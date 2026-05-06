@@ -34,6 +34,8 @@ stages:
 
 deploy:dev:
   stage: deploy
+  tags:
+    - ssh-runner
   environment:
     name: dev
     url: $DEV_URL
@@ -51,6 +53,8 @@ deploy:dev:
 
 deploy:prod:
   stage: deploy
+  tags:
+    - ssh-runner
   environment:
     name: prod
     url: $PROD_URL
