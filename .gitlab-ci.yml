@@ -1,0 +1,68 @@
+variables:
+  PROJECT_NAME: "gree"
+  
+  # dev
+  DEV_HOST: "gree.all4it.org"
+  DEV_PORT: "22108"
+  DEV_USER: "bitrix"
+  DEV_PATH: "/home/bitrix/ext_www/gree.all4it.org"
+  DEV_BRANCH: "develop"
+  DEV_URL: "https://gree.all4it.org"
+
+  # prod
+  PROD_HOST: "gree.all4it.org"
+  PROD_PORT: "22108"
+  PROD_USER: "bitrix"
+  PROD_PATH: "/home/bitrix/ext_www/gree.all4it.org"
+  PROD_BRANCH: "master"
+  PROD_URL: "https://gree.all4it.org"
+
+stages:
+  - deploy
+
+.deploy_script: &deploy_script
+  - |
+    ssh -p $DEPLOY_PORT ${DEPLOY_USER}@${DEPLOY_HOST} "
+      echo '>>> Переходим в $DEPLOY_PATH' &&
+      cd $DEPLOY_PATH &&
+      git fetch &&
+      git stash &&
+      git checkout $DEPLOY_BRANCH &&
+      git pull --rebase origin $DEPLOY_BRANCH &&
+      echo '$PROJECT_NAME успешно обновлён на $DEPLOY_HOST'
+    "
+
+deploy:dev:
+  stage: deploy
+  environment:
+    name: dev
+    url: $DEV_URL
+  variables:
+    DEPLOY_HOST: $DEV_HOST
+    DEPLOY_PORT: $DEV_PORT
+    DEPLOY_USER: $DEV_USER
+    DEPLOY_PATH: $DEV_PATH
+    DEPLOY_BRANCH: $DEV_BRANCH
+  script:
+    - echo "Деплой $PROJECT_NAME → DEV ($DEV_HOST)"
+    - *deploy_script
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+deploy:prod:
+  stage: deploy
+  environment:
+    name: prod
+    url: $PROD_URL
+  variables:
+    DEPLOY_HOST: $PROD_HOST
+    DEPLOY_PORT: $PROD_PORT
+    DEPLOY_USER: $PROD_USER
+    DEPLOY_PATH: $PROD_PATH
+    DEPLOY_BRANCH: $PROD_BRANCH
+  script:
+    - echo "Деплой $PROJECT_NAME → PROD ($PROD_HOST)"
+    - *deploy_script
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: manual
