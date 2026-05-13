@@ -1,0 +1,128 @@
+.breadcrumbs {
+  margin-top: 30px;
+}
+.main {
+  padding-block: 40px 250px;
+}
+.main__title {
+  font-size: 32px;
+  font-weight: 500;
+}
+.main__description {
+  margin-top: 10px;
+  font-size: 18px;
+}
+.catalog {
+  column-gap: 45px;
+  margin-top: 40px;
+  display: flex;
+}
+.catalog-sidebar {
+  background-color: #fff;
+  border-radius: 24px;
+  flex-direction: column;
+  row-gap: 25px;
+  width: 250px;
+  height: fit-content;
+  padding: 20px;
+  display: flex;
+}
+.catalog-sidebar__title {
+  color: #282828;
+  font-weight: 500;
+}
+.catalog-sidebar-filters__title {
+  color: #282828;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 2;
+}
+.catalog-sidebar-filters__items {
+  flex-direction: column;
+  row-gap: 10px;
+  margin-top: 10px;
+  display: flex;
+}
+.catalog-sidebar-buttons {
+  flex-direction: column;
+  row-gap: 10px;
+  display: flex;
+}
+.catalog-sidebar__submit-button,
+.catalog-sidebar__reset-button {
+  text-align: center;
+  color: #282828;
+  border: 1px solid #0000;
+  border-radius: 12px;
+  width: 100%;
+  height: 42px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.catalog-sidebar__submit-button {
+  opacity: 0;
+  pointer-events: none;
+  background-color: #ebebeb;
+  border-color: #ebebeb;
+  transition: opacity 0.25s;
+}
+.catalog-sidebar__submit-button--visible {
+  opacity: 1;
+  pointer-events: all;
+}
+.catalog-sidebar__reset-button {
+  border-color: #d9dce1;
+}
+.catalog-wrapper {
+  flex-grow: 1;
+}
+.catalog-header {
+  justify-content: space-between;
+  align-items: center;
+  display: flex;
+}
+.catalog-header__title {
+  font-size: 18px;
+  font-weight: 500;
+}
+.catalog-sort-button {
+  -webkit-user-select: none;
+  user-select: none;
+  background-color: #fff;
+  border-radius: 8px;
+  align-items: center;
+  column-gap: 10px;
+  padding-inline: 15px;
+  display: flex;
+  position: relative;
+}
+.catalog-sort-button__text {
+  color: #282828;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 40px;
+}
+.catalog-sort-button > svg {
+  color: #282828;
+}
+.catalog-sort-button__control {
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.catalog-items {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+  display: grid;
+}
+.catalog-pagination {
+  margin: 30px auto 0;
+}
+.gree {
+  margin-top: 150px;
+}

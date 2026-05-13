@@ -108,3 +108,9 @@ core.*
 /.top.menu.php
 /.topest.menu.php
 
+
+# Blade compiled template cache
+/local/cache/
+
+# Composer dependencies
+/vendor/
