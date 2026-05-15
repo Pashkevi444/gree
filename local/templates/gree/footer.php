@@ -88,9 +88,9 @@ use Gree\Helpers\Language;
           <div class="footer-navigation">
             <div class="footer-navigation__title"><?= Language::t('footer.col.catalog') ?></div>
             <div class="footer-navigation-items">
-              <a class="footer-navigation__item" href="/catalog/?type%5B%5D=wall"><?= Language::t('footer.nav.wall') ?></a>
-              <a class="footer-navigation__item" href="/catalog/?type%5B%5D=column"><?= Language::t('footer.nav.column') ?></a>
-              <a class="footer-navigation__item" href="/catalog/?type%5B%5D=industrial"><?= Language::t('footer.nav.industrial') ?></a>
+              <a class="footer-navigation__item" href="/catalog/nastennie/"><?= Language::t('footer.nav.wall') ?></a>
+              <a class="footer-navigation__item" href="/catalog/kolonnye/"><?= Language::t('footer.nav.column') ?></a>
+              <a class="footer-navigation__item" href="/catalog/promyshlennye/"><?= Language::t('footer.nav.industrial') ?></a>
             </div>
           </div>
           <div class="footer-navigation">

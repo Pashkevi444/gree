@@ -7,6 +7,7 @@ namespace Gree\Tests\Unit\Controller;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\Controller\CatalogController;
 use Gree\DTO\ProductDto;
+use Gree\Enum\Color;
 use Gree\Enum\ProductType;
 use PHPUnit\Framework\TestCase;
 
@@ -57,7 +58,7 @@ final class CatalogControllerTest extends TestCase
             area: 30,
             isBestseller: true,
             image: '/upload/p.png',
-            colors: ['#ffffff', '#8c8c8c'],
+            colors: [Color::White, Color::Silver],
         );
 
         $payload = CatalogController::buildItemPayload($product);
@@ -66,9 +67,9 @@ final class CatalogControllerTest extends TestCase
         $this->assertSame('/upload/p.png', $payload['image']);
         $this->assertSame('Gree BORA X', $payload['name']);
         $this->assertSame('Площадь — 30 м²', $payload['meta']['text']);
-        $this->assertSame(['#ffffff', '#8c8c8c'], $payload['meta']['colors']);
+        $this->assertSame(['#ffffff', '#8c8c8c'], $payload['meta']['colors']); // serialised as hex strings
         $this->assertSame(3_490_000, $payload['price']);
-        $this->assertSame('/catalog/gree-bora-x/', $payload['href']);
+        $this->assertSame('/catalog/nastennie/gree-bora-x/', $payload['href']);
     }
 
     public function testBuildItemPayloadOmitsBadgeWhenNotBestseller(): void

@@ -9,6 +9,8 @@ use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\DTO\FilterDto;
 use Gree\DTO\ProductDto;
+use Gree\Enum\Color;
+use Gree\Enum\ProductType;
 use Gree\View\CatalogViewData;
 
 final class CatalogController extends BaseController
@@ -20,23 +22,24 @@ final class CatalogController extends BaseController
 
     public function index(): HttpResponse
     {
-        $this->setMeta('Каталог кондиционеров Gree');
-        $this->addPageAssets('catalog');
+        return $this->render(lockedType: null);
+    }
 
-        $filter = FilterDto::fromRequest($this->getRequest());
-        $products = $this->catalogService->getList($filter);
-        $total = $this->catalogService->count($filter);
-        $greeCards = $this->catalogService->getGreeCards();
-        $greeStats = $this->catalogService->getGreeStats();
-
-        return $this->view('catalog/index', new CatalogViewData(
-            products: $products,
-            filter: $filter,
-            total: $total,
-            greeCards: $greeCards,
-            greeStats: $greeStats,
-            breadcrumbs: $this->breadcrumbs->catalog(),
-        ));
+    /**
+     * Section landing — /catalog/nastennie/ etc. URL slug pins the type filter
+     * for the whole page; the "Type" filter group in the form is hidden because
+     * it's already decided by the URL.
+     *
+     * Invalid slugs are rejected at the routing layer (regex guard), but defend
+     * here too in case someone calls this directly.
+     */
+    public function section(string $slug): HttpResponse
+    {
+        $type = ProductType::fromSlug($slug);
+        if ($type === null) {
+            return $this->render(lockedType: null);
+        }
+        return $this->render(lockedType: $type);
     }
 
     public function filter(): HttpResponse
@@ -51,17 +54,62 @@ final class CatalogController extends BaseController
         ]);
     }
 
+    private function render(?ProductType $lockedType): HttpResponse
+    {
+        $this->setMeta('Каталог кондиционеров Gree');
+        $this->addPageAssets('catalog');
+
+        $filter = FilterDto::fromRequest($this->getRequest());
+
+        // Section page forces the type filter regardless of what's in the
+        // session / query — the URL is the source of truth.
+        if ($lockedType !== null) {
+            $filter = new FilterDto(
+                types: [$lockedType],
+                priceMin: $filter->priceMin,
+                priceMax: $filter->priceMax,
+                areas: $filter->areas,
+                bestseller: $filter->bestseller,
+                inverterMotor: $filter->inverterMotor,
+                colors: $filter->colors,
+                sortField: $filter->sortField,
+                page: $filter->page,
+                perPage: $filter->perPage,
+            );
+        }
+
+        $products = $this->catalogService->getList($filter);
+        $total = $this->catalogService->count($filter);
+        $greeCards = $this->catalogService->getGreeCards();
+        $greeStats = $this->catalogService->getGreeStats();
+
+        $crumbs = $lockedType !== null
+            ? $this->breadcrumbs->catalogSection($lockedType)
+            : $this->breadcrumbs->catalog();
+
+        return $this->view('catalog/index', new CatalogViewData(
+            products: $products,
+            filter: $filter,
+            total: $total,
+            greeCards: $greeCards,
+            greeStats: $greeStats,
+            breadcrumbs: $crumbs,
+            lockedType: $lockedType,
+        ));
+    }
+
     public static function buildItemPayload(ProductDto $product): array
     {
+        $href = '/catalog/' . $product->type->slug() . '/' . $product->code . '/';
         $payload = [
             'image' => $product->image,
             'name' => $product->name,
             'meta' => [
                 'text' => $product->area > 0 ? "Площадь — {$product->area} м²" : '',
-                'colors' => $product->colors,
+                'colors' => array_map(fn(Color $c) => $c->hex(), $product->colors),
             ],
             'price' => $product->price,
-            'href' => "/catalog/{$product->code}/",
+            'href' => $href,
         ];
 
         if ($product->isBestseller) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gree\Tests\Unit\Repository;
 
 use Gree\Collection\ProductCollection;
+use Gree\Contract\Repository\OfferRepositoryInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
 use Gree\DTO\FilterDto;
 use Gree\Enum\Locale;
@@ -19,7 +20,10 @@ final class ProductRepositoryTest extends TestCase
     {
         $language = $this->createMock(LanguageServiceInterface::class);
         $language->method('get')->willReturn(Locale::Ru);
-        $this->repo = new ProductRepository($language);
+        $offers = $this->createMock(OfferRepositoryInterface::class);
+        $offers->method('getByProductIds')->willReturn([]);
+        $offers->method('findProductIds')->willReturn([]);
+        $this->repo = new ProductRepository($language, $offers);
     }
 
     public function testGetListReturnsProductCollection(): void

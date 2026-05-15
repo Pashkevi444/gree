@@ -45,4 +45,19 @@ final class ProductTypeTest extends TestCase
     {
         $this->assertCount(3, ProductType::cases());
     }
+
+    public function testSlugs(): void
+    {
+        $this->assertSame('nastennie',     ProductType::Wall->slug());
+        $this->assertSame('kolonnye',      ProductType::Column->slug());
+        $this->assertSame('promyshlennye', ProductType::Industrial->slug());
+    }
+
+    public function testFromSlug(): void
+    {
+        $this->assertSame(ProductType::Wall,       ProductType::fromSlug('nastennie'));
+        $this->assertSame(ProductType::Column,     ProductType::fromSlug('kolonnye'));
+        $this->assertSame(ProductType::Industrial, ProductType::fromSlug('promyshlennye'));
+        $this->assertNull(ProductType::fromSlug('unknown'));
+    }
 }

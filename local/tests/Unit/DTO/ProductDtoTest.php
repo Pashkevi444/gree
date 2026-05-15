@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gree\Tests\Unit\DTO;
 
 use Gree\DTO\ProductDto;
+use Gree\Enum\Color;
 use Gree\Enum\ProductType;
 use PHPUnit\Framework\TestCase;
 
@@ -43,12 +44,12 @@ final class ProductDtoTest extends TestCase
             area:         100,
             isBestseller: true,
             image:        '/images/col.png',
-            colors:       ['#fff', '#000'],
+            colors:       [Color::White, Color::Black],
         );
 
         $this->assertTrue($dto->isBestseller);
         $this->assertSame('/images/col.png', $dto->image);
-        $this->assertSame(['#fff', '#000'],  $dto->colors);
+        $this->assertSame([Color::White, Color::Black],  $dto->colors);
     }
 
     public function testFromArray(): void
@@ -62,11 +63,12 @@ final class ProductDtoTest extends TestCase
             'area'         => '500',
             'is_bestseller' => '1',
             'image'        => '/img/ind.png',
-            'colors'       => ['#aaa'],
+            'colors'       => ['white', 'silver'],
         ]);
 
         $this->assertSame(7,                        $dto->id);
         $this->assertSame(ProductType::Industrial,  $dto->type);
+        $this->assertSame([Color::White, Color::Silver], $dto->colors);
         $this->assertSame(50_000_000,               $dto->price);
         $this->assertSame(500,                      $dto->area);
         $this->assertTrue($dto->isBestseller);

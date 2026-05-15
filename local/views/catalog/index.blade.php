@@ -12,11 +12,18 @@
 @section('content')
     @include('partials.breadcrumbs', ['breadcrumbs' => $breadcrumbs])
     <main class="main">
-      <h1 class="main__title container">{{ Language::t('catalog.title') }}</h1>
-      <p class="main__description container">{{ Language::t('catalog.description') }}</p>
+      @if ($lockedType !== null)
+        <h1 class="main__title container">{{ Language::t('catalog.section.' . $lockedType->value . '.title') }}</h1>
+        <p class="main__description container">{{ Language::t('catalog.section.' . $lockedType->value . '.description') }}</p>
+      @else
+        <h1 class="main__title container">{{ Language::t('catalog.title') }}</h1>
+        <p class="main__description container">{{ Language::t('catalog.description') }}</p>
+      @endif
       <section class="catalog container">
         <form id="filters-form" class="catalog-sidebar" action="/api/catalog" autocomplete="off">
           <div class="catalog-sidebar__title">{{ Language::t('catalog.filters') }}</div>
+          @if ($lockedType === null)
+          {{-- Type group hidden on section pages — URL already pins the type --}}
           <div class="catalog-sidebar-filters">
             <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.type') }}</div>
             <div class="catalog-sidebar-filters__items">
@@ -64,6 +71,11 @@
               </label>
             </div>
           </div>
+          @else
+            {{-- The locked type is kept in a hidden field so the filter API
+                 receives it even though there is no visible checkbox. --}}
+            <input type="hidden" name="type[]" value="{{ $lockedType->value }}" />
+          @endif
           <div class="catalog-sidebar-filters">
             <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.price') }}</div>
             <div class="catalog-sidebar-filters__items">
@@ -139,7 +151,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Нет</div>
+                <div class="checkbox__text">{{ Language::t('catalog.filter.no') }}</div>
               </label>
             </div>
           </div>
@@ -172,7 +184,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Нет</div>
+                <div class="checkbox__text">{{ Language::t('catalog.filter.no') }}</div>
               </label>
             </div>
           </div>

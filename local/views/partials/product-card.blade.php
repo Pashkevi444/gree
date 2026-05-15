@@ -11,13 +11,12 @@
     @endif
     @if ($product->colors)
     <div class="product-card-meta-colors">
-      @foreach ($product->colors as $hex)
-      @php $isWhite = in_array(strtolower($hex), ['#fff', '#ffffff'], true); @endphp
-      <div class="product-card-meta-colors__item @if ($isWhite)product-card-meta-colors__item--white @endif" style="--background-color: {{ $hex }}"></div>
+      @foreach ($product->colors as $color)
+      <div class="product-card-meta-colors__item @if ($color === \Gree\Enum\Color::White)product-card-meta-colors__item--white @endif" style="--background-color: {{ $color->hex() }}"></div>
       @endforeach
     </div>
     @endif
   </div>
   <div class="product-card__price">{{ Language::t('product.price_from', ['price' => number_format($product->price, 0, '.', ' ')]) }}</div>
-  <a class="product-card__button" href="/catalog/{{ $product->code }}/">{{ Language::t('product.details') }}</a>
+  <a class="product-card__button" href="/catalog/{{ $product->type->slug() }}/{{ $product->code }}/">{{ Language::t('product.details') }}</a>
 </div>

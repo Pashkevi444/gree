@@ -15,9 +15,19 @@ return static function (RoutingConfigurator $routes): void {
 
     $routes->get('/', static fn() => App::get(HomeController::class)->index())->name('home');
 
+    // Catalog hub — three sections rendered on one page (anchors per TZ)
     $routes->get('/catalog/', static fn() => App::get(CatalogController::class)->index())->name('catalog.index');
+
+    // Section listing: /catalog/nastennie/ — same template, locked type filter
     $routes
-        ->get('/catalog/{code}/', static fn(string $code) => App::get(ProductController::class)->show($code))
+        ->get('/catalog/{section}/', static fn(string $section) => App::get(CatalogController::class)->section($section))
+        ->where('section', 'nastennie|kolonnye|promyshlennye')
+        ->name('catalog.section');
+
+    // Product detail under section: /catalog/nastennie/gree-bora-x-07/
+    $routes
+        ->get('/catalog/{section}/{code}/', static fn(string $section, string $code) => App::get(ProductController::class)->show($code, $section))
+        ->where('section', 'nastennie|kolonnye|promyshlennye')
         ->where('code', '[\w\d\-]+')
         ->name('catalog.product');
 

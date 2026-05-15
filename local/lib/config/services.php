@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Gree\Contract\Repository\BrandRepositoryInterface;
 use Gree\Contract\Repository\CatalogRepositoryInterface;
 use Gree\Contract\Repository\HomeRepositoryInterface;
+use Gree\Contract\Repository\OfferRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
 use Gree\Contract\Service\BrandServiceInterface;
 use Gree\Contract\Service\BreadcrumbsServiceInterface;
@@ -22,6 +23,7 @@ use Gree\Controller\ProductController;
 use Gree\Repository\BrandRepository;
 use Gree\Repository\CatalogRepository;
 use Gree\Repository\HomeRepository;
+use Gree\Repository\OfferRepository;
 use Gree\Repository\ProductRepository;
 use Gree\Repository\TranslationRepository;
 use Gree\Service\BrandService;
@@ -53,8 +55,15 @@ $container
 $container->setAlias(HomeRepositoryInterface::class, HomeRepository::class)->setPublic(true);
 
 $container
+    ->register(OfferRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(OfferRepositoryInterface::class, OfferRepository::class)->setPublic(true);
+
+$container
     ->register(ProductRepository::class)
     ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->addArgument(new Reference(OfferRepositoryInterface::class))
     ->setPublic(true);
 $container->setAlias(ProductRepositoryInterface::class, ProductRepository::class)->setPublic(true);
 

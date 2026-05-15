@@ -51,7 +51,7 @@
               @include('partials.product-card', ['product' => $product])
             @endforeach
           </div>
-          <a class="catalog-section__button" href="/catalog/?type%5B%5D=wall">{{ Language::t('home.section.viewAll') }}</a>
+          <a class="catalog-section__button" href="/catalog/nastennie/">{{ Language::t('home.section.viewAll') }}</a>
         </div>
         <div id="catalog-column" class="catalog-section">
           <h2 class="catalog-section__title">{{ Language::t('home.section.column.title') }}</h2>
@@ -61,7 +61,7 @@
               @include('partials.product-card', ['product' => $product])
             @endforeach
           </div>
-          <a class="catalog-section__button" href="/catalog/?type%5B%5D=column">{{ Language::t('home.section.viewAll') }}</a>
+          <a class="catalog-section__button" href="/catalog/kolonnye/">{{ Language::t('home.section.viewAll') }}</a>
         </div>
         <div id="catalog-industry" class="catalog-section">
           <h2 class="catalog-section__title">{{ Language::t('home.section.industrial.title') }}</h2>
@@ -71,7 +71,7 @@
               @include('partials.product-card', ['product' => $product])
             @endforeach
           </div>
-          <a class="catalog-section__button" href="/catalog/?type%5B%5D=industrial">{{ Language::t('home.section.viewAll') }}</a>
+          <a class="catalog-section__button" href="/catalog/promyshlennye/">{{ Language::t('home.section.viewAll') }}</a>
         </div>
       </section>
 
