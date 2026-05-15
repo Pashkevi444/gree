@@ -7,13 +7,12 @@ namespace Gree\Tests\Unit\Service;
 use Gree\Collection\GreeCardCollection;
 use Gree\Collection\GreeStatCollection;
 use Gree\Collection\ProductCollection;
-use Gree\Contract\Repository\GreeCardsRepositoryInterface;
+use Gree\Contract\Repository\CatalogRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
 use Gree\DTO\FilterDto;
 use Gree\DTO\GreeCardDto;
 use Gree\DTO\GreeStatDto;
 use Gree\DTO\ProductDto;
-use Gree\Enum\IblockCode;
 use Gree\Enum\ProductType;
 use Gree\Service\CatalogService;
 use PHPUnit\Framework\TestCase;
@@ -27,11 +26,11 @@ final class CatalogServiceTest extends TestCase
 
     private function makeService(
         ?ProductRepositoryInterface $products = null,
-        ?GreeCardsRepositoryInterface $cards = null,
+        ?CatalogRepositoryInterface $catalog = null,
     ): CatalogService {
         return new CatalogService(
             $products ?? $this->createMock(ProductRepositoryInterface::class),
-            $cards ?? $this->createMock(GreeCardsRepositoryInterface::class),
+            $catalog ?? $this->createMock(CatalogRepositoryInterface::class),
         );
     }
 
@@ -94,29 +93,23 @@ final class CatalogServiceTest extends TestCase
         $this->assertSame(42, $this->makeService($repo)->count($filter));
     }
 
-    public function testGetGreeCardsReadsCatalogIblock(): void
+    public function testGetGreeCardsDelegatesToCatalogRepository(): void
     {
         $expected = new GreeCardCollection(new GreeCardDto(1, 'Warranty', 'desc', 'thumbs-up'));
 
-        $cards = $this->createMock(GreeCardsRepositoryInterface::class);
-        $cards->expects($this->once())
-            ->method('getCards')
-            ->with(IblockCode::CatalogGreeCards)
-            ->willReturn($expected);
+        $catalog = $this->createMock(CatalogRepositoryInterface::class);
+        $catalog->expects($this->once())->method('getGreeCards')->willReturn($expected);
 
-        $this->assertSame($expected, $this->makeService(cards: $cards)->getGreeCards());
+        $this->assertSame($expected, $this->makeService(catalog: $catalog)->getGreeCards());
     }
 
-    public function testGetGreeStatsReadsCatalogIblock(): void
+    public function testGetGreeStatsDelegatesToCatalogRepository(): void
     {
         $expected = new GreeStatCollection(new GreeStatDto(1, '#1', 1, '#', 'worldwide', 'desc'));
 
-        $cards = $this->createMock(GreeCardsRepositoryInterface::class);
-        $cards->expects($this->once())
-            ->method('getStats')
-            ->with(IblockCode::CatalogGreeStats)
-            ->willReturn($expected);
+        $catalog = $this->createMock(CatalogRepositoryInterface::class);
+        $catalog->expects($this->once())->method('getGreeStats')->willReturn($expected);
 
-        $this->assertSame($expected, $this->makeService(cards: $cards)->getGreeStats());
+        $this->assertSame($expected, $this->makeService(catalog: $catalog)->getGreeStats());
     }
 }

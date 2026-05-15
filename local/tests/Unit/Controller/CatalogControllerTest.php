@@ -15,7 +15,8 @@ final class CatalogControllerTest extends TestCase
     public function testConstructorAcceptsCatalogService(): void
     {
         $service = $this->createMock(CatalogServiceInterface::class);
-        $controller = new CatalogController($service);
+        $crumbs = $this->createMock(\Gree\Contract\Service\BreadcrumbsServiceInterface::class);
+        $controller = new CatalogController($service, $crumbs);
 
         $this->assertInstanceOf(CatalogController::class, $controller);
     }
@@ -30,7 +31,8 @@ final class CatalogControllerTest extends TestCase
     public function testHasFilterMethod(): void
     {
         $service = $this->createMock(CatalogServiceInterface::class);
-        $controller = new CatalogController($service);
+        $crumbs = $this->createMock(\Gree\Contract\Service\BreadcrumbsServiceInterface::class);
+        $controller = new CatalogController($service, $crumbs);
 
         $this->assertTrue(method_exists($controller, 'filter'));
     }
@@ -38,7 +40,8 @@ final class CatalogControllerTest extends TestCase
     public function testHasIndexMethod(): void
     {
         $service = $this->createMock(CatalogServiceInterface::class);
-        $controller = new CatalogController($service);
+        $crumbs = $this->createMock(\Gree\Contract\Service\BreadcrumbsServiceInterface::class);
+        $controller = new CatalogController($service, $crumbs);
 
         $this->assertTrue(method_exists($controller, 'index'));
     }

@@ -1,45 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <nav class="breadcrumbs container">
-      <a class="breadcrumbs__item" href="/">Главная</a>
-      &nbsp;
-      <svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M0.5625 6.5625L3.5625 3.5625L0.5625 0.5625"
-          stroke="white"
-          stroke-width="1.125"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-      &nbsp;
-      <a class="breadcrumbs__item" href="/catalog/">Каталог</a>
-      &nbsp;
-      <svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M0.5625 6.5625L3.5625 3.5625L0.5625 0.5625"
-          stroke="white"
-          stroke-width="1.125"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-      &nbsp;
-      <a class="breadcrumbs__item" href="/catalog/">Настенные кондиционеры</a>
-      &nbsp;
-      <svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M0.5625 6.5625L3.5625 3.5625L0.5625 0.5625"
-          stroke="white"
-          stroke-width="1.125"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-      &nbsp;
-      <span class="breadcrumbs__item">Gree Pular GWH07AGA-K3NNA1B</span>
-    </nav>
+    @include('partials.breadcrumbs', ['breadcrumbs' => $breadcrumbs])
     <main class="main">
       <div class="wrapper container">
         <div class="catalog">

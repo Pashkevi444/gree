@@ -7,19 +7,18 @@ namespace Gree\Service;
 use Gree\Collection\GreeCardCollection;
 use Gree\Collection\GreeStatCollection;
 use Gree\Collection\ProductCollection;
-use Gree\Contract\Repository\GreeCardsRepositoryInterface;
+use Gree\Contract\Repository\CatalogRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\DTO\FilterDto;
 use Gree\DTO\ProductDto;
-use Gree\Enum\IblockCode;
 use Gree\Logging\FileLogger;
 
 final class CatalogService extends BaseService implements CatalogServiceInterface
 {
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
-        private readonly GreeCardsRepositoryInterface $greeCardsRepository,
+        private readonly CatalogRepositoryInterface $catalogRepository,
     ) {}
 
     public function getList(FilterDto $filter): ProductCollection
@@ -55,7 +54,7 @@ final class CatalogService extends BaseService implements CatalogServiceInterfac
     public function getGreeCards(): GreeCardCollection
     {
         try {
-            return $this->greeCardsRepository->getCards(IblockCode::CatalogGreeCards);
+            return $this->catalogRepository->getGreeCards();
         } catch (\Throwable $e) {
             FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
             throw $e;
@@ -65,7 +64,7 @@ final class CatalogService extends BaseService implements CatalogServiceInterfac
     public function getGreeStats(): GreeStatCollection
     {
         try {
-            return $this->greeCardsRepository->getStats(IblockCode::CatalogGreeStats);
+            return $this->catalogRepository->getGreeStats();
         } catch (\Throwable $e) {
             FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
             throw $e;

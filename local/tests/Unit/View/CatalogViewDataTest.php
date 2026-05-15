@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gree\Tests\Unit\View;
 
+use Gree\Collection\BreadcrumbCollection;
 use Gree\Collection\GreeCardCollection;
 use Gree\Collection\GreeStatCollection;
 use Gree\Collection\ProductCollection;
@@ -25,14 +26,16 @@ final class CatalogViewDataTest extends TestCase
         $filter = new FilterDto();
         $cards = new GreeCardCollection();
         $stats = new GreeStatCollection();
+        $crumbs = new BreadcrumbCollection();
 
-        $data = new CatalogViewData($products, $filter, 42, $cards, $stats);
+        $data = new CatalogViewData($products, $filter, 42, $cards, $stats, $crumbs);
 
         $this->assertSame($products, $data->products);
         $this->assertSame($filter, $data->filter);
         $this->assertSame(42, $data->total);
         $this->assertSame($cards, $data->greeCards);
         $this->assertSame($stats, $data->greeStats);
+        $this->assertSame($crumbs, $data->breadcrumbs);
     }
 
     public function testToArrayContainsExpectedKeys(): void
@@ -44,6 +47,7 @@ final class CatalogViewDataTest extends TestCase
         $this->assertArrayHasKey('total', $array);
         $this->assertArrayHasKey('greeCards', $array);
         $this->assertArrayHasKey('greeStats', $array);
+        $this->assertArrayHasKey('breadcrumbs', $array);
     }
 
     public function testIsReadonly(): void
@@ -62,6 +66,7 @@ final class CatalogViewDataTest extends TestCase
             0,
             new GreeCardCollection(),
             new GreeStatCollection(),
+            new BreadcrumbCollection(),
         );
     }
 }

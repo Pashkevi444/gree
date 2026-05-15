@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gree\Controller;
 
 use Bitrix\Main\HttpResponse;
+use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\DTO\FilterDto;
 use Gree\DTO\ProductDto;
@@ -12,7 +13,10 @@ use Gree\View\CatalogViewData;
 
 final class CatalogController extends BaseController
 {
-    public function __construct(private readonly CatalogServiceInterface $catalogService) {}
+    public function __construct(
+        private readonly CatalogServiceInterface $catalogService,
+        private readonly BreadcrumbsServiceInterface $breadcrumbs,
+    ) {}
 
     public function index(): HttpResponse
     {
@@ -31,6 +35,7 @@ final class CatalogController extends BaseController
             total: $total,
             greeCards: $greeCards,
             greeStats: $greeStats,
+            breadcrumbs: $this->breadcrumbs->catalog(),
         ));
     }
 

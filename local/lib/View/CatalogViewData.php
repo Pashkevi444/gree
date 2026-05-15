@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gree\View;
 
+use Gree\Collection\BreadcrumbCollection;
 use Gree\Collection\GreeCardCollection;
 use Gree\Collection\GreeStatCollection;
 use Gree\Collection\ProductCollection;
@@ -17,5 +18,6 @@ final readonly class CatalogViewData extends BaseViewData
         public int $total,
         public GreeCardCollection $greeCards,
         public GreeStatCollection $greeStats,
+        public BreadcrumbCollection $breadcrumbs,
     ) {}
 }

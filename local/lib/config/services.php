@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 use Gree\Contract\Repository\BrandRepositoryInterface;
-use Gree\Contract\Repository\GreeCardsRepositoryInterface;
+use Gree\Contract\Repository\CatalogRepositoryInterface;
 use Gree\Contract\Repository\HomeRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
 use Gree\Contract\Service\BrandServiceInterface;
+use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\Contract\Service\HomeServiceInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
@@ -19,11 +20,12 @@ use Gree\Controller\HomeController;
 use Gree\Controller\LanguageController;
 use Gree\Controller\ProductController;
 use Gree\Repository\BrandRepository;
-use Gree\Repository\GreeCardsRepository;
+use Gree\Repository\CatalogRepository;
 use Gree\Repository\HomeRepository;
 use Gree\Repository\ProductRepository;
 use Gree\Repository\TranslationRepository;
 use Gree\Service\BrandService;
+use Gree\Service\BreadcrumbsService;
 use Gree\Service\CatalogService;
 use Gree\Service\HomeService;
 use Gree\Service\LanguageService;
@@ -57,10 +59,10 @@ $container
 $container->setAlias(ProductRepositoryInterface::class, ProductRepository::class)->setPublic(true);
 
 $container
-    ->register(GreeCardsRepository::class)
+    ->register(CatalogRepository::class)
     ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
-$container->setAlias(GreeCardsRepositoryInterface::class, GreeCardsRepository::class)->setPublic(true);
+$container->setAlias(CatalogRepositoryInterface::class, CatalogRepository::class)->setPublic(true);
 
 // ─── Translator stack ─────────────────────────────────────────────────────
 $container->register(TranslationRepository::class)->setPublic(true);
@@ -82,7 +84,7 @@ $container->setAlias(HomeServiceInterface::class, HomeService::class)->setPublic
 $container
     ->register(CatalogService::class)
     ->addArgument(new Reference(ProductRepositoryInterface::class))
-    ->addArgument(new Reference(GreeCardsRepositoryInterface::class))
+    ->addArgument(new Reference(CatalogRepositoryInterface::class))
     ->setPublic(true);
 $container->setAlias(CatalogServiceInterface::class, CatalogService::class)->setPublic(true);
 
@@ -91,6 +93,13 @@ $container
     ->addArgument(new Reference(BrandRepositoryInterface::class))
     ->setPublic(true);
 $container->setAlias(BrandServiceInterface::class, BrandService::class)->setPublic(true);
+
+$container
+    ->register(BreadcrumbsService::class)
+    ->addArgument(new Reference(TranslatorServiceInterface::class))
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(BreadcrumbsServiceInterface::class, BreadcrumbsService::class)->setPublic(true);
 
 // ─── Controllers ──────────────────────────────────────────────────────────
 $container
@@ -109,11 +118,13 @@ $container->register(BlogController::class)->setPublic(true);
 $container
     ->register(CatalogController::class)
     ->addArgument(new Reference(CatalogServiceInterface::class))
+    ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
     ->setPublic(true);
 
 $container
     ->register(ProductController::class)
     ->addArgument(new Reference(CatalogServiceInterface::class))
+    ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
     ->setPublic(true);
 
 $container
