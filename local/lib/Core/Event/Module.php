@@ -11,9 +11,16 @@ final class Module
     public static function onBeforeProlog(): void
     {
         Loader::includeModule('iblock');
+        Loader::includeModule('highloadblock');
 
         // Reset options cache so each request gets fresh values.
         \Gree\Core\Options::reset();
+
+        // Auto-detect locale on first visit (CIS Accept-Language → ru, else → en),
+        // store it in the session — subsequent requests respect the stored value.
+        \Gree\Core\App::container()
+            ->get(\Gree\Contract\Service\LanguageServiceInterface::class)
+            ->detectAndStore(\Bitrix\Main\Application::getInstance()->getContext()->getRequest());
     }
 
     public static function onAdminIblockElementEditForm(): void

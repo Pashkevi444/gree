@@ -19,9 +19,6 @@ use Gree\Enum\IblockCode;
 
 final class HomeRepository extends BaseRepository implements HomeRepositoryInterface
 {
-
-    // -------------------------------------------------------------------------
-
     public function getSlider(): SliderItemCollection
     {
         return $this->fetchSlider();
@@ -62,7 +59,13 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
 
         $result = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'PREVIEW_PICTURE', 'SUBTITLE_VALUE' => 'SUBTITLE.VALUE', 'BUTTON_TEXT_VALUE' => 'BUTTON_TEXT.VALUE', 'BUTTON_URL_VALUE' => 'BUTTON_URL.VALUE'])
+            ->setSelect(array_merge(
+                ['ID', 'PREVIEW_PICTURE'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('SUBTITLE'),
+                $this->localizedSelect('BUTTON_TEXT'),
+                ['BUTTON_URL_VALUE' => 'BUTTON_URL.VALUE'],
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)
             ->cacheJoins(true)
@@ -71,11 +74,11 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
         $items = [];
         while ($row = $result->fetch()) {
             $items[] = new SliderItemDto(
-                id: (int)$row['ID'],
-                name: (string)$row['NAME'],
-                subtitle: (string)($row['SUBTITLE_VALUE'] ?? ''),
-                buttonText: (string)($row['BUTTON_TEXT_VALUE'] ?? ''),
-                buttonUrl: (string)($row['BUTTON_URL_VALUE'] ?? ''),
+                id: (int) $row['ID'],
+                name: $this->localized($row, 'NAME'),
+                subtitle: $this->localized($row, 'SUBTITLE'),
+                buttonText: $this->localized($row, 'BUTTON_TEXT'),
+                buttonUrl: (string) ($row['BUTTON_URL_VALUE'] ?? ''),
                 backgroundImage: !empty($row['PREVIEW_PICTURE']) ? \CFile::GetPath($row['PREVIEW_PICTURE']) : '',
             );
         }
@@ -96,7 +99,12 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
 
         $result = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'PREVIEW_TEXT', 'ICON_CODE_VALUE' => 'ICON_CODE.VALUE'])
+            ->setSelect(array_merge(
+                ['ID'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('PREVIEW_TEXT'),
+                ['ICON_CODE_VALUE' => 'ICON_CODE.VALUE'],
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)->cacheJoins(true)
             ->exec();
@@ -104,10 +112,10 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
         $items = [];
         while ($row = $result->fetch()) {
             $items[] = new GreeCardDto(
-                id: (int)$row['ID'],
-                name: (string)$row['NAME'],
-                description: (string)($row['PREVIEW_TEXT'] ?? ''),
-                iconCode: (string)($row['ICON_CODE_VALUE'] ?? ''),
+                id: (int) $row['ID'],
+                name: $this->localized($row, 'NAME'),
+                description: $this->localized($row, 'PREVIEW_TEXT'),
+                iconCode: (string) ($row['ICON_CODE_VALUE'] ?? ''),
             );
         }
 
@@ -127,7 +135,14 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
 
         $result = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'PREVIEW_TEXT', 'NUMBER_PREFIX_VALUE' => 'NUMBER_PREFIX.VALUE', 'NUMBER_VALUE_VALUE' => 'NUMBER_VALUE.VALUE', 'NUMBER_SUFFIX_VALUE' => 'NUMBER_SUFFIX.VALUE'])
+            ->setSelect(array_merge(
+                ['ID'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('PREVIEW_TEXT'),
+                $this->localizedSelect('NUMBER_PREFIX'),
+                $this->localizedSelect('NUMBER_SUFFIX'),
+                ['NUMBER_VALUE_VALUE' => 'NUMBER_VALUE.VALUE'],
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)
             ->cacheJoins(true)
@@ -136,12 +151,12 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
         $items = [];
         while ($row = $result->fetch()) {
             $items[] = new GreeStatDto(
-                id: (int)$row['ID'],
-                name: (string)$row['NAME'],
-                numberValue: (int)($row['NUMBER_VALUE_VALUE'] ?? 0),
-                numberPrefix: (string)($row['NUMBER_PREFIX_VALUE'] ?? ''),
-                numberSuffix: (string)($row['NUMBER_SUFFIX_VALUE'] ?? ''),
-                description: (string)($row['PREVIEW_TEXT'] ?? ''),
+                id: (int) $row['ID'],
+                name: $this->localized($row, 'NAME'),
+                numberValue: (int) ($row['NUMBER_VALUE_VALUE'] ?? 0),
+                numberPrefix: $this->localized($row, 'NUMBER_PREFIX'),
+                numberSuffix: $this->localized($row, 'NUMBER_SUFFIX'),
+                description: $this->localized($row, 'PREVIEW_TEXT'),
             );
         }
 
@@ -161,7 +176,12 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
 
         $result = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'PREVIEW_TEXT', 'ICON_CODE_VALUE' => 'ICON_CODE.VALUE'])
+            ->setSelect(array_merge(
+                ['ID'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('PREVIEW_TEXT'),
+                ['ICON_CODE_VALUE' => 'ICON_CODE.VALUE'],
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)->cacheJoins(true)
             ->exec();
@@ -169,10 +189,10 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
         $items = [];
         while ($row = $result->fetch()) {
             $items[] = new AppFeatureDto(
-                id: (int)$row['ID'],
-                name: (string)$row['NAME'],
-                description: (string)($row['PREVIEW_TEXT'] ?? ''),
-                iconCode: (string)($row['ICON_CODE_VALUE'] ?? ''),
+                id: (int) $row['ID'],
+                name: $this->localized($row, 'NAME'),
+                description: $this->localized($row, 'PREVIEW_TEXT'),
+                iconCode: (string) ($row['ICON_CODE_VALUE'] ?? ''),
             );
         }
 
@@ -192,7 +212,11 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
 
         $result = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'PREVIEW_TEXT', 'PREVIEW_PICTURE'])
+            ->setSelect(array_merge(
+                ['ID', 'PREVIEW_PICTURE'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('PREVIEW_TEXT'),
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)->cacheJoins(true)
             ->exec();
@@ -200,14 +224,13 @@ final class HomeRepository extends BaseRepository implements HomeRepositoryInter
         $items = [];
         while ($row = $result->fetch()) {
             $items[] = new TechnologyDto(
-                id: (int)$row['ID'],
-                name: (string)$row['NAME'],
-                description: (string)($row['PREVIEW_TEXT'] ?? ''),
+                id: (int) $row['ID'],
+                name: $this->localized($row, 'NAME'),
+                description: $this->localized($row, 'PREVIEW_TEXT'),
                 image: !empty($row['PREVIEW_PICTURE']) ? \CFile::GetPath($row['PREVIEW_PICTURE']) : '',
             );
         }
 
         return new TechnologyCollection(...$items);
     }
-
 }

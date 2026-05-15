@@ -7,6 +7,7 @@ use Gree\Controller\BlogController;
 use Gree\Controller\BrandController;
 use Gree\Controller\CatalogController;
 use Gree\Controller\HomeController;
+use Gree\Controller\LanguageController;
 use Gree\Controller\ProductController;
 use Gree\Core\App;
 
@@ -30,5 +31,10 @@ return static function (RoutingConfigurator $routes): void {
         ->get('/blog/{code}/', static fn(string $code) => App::container()->get(BlogController::class)->show($code))
         ->where('code', '[\w\d\-]+')
         ->name('blog.show');
+
+    $routes
+        ->get('/lang/{locale}/', static fn(string $locale) => App::container()->get(LanguageController::class)->switch($locale))
+        ->where('locale', 'ru|en')
+        ->name('lang.switch');
 
 };

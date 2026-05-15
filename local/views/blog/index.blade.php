@@ -4,7 +4,7 @@
     <main class="main">
       <section
         class="hero container"
-        style="background-image: url('/images/f836c0d91ded99c33b3c8e7fb5bcc0fa6f6da8d3.png')"
+        style="background-image: url('/dist/images/f836c0d91ded99c33b3c8e7fb5bcc0fa6f6da8d3.png')"
       >
         <h1 class="hero__title">Блог Gree</h1>
         <p class="hero__description">Полезные советы и новости от экспертов Gree для вашего дома.</p>

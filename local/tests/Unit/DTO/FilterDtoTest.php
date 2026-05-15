@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Gree\Tests\Unit\DTO;
 
 use Gree\DTO\FilterDto;
+use Gree\Enum\Color;
 use Gree\Enum\ProductType;
 use Gree\Enum\SortField;
+use Gree\Tests\Stub\BitrixHttpRequest;
 use PHPUnit\Framework\TestCase;
 
 final class FilterDtoTest extends TestCase
@@ -24,6 +26,7 @@ final class FilterDtoTest extends TestCase
         $this->assertSame(0, $filter->priceMin);
         $this->assertSame(PHP_INT_MAX, $filter->priceMax);
         $this->assertSame([], $filter->areas);
+        $this->assertSame([], $filter->colors);
         $this->assertNull($filter->bestseller);
         $this->assertNull($filter->inverterMotor);
         $this->assertSame(SortField::Popular, $filter->sortField);
@@ -36,6 +39,23 @@ final class FilterDtoTest extends TestCase
         $this->assertCount(2, $filter->types);
         $this->assertContains(ProductType::Wall, $filter->types);
         $this->assertContains(ProductType::Column, $filter->types);
+    }
+
+    public function testFromArrayWithColors(): void
+    {
+        $filter = FilterDto::fromArray(['color' => ['white', 'silver']]);
+
+        $this->assertCount(2, $filter->colors);
+        $this->assertContains(Color::White, $filter->colors);
+        $this->assertContains(Color::Silver, $filter->colors);
+    }
+
+    public function testFromArrayIgnoresInvalidColors(): void
+    {
+        $filter = FilterDto::fromArray(['color' => ['white', 'gray']]);
+
+        $this->assertCount(1, $filter->colors);
+        $this->assertContains(Color::White, $filter->colors);
     }
 
     public function testFromArrayWithPriceRange(): void
@@ -72,70 +92,82 @@ final class FilterDtoTest extends TestCase
         $this->assertContains(ProductType::Wall, $filter->types);
     }
 
-    public function testFromRequestDelegatesToFromArray(): void
+    public function testFromRequestPostSavesFullStateToSession(): void
     {
-        $dict = $this->createMock(\Bitrix\Main\Type\ParameterDictionary::class);
-        $dict->method('toArray')->willReturn(['sort' => 'price_asc', 'page' => '2', 'per_page' => '24']);
-
-        $request = $this->createMock(\Bitrix\Main\HttpRequest::class);
-        $request->method('getQueryList')->willReturn($dict);
+        $request = new BitrixHttpRequest(
+            post: ['type' => ['wall'], 'sort' => 'price_desc', 'page' => '2', 'color' => ['black']],
+            method: 'POST',
+        );
 
         $filter = FilterDto::fromRequest($request);
 
-        $this->assertSame(SortField::PriceAsc, $filter->sortField);
+        $this->assertSame(SortField::PriceDesc, $filter->sortField);
         $this->assertSame(2, $filter->page);
-        $this->assertSame(24, $filter->perPage);
-    }
-
-    public function testFromRequestSavesFilterParamsToSession(): void
-    {
-        $dict = $this->createMock(\Bitrix\Main\Type\ParameterDictionary::class);
-        $dict->method('toArray')->willReturn(['sort' => 'price_desc', 'type' => ['wall']]);
-
-        $request = $this->createMock(\Bitrix\Main\HttpRequest::class);
-        $request->method('getQueryList')->willReturn($dict);
-
-        FilterDto::fromRequest($request);
+        $this->assertContains(ProductType::Wall, $filter->types);
+        $this->assertContains(Color::Black, $filter->colors);
 
         $session = \Bitrix\Main\Application::getInstance()->getSession();
         $this->assertTrue($session->has('catalog_filter'));
         $saved = $session->get('catalog_filter');
         $this->assertSame('price_desc', $saved['sort']);
+        $this->assertSame(['wall'], $saved['type']);
     }
 
-    public function testFromRequestRestoresFilterFromSessionWhenNoFilterParams(): void
+    public function testFromRequestGetReadsFromSession(): void
     {
         $session = \Bitrix\Main\Application::getInstance()->getSession();
-        $session->set('catalog_filter', ['sort' => 'price_asc', 'type' => ['column']]);
+        $session->set('catalog_filter', ['sort' => 'price_asc', 'type' => ['column'], 'page' => '3']);
 
-        $dict = $this->createMock(\Bitrix\Main\Type\ParameterDictionary::class);
-        $dict->method('toArray')->willReturn(['page' => '2']);
-
-        $request = $this->createMock(\Bitrix\Main\HttpRequest::class);
-        $request->method('getQueryList')->willReturn($dict);
+        $request = new BitrixHttpRequest(method: 'GET');
 
         $filter = FilterDto::fromRequest($request);
 
         $this->assertSame(SortField::PriceAsc, $filter->sortField);
-        $this->assertCount(1, $filter->types);
+        $this->assertSame(3, $filter->page);
         $this->assertContains(ProductType::Column, $filter->types);
-        $this->assertSame(2, $filter->page);
     }
 
-    public function testFromRequestIgnoresSessionWhenFilterParamsPresent(): void
+    public function testFromRequestGetSavesParamsToSession(): void
     {
-        $session = \Bitrix\Main\Application::getInstance()->getSession();
-        $session->set('catalog_filter', ['sort' => 'price_asc']);
-
-        $dict = $this->createMock(\Bitrix\Main\Type\ParameterDictionary::class);
-        $dict->method('toArray')->willReturn(['sort' => 'price_desc']);
-
-        $request = $this->createMock(\Bitrix\Main\HttpRequest::class);
-        $request->method('getQueryList')->willReturn($dict);
+        $request = new BitrixHttpRequest(
+            query: ['sort' => 'price_desc', 'type' => ['wall'], 'page' => '2'],
+            method: 'GET',
+        );
 
         $filter = FilterDto::fromRequest($request);
 
         $this->assertSame(SortField::PriceDesc, $filter->sortField);
+        $this->assertSame(2, $filter->page);
+        $this->assertContains(ProductType::Wall, $filter->types);
+
+        $session = \Bitrix\Main\Application::getInstance()->getSession();
+        $this->assertSame('price_desc', $session->get('catalog_filter')['sort']);
+    }
+
+    public function testFromRequestGetWithParamsOverwritesSession(): void
+    {
+        $session = \Bitrix\Main\Application::getInstance()->getSession();
+        $session->set('catalog_filter', ['sort' => 'price_asc', 'page' => '3']);
+
+        $request = new BitrixHttpRequest(
+            query: ['page' => '5'],
+            method: 'GET',
+        );
+
+        $filter = FilterDto::fromRequest($request);
+
+        $this->assertSame(5, $filter->page);
+        $this->assertSame(SortField::Popular, $filter->sortField);
+    }
+
+    public function testFromRequestGetWithoutSessionUsesDefaults(): void
+    {
+        $request = new BitrixHttpRequest(method: 'GET');
+
+        $filter = FilterDto::fromRequest($request);
+
+        $this->assertSame(SortField::Popular, $filter->sortField);
+        $this->assertSame(1, $filter->page);
     }
 
     public function testDefaultPageAndPerPage(): void

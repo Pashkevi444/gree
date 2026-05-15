@@ -8,25 +8,42 @@ use Gree\Contract\Repository\ProductRepositoryInterface;
 use Gree\Contract\Service\BrandServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\Contract\Service\HomeServiceInterface;
+use Gree\Contract\Service\LanguageServiceInterface;
+use Gree\Contract\Service\TranslationLoaderInterface;
+use Gree\Contract\Service\TranslatorServiceInterface;
 use Gree\Controller\BlogController;
 use Gree\Controller\BrandController;
 use Gree\Controller\CatalogController;
 use Gree\Controller\HomeController;
+use Gree\Controller\LanguageController;
 use Gree\Controller\ProductController;
 use Gree\Repository\BrandRepository;
 use Gree\Repository\HomeRepository;
 use Gree\Repository\ProductRepository;
+use Gree\Repository\TranslationRepository;
 use Gree\Service\BrandService;
 use Gree\Service\CatalogService;
 use Gree\Service\HomeService;
+use Gree\Service\LanguageService;
+use Gree\Service\TranslatorService;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
 $container = new ContainerBuilder();
 
-// Repositories — D7 handles caching internally via setCacheTtl()
+// i18n — register first so repositories can depend on it
+$container
+    ->register(LanguageService::class, LanguageService::class)
+    ->setPublic(true);
+
+$container
+    ->setAlias(LanguageServiceInterface::class, LanguageService::class)
+    ->setPublic(true);
+
+// Repositories — every repo extends BaseRepository which takes LanguageServiceInterface
 $container
     ->register(BrandRepository::class, BrandRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
 
 $container
@@ -35,6 +52,7 @@ $container
 
 $container
     ->register(HomeRepository::class, HomeRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
 
 $container
@@ -43,10 +61,29 @@ $container
 
 $container
     ->register(ProductRepository::class, ProductRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
 
 $container
     ->setAlias(ProductRepositoryInterface::class, ProductRepository::class)
+    ->setPublic(true);
+
+// Translator stack — TranslationRepository reads UI strings from the HL Translations block
+$container
+    ->register(TranslationRepository::class, TranslationRepository::class)
+    ->setPublic(true);
+
+$container
+    ->setAlias(TranslationLoaderInterface::class, TranslationRepository::class)
+    ->setPublic(true);
+
+$container
+    ->register(TranslatorService::class, TranslatorService::class)
+    ->addArgument(new Reference(TranslationLoaderInterface::class))
+    ->setPublic(true);
+
+$container
+    ->setAlias(TranslatorServiceInterface::class, TranslatorService::class)
     ->setPublic(true);
 
 // Services
@@ -81,6 +118,7 @@ $container
 $container
     ->register(HomeController::class, HomeController::class)
     ->addArgument(new Reference(HomeServiceInterface::class))
+    ->addArgument(new Reference(CatalogServiceInterface::class))
     ->setPublic(true);
 
 $container
@@ -100,6 +138,11 @@ $container
 $container
     ->register(ProductController::class, ProductController::class)
     ->addArgument(new Reference(CatalogServiceInterface::class))
+    ->setPublic(true);
+
+$container
+    ->register(LanguageController::class, LanguageController::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
 
 $container->compile();

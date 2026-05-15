@@ -19,7 +19,6 @@ use Gree\Enum\IblockCode;
 
 final class BrandRepository extends BaseRepository implements BrandRepositoryInterface
 {
-
     public function getHistory(): ?BrandHistoryDto
     {
         \Bitrix\Main\Loader::includeModule('iblock');
@@ -33,7 +32,11 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
 
         $row = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'DETAIL_TEXT'])
+            ->setSelect(array_merge(
+                ['ID'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('DETAIL_TEXT'),
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)
             ->cacheJoins(true)
@@ -46,8 +49,8 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
 
         return new BrandHistoryDto(
             id: (int) $row['ID'],
-            name: (string) $row['NAME'],
-            text: (string) ($row['DETAIL_TEXT'] ?? ''),
+            name: $this->localized($row, 'NAME'),
+            text: $this->localized($row, 'DETAIL_TEXT'),
         );
     }
 
@@ -64,7 +67,13 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
 
         $row = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'PREVIEW_TEXT', 'BUTTON_TEXT_VALUE' => 'BUTTON_TEXT.VALUE', 'BUTTON_URL_VALUE' => 'BUTTON_URL.VALUE'])
+            ->setSelect(array_merge(
+                ['ID'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('PREVIEW_TEXT'),
+                $this->localizedSelect('BUTTON_TEXT'),
+                ['BUTTON_URL_VALUE' => 'BUTTON_URL.VALUE'],
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)
             ->cacheJoins(true)
@@ -77,9 +86,9 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
 
         return new BrandWhyGreeDto(
             id: (int) $row['ID'],
-            name: (string) $row['NAME'],
-            description: (string) ($row['PREVIEW_TEXT'] ?? ''),
-            buttonText: (string) ($row['BUTTON_TEXT_VALUE'] ?? ''),
+            name: $this->localized($row, 'NAME'),
+            description: $this->localized($row, 'PREVIEW_TEXT'),
+            buttonText: $this->localized($row, 'BUTTON_TEXT'),
             buttonUrl: (string) ($row['BUTTON_URL_VALUE'] ?? ''),
         );
     }
@@ -97,7 +106,12 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
 
         $result = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'PREVIEW_TEXT', 'ICON_CODE_VALUE' => 'ICON_CODE.VALUE'])
+            ->setSelect(array_merge(
+                ['ID'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('PREVIEW_TEXT'),
+                ['ICON_CODE_VALUE' => 'ICON_CODE.VALUE'],
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)
             ->cacheJoins(true)
@@ -107,8 +121,8 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
         while ($row = $result->fetch()) {
             $items[] = new GreeCardDto(
                 id: (int) $row['ID'],
-                name: (string) $row['NAME'],
-                description: (string) ($row['PREVIEW_TEXT'] ?? ''),
+                name: $this->localized($row, 'NAME'),
+                description: $this->localized($row, 'PREVIEW_TEXT'),
                 iconCode: (string) ($row['ICON_CODE_VALUE'] ?? ''),
             );
         }
@@ -129,7 +143,13 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
 
         $result = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'NUMBER_PREFIX_VALUE' => 'NUMBER_PREFIX.VALUE', 'NUMBER_VALUE_VALUE' => 'NUMBER_VALUE.VALUE', 'NUMBER_SUFFIX_VALUE' => 'NUMBER_SUFFIX.VALUE'])
+            ->setSelect(array_merge(
+                ['ID'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('NUMBER_PREFIX'),
+                $this->localizedSelect('NUMBER_SUFFIX'),
+                ['NUMBER_VALUE_VALUE' => 'NUMBER_VALUE.VALUE'],
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)
             ->cacheJoins(true)
@@ -139,10 +159,10 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
         while ($row = $result->fetch()) {
             $items[] = new GreeStatDto(
                 id: (int) $row['ID'],
-                name: (string) $row['NAME'],
+                name: $this->localized($row, 'NAME'),
                 numberValue: (int) ($row['NUMBER_VALUE_VALUE'] ?? 0),
-                numberPrefix: (string) ($row['NUMBER_PREFIX_VALUE'] ?? ''),
-                numberSuffix: (string) ($row['NUMBER_SUFFIX_VALUE'] ?? ''),
+                numberPrefix: $this->localized($row, 'NUMBER_PREFIX'),
+                numberSuffix: $this->localized($row, 'NUMBER_SUFFIX'),
             );
         }
 
@@ -162,7 +182,11 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
 
         $result = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'DETAIL_TEXT'])
+            ->setSelect(array_merge(
+                ['ID'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('DETAIL_TEXT'),
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)
             ->cacheJoins(true)
@@ -172,8 +196,8 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
         while ($row = $result->fetch()) {
             $items[] = new BrandAboutCardDto(
                 id: (int) $row['ID'],
-                name: (string) $row['NAME'],
-                description: (string) ($row['DETAIL_TEXT'] ?? ''),
+                name: $this->localized($row, 'NAME'),
+                description: $this->localized($row, 'DETAIL_TEXT'),
             );
         }
 
@@ -193,7 +217,11 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
 
         $result = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'NAME', 'PREVIEW_TEXT', 'PREVIEW_PICTURE'])
+            ->setSelect(array_merge(
+                ['ID', 'PREVIEW_PICTURE'],
+                $this->localizedSelect('NAME'),
+                $this->localizedSelect('DETAIL_TEXT'),
+            ))
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)
             ->cacheJoins(true)
@@ -203,13 +231,12 @@ final class BrandRepository extends BaseRepository implements BrandRepositoryInt
         while ($row = $result->fetch()) {
             $items[] = new TechnologyDto(
                 id: (int) $row['ID'],
-                name: (string) $row['NAME'],
-                description: (string) ($row['PREVIEW_TEXT'] ?? ''),
+                name: $this->localized($row, 'NAME'),
+                description: $this->localized($row, 'DETAIL_TEXT'),
                 image: !empty($row['PREVIEW_PICTURE']) ? \CFile::GetPath($row['PREVIEW_PICTURE']) : '',
             );
         }
 
         return new TechnologyCollection(...$items);
     }
-
 }

@@ -8,6 +8,9 @@ use Gree\Enum\ProductType;
 
 final readonly class ProductDto extends BaseDto
 {
+    /**
+     * @param string[] $colors hex codes
+     */
     public function __construct(
         public int $id,
         public string $name,
@@ -31,6 +34,7 @@ final readonly class ProductDto extends BaseDto
             'area' => $this->area,
             'is_bestseller' => $this->isBestseller,
             'image' => $this->image,
+            'colors' => $this->colors,
         ];
     }
 

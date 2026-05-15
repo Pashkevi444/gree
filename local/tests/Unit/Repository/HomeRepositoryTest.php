@@ -9,6 +9,8 @@ use Gree\Collection\GreeCardCollection;
 use Gree\Collection\GreeStatCollection;
 use Gree\Collection\SliderItemCollection;
 use Gree\Collection\TechnologyCollection;
+use Gree\Contract\Service\LanguageServiceInterface;
+use Gree\Enum\Locale;
 use Gree\Repository\HomeRepository;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +20,9 @@ final class HomeRepositoryTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->repo = new HomeRepository();
+        $language = $this->createMock(LanguageServiceInterface::class);
+        $language->method('get')->willReturn(Locale::Ru);
+        $this->repo = new HomeRepository($language);
     }
 
     public function testGetSliderReturnsSliderItemCollection(): void

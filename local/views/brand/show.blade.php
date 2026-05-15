@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@php use Gree\Helpers\Language; @endphp
+
 @section('content')
     <main class="main">
       @if ($history)
@@ -50,7 +52,7 @@
 
       @if ($aboutCards->count())
         <section class="about container">
-          <h2 class="about__title">О компании Gree</h2>
+          <h2 class="about__title">{{ Language::t('brand.about.title') }}</h2>
           <div class="about-cards">
             @foreach ($aboutCards as $card)
               <div class="about-card">
@@ -64,8 +66,8 @@
 
       @if ($technologies->count())
         <section class="technologies container">
-          <h2 class="technologies__title">Технологии для вашего комфорта</h2>
-          <p class="technologies__description">Ключевые преимущества кондиционеров Gree</p>
+          <h2 class="technologies__title">{{ Language::t('home.tech.title') }}</h2>
+          <p class="technologies__description">{{ Language::t('home.tech.description') }}</p>
           <div class="technologies-items technologies-items-columns-2">
             @foreach ($technologies as $tech)
               <div class="technologies-item">

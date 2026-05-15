@@ -10,4 +10,9 @@ class BitrixIblockTable
     {
         return null;
     }
+
+    public static function query(): BitrixQuery
+    {
+        return new BitrixQuery();
+    }
 }

@@ -1,13 +1,15 @@
 <?php
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
 
-use Bitrix\Main\Page\Asset;
+use Gree\Contract\Service\LanguageServiceInterface;
+use Gree\Core\App;
+use Gree\Enum\Locale;
+use Gree\Helpers\Language;
 
-Asset::getInstance()->addCss(SITE_TEMPLATE_PATH . '/styles/main.css');
-Asset::getInstance()->addJs(SITE_TEMPLATE_PATH  . '/scripts/main.js');
+$currentLocale = App::container()->get(LanguageServiceInterface::class)->get();
 ?>
 <!doctype html>
-<html lang="ru-RU">
+<html lang="<?= $currentLocale->value ?>">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
@@ -83,34 +85,11 @@ Asset::getInstance()->addJs(SITE_TEMPLATE_PATH  . '/scripts/main.js');
             example@example.com
           </a>
         </div>
-        <button class="language-select" type="button">
-          <div class="language-select__country-icon">
-            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="russian">
-              <g clip-path="url(#clip0_87_1400)">
-                <path d="M0 0H18V6.00117H0V0Z" fill="white" />
-                <path d="M0 6.00119H18V11.9988H0V6.00119Z" fill="#729AE6" />
-                <path d="M0 11.9988H18V18H0V11.9988Z" fill="#C64F45" />
-              </g>
-              <defs>
-                <clipPath id="clip0_87_1400">
-                  <rect width="18" height="18" fill="white" />
-                </clipPath>
-              </defs>
-            </svg>
-          </div>
-          <div class="language-select__text">Рус</div>
-          <div class="language-select__icon">
-            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M0.75 0.75L4.75 4.75L8.75 0.75"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
-        </button>
+        <div class="language-select">
+          <a class="language-select__option <?= $currentLocale === Locale::Ru ? 'language-select__option--active' : '' ?>" href="/lang/ru/"><?= Language::t('header.lang.ru') ?></a>
+          <span class="language-select__divider">/</span>
+          <a class="language-select__option <?= $currentLocale === Locale::En ? 'language-select__option--active' : '' ?>" href="/lang/en/"><?= Language::t('header.lang.en') ?></a>
+        </div>
       </div>
       <div class="header-body">
         <a class="header__logotype" href="/">
@@ -138,14 +117,14 @@ Asset::getInstance()->addJs(SITE_TEMPLATE_PATH  . '/scripts/main.js');
               fill="currentColor"
             />
           </svg>
-          Каталог
+          <?= Language::t('header.catalog') ?>
         </a>
         <nav class="header-navigation">
-          <a class="header-navigation__item" href="/brand/gree/">О бренде</a>
-          <a class="header-navigation__item" href="/help.html">Помощь</a>
-          <a class="header-navigation__item" href="/buy.html">Где купить</a>
-          <a class="header-navigation__item" href="/partners.html">Партнёрам</a>
-          <a class="header-navigation__item" href="/contacts.html">Контакты</a>
+          <a class="header-navigation__item" href="/brand/gree/"><?= Language::t('header.nav.brand') ?></a>
+          <a class="header-navigation__item" href="/help.html"><?= Language::t('header.nav.help') ?></a>
+          <a class="header-navigation__item" href="/buy.html"><?= Language::t('header.nav.buy') ?></a>
+          <a class="header-navigation__item" href="/partners.html"><?= Language::t('header.nav.partners') ?></a>
+          <a class="header-navigation__item" href="/contacts.html"><?= Language::t('header.nav.contacts') ?></a>
         </nav>
         <a class="header__cart-button" href="/cart.html">
           <svg width="18" height="17" viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -157,7 +136,7 @@ Asset::getInstance()->addJs(SITE_TEMPLATE_PATH  . '/scripts/main.js');
               stroke-linejoin="round"
             />
           </svg>
-          Корзина
+          <?= Language::t('header.cart') ?>
         </a>
       </div>
     </header>

@@ -8,6 +8,8 @@ use Gree\Collection\BrandAboutCardCollection;
 use Gree\Collection\GreeCardCollection;
 use Gree\Collection\GreeStatCollection;
 use Gree\Collection\TechnologyCollection;
+use Gree\Contract\Service\LanguageServiceInterface;
+use Gree\Enum\Locale;
 use Gree\Repository\BrandRepository;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +19,9 @@ final class BrandRepositoryTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->repo = new BrandRepository();
+        $language = $this->createMock(LanguageServiceInterface::class);
+        $language->method('get')->willReturn(Locale::Ru);
+        $this->repo = new BrandRepository($language);
     }
 
     public function testGetHistoryReturnsNullWhenIblockMissing(): void

@@ -35,7 +35,7 @@ abstract class BaseController
     protected function json(mixed $data, int $status = 200): HttpResponse
     {
         $response = new HttpResponse();
-        $response->addHeader('Content-Type: application/json; charset=utf-8');
+        $response->addHeader('Content-Type', 'application/json; charset=utf-8');
         $response->setStatus($status . ' ' . $this->statusText($status));
         $response->setContent(Json::encode($data));
 
@@ -59,15 +59,21 @@ abstract class BaseController
     }
 
     /**
-     * Register page-specific CSS + JS via Bitrix Asset.
-     * Adds /local/templates/gree/styles/{page}.css and scripts/{page}.js.
-     * Call before view() so ShowHead() picks them up.
+     * Register page CSS + JS. Assets are served straight from /dist/ — the frontend
+     * dev's build directory. No duplication at the project root: drop a new build
+     * into /dist/ and these URLs continue to work.
+     *
+     * Scripts MUST be deferred — Bitrix Asset::addJs() injects them into <head>
+     * without defer, which runs them before DOM exists and crashes querySelector
+     * calls inside main.js. Using addString preserves the `defer` attribute.
      */
     protected function addPageAssets(string $page): void
     {
-        $tpl = SITE_TEMPLATE_PATH;
-        \Bitrix\Main\Page\Asset::getInstance()->addCss($tpl . '/styles/' . $page . '.css');
-        \Bitrix\Main\Page\Asset::getInstance()->addJs($tpl . '/scripts/' . $page . '.js');
+        $asset = \Bitrix\Main\Page\Asset::getInstance();
+        $asset->addCss('/dist/styles/main.css');
+        $asset->addCss('/dist/styles/' . $page . '.css');
+        $asset->addString('<script defer src="/dist/scripts/main.js"></script>');
+        $asset->addString('<script defer src="/dist/scripts/' . $page . '.js"></script>');
     }
 
     protected function getRequest(): \Bitrix\Main\HttpRequest

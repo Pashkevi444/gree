@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@php use Gree\Helpers\Language; @endphp
+
 @section('content')
     <main class="main">
 
@@ -37,69 +39,47 @@
       {{-- Каталог (статика — товары выводятся отдельно) --}}
       <section class="catalog container">
         <div class="catalog-header">
-          <a class="catalog-header__button" href="#catalog-wall"> Настенные <span>до 80 м²</span> </a>
-          <a class="catalog-header__button" href="#catalog-column"> Колонные <span>до 80 м²</span> </a>
-          <a class="catalog-header__button" href="#catalog-industry"> Промышленные <span>от 100 м²</span> </a>
+          <a class="catalog-header__button" href="#catalog-wall"> {{ Language::t('home.anchor.wall') }} <span>{{ Language::t('home.anchor.wall.range') }}</span> </a>
+          <a class="catalog-header__button" href="#catalog-column"> {{ Language::t('home.anchor.column') }} <span>{{ Language::t('home.anchor.column.range') }}</span> </a>
+          <a class="catalog-header__button" href="#catalog-industry"> {{ Language::t('home.anchor.industrial') }} <span>{{ Language::t('home.anchor.industrial.range') }}</span> </a>
         </div>
         <div id="catalog-wall" class="catalog-section">
-          <h2 class="catalog-section__title">Настенные кондиционеры</h2>
-          <p class="catalog-section__description">Подходят для площадей до 80 м²</p>
+          <h2 class="catalog-section__title">{{ Language::t('home.section.wall.title') }}</h2>
+          <p class="catalog-section__description">{{ Language::t('home.section.wall.desc') }}</p>
           <div class="catalog-section__items">
-            <div class="product-card">
-              <div class="product-card__badge product-card__badge--bestseller">Хит продаж</div>
-              <img class="product-card__image" src="/local/templates/gree/images/e39f753c587e47108643ec6d0d09750fb40b83fd.png" alt="" />
-              <div class="product-card__name">Кондиционер Gree Pular GWH07AGA-K3NNA1B</div>
-              <div class="product-card-meta">
-                <div class="product-card-meta__text">Площадь — 30 м²</div>
-              </div>
-              <div class="product-card__price">от 250 000 000 000 UZS</div>
-              <a class="product-card__button" href="/product.html">Подробнее</a>
-            </div>
+            @foreach ($wallProducts as $product)
+              @include('partials.product-card', ['product' => $product])
+            @endforeach
           </div>
-          <a class="catalog-section__button" href="/catalog/">Посмотреть все модели</a>
+          <a class="catalog-section__button" href="/catalog/?type%5B%5D=wall">{{ Language::t('home.section.viewAll') }}</a>
         </div>
         <div id="catalog-column" class="catalog-section">
-          <h2 class="catalog-section__title">Колонные кондиционеры</h2>
-          <p class="catalog-section__description">Подходят для площадей до 200 м²</p>
+          <h2 class="catalog-section__title">{{ Language::t('home.section.column.title') }}</h2>
+          <p class="catalog-section__description">{{ Language::t('home.section.column.desc') }}</p>
           <div class="catalog-section__items">
-            <div class="product-card">
-              <img class="product-card__image" src="/local/templates/gree/images/e39f753c587e47108643ec6d0d09750fb40b83fd.png" alt="" />
-              <div class="product-card__name">Кондиционер Gree Pular GWH07AGA-K3NNA1B</div>
-              <div class="product-card-meta">
-                <div class="product-card-meta__text">Площадь — 30 м²</div>
-              </div>
-              <div class="product-card__price">от 250 000 000 000 UZS</div>
-              <a class="product-card__button" href="/product.html">Подробнее</a>
-            </div>
+            @foreach ($columnProducts as $product)
+              @include('partials.product-card', ['product' => $product])
+            @endforeach
           </div>
-          <a class="catalog-section__button" href="/catalog/">Посмотреть все модели</a>
+          <a class="catalog-section__button" href="/catalog/?type%5B%5D=column">{{ Language::t('home.section.viewAll') }}</a>
         </div>
         <div id="catalog-industry" class="catalog-section">
-          <h2 class="catalog-section__title">Промышленные кондиционеры</h2>
-          <p class="catalog-section__description">Климат-контроль помещений любых площадей и сложности по индивидуальному проекту</p>
+          <h2 class="catalog-section__title">{{ Language::t('home.section.industrial.title') }}</h2>
+          <p class="catalog-section__description">{{ Language::t('home.section.industrial.desc') }}</p>
           <div class="catalog-section__items">
-            <div class="product-card">
-              <img class="product-card__image" src="/local/templates/gree/images/e39f753c587e47108643ec6d0d09750fb40b83fd.png" alt="" />
-              <div class="product-card__name">Кондиционер Gree Pular GWH07AGA-K3NNA1B</div>
-              <div class="product-card-meta">
-                <div class="product-card-meta__text">Площадь — 30 м²</div>
-              </div>
-              <div class="product-card__price">от 250 000 000 000 UZS</div>
-              <a class="product-card__button" href="/product.html">Подробнее</a>
-            </div>
+            @foreach ($industrialProducts as $product)
+              @include('partials.product-card', ['product' => $product])
+            @endforeach
           </div>
-          <a class="catalog-section__button" href="/catalog/">Посмотреть все модели</a>
+          <a class="catalog-section__button" href="/catalog/?type%5B%5D=industrial">{{ Language::t('home.section.viewAll') }}</a>
         </div>
       </section>
 
       {{-- Почему выбирают Gree: карточки + статистика --}}
       <section class="gree container">
-        <h2 class="gree__title">Почему выбирают Gree</h2>
-        <p class="gree__description">
-          Gree — мировой лидер в производстве кондиционеров с собственными технологиями, строгим контролем качества и
-          решениями для разных сценариев использования.
-        </p>
-        <a class="gree__button" href="/brand/gree/">Узнать больше о Gree</a>
+        <h2 class="gree__title">{{ Language::t('home.gree.title') }}</h2>
+        <p class="gree__description">{{ Language::t('home.gree.description') }}</p>
+        <a class="gree__button" href="/brand/gree/">{{ Language::t('home.gree.cta') }}</a>
 
         <div class="gree-cards">
           @foreach ($greeCards as $card)
@@ -129,14 +109,11 @@
 
       {{-- Приложение + фичи --}}
       <section class="gree-app container">
-        <h2 class="gree-app__title">Управляйте кондиционером со смартфона</h2>
-        <p class="gree-app__description">
-          Меняйте температуру, режим, таймер и скорость вентиляции из любой точки мира. Удобное управление и контроль
-          энергопотребления в одном приложении.
-        </p>
+        <h2 class="gree-app__title">{{ Language::t('home.app.title') }}</h2>
+        <p class="gree-app__description">{{ Language::t('home.app.description') }}</p>
         <div
           class="gree-app-wrapper"
-          style="--background-image: url('/images/e601a45048fdf16bef9fc2cb2f7e10115b005a31.png')"
+          style="--background-image: url('/dist/images/e601a45048fdf16bef9fc2cb2f7e10115b005a31.png')"
         >
           @foreach ($appFeatures as $feature)
             <div class="gree-app-card">
@@ -152,8 +129,8 @@
 
       {{-- Технологии --}}
       <section class="technologies container">
-        <h2 class="technologies__title">Технологии для вашего комфорта</h2>
-        <p class="technologies__description">Ключевые преимущества кондиционеров Gree</p>
+        <h2 class="technologies__title">{{ Language::t('home.tech.title') }}</h2>
+        <p class="technologies__description">{{ Language::t('home.tech.description') }}</p>
         <div class="technologies-items technologies-items-columns-3">
           @foreach ($technologies as $tech)
             <div class="technologies-item">

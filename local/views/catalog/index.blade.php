@@ -1,8 +1,17 @@
 @extends('layouts.app')
 
+@php
+    use Gree\Helpers\Language;
+    $selectedTypes = array_map(fn($t) => $t->value, $filter->types);
+    $selectedAreas = $filter->areas;
+    $selectedColors = array_map(fn($c) => $c->value, $filter->colors);
+    $bestsellerValue = $filter->bestseller === null ? null : ($filter->bestseller ? 'yes' : 'no');
+    $inverterValue = $filter->inverterMotor === null ? null : ($filter->inverterMotor ? 'yes' : 'no');
+@endphp
+
 @section('content')
     <nav class="breadcrumbs container">
-      <a class="breadcrumbs__item" href="/">Главная</a>
+      <a class="breadcrumbs__item" href="/">{{ Language::t('breadcrumbs.home') }}</a>
       &nbsp;
       <svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -14,7 +23,7 @@
         />
       </svg>
       &nbsp;
-      <a class="breadcrumbs__item" href="/catalog/">Каталог</a>
+      <a class="breadcrumbs__item" href="/catalog/">{{ Language::t('breadcrumbs.catalog') }}</a>
       &nbsp;
       <svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -26,21 +35,19 @@
         />
       </svg>
       &nbsp;
-      <span class="breadcrumbs__item">Настенные кондиционеры</span>
+      <span class="breadcrumbs__item">{{ Language::t('breadcrumbs.wall') }}</span>
     </nav>
     <main class="main">
-      <h1 class="main__title container">Каталог настенных кондиционеров Gree</h1>
-      <p class="main__description container">
-        Современные настенные кондиционеры для комфортного климата в вашем доме или офисе.
-      </p>
+      <h1 class="main__title container">{{ Language::t('catalog.title') }}</h1>
+      <p class="main__description container">{{ Language::t('catalog.description') }}</p>
       <section class="catalog container">
-        <form id="filters-form" class="catalog-sidebar" action="/api/v1/catalog/filter/" autocomplete="off">
-          <div class="catalog-sidebar__title">Фильтры</div>
+        <form id="filters-form" class="catalog-sidebar" action="/api/catalog" autocomplete="off">
+          <div class="catalog-sidebar__title">{{ Language::t('catalog.filters') }}</div>
           <div class="catalog-sidebar-filters">
-            <div class="catalog-sidebar-filters__title">Тип</div>
+            <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.type') }}</div>
             <div class="catalog-sidebar-filters__items">
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="type[]" value="wall" checked />
+                <input class="checkbox__control" type="checkbox" name="type[]" value="wall" @checked(in_array('wall', $selectedTypes, true)) />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -51,10 +58,10 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Настенный</div>
+                <div class="checkbox__text">{{ Language::t('product.type.wall') }}</div>
               </label>
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="type[]" value="column" />
+                <input class="checkbox__control" type="checkbox" name="type[]" value="column" @checked(in_array('column', $selectedTypes, true)) />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -65,10 +72,10 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Колонный</div>
+                <div class="checkbox__text">{{ Language::t('product.type.column') }}</div>
               </label>
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="type[]" value="industrial" />
+                <input class="checkbox__control" type="checkbox" name="type[]" value="industrial" @checked(in_array('industrial', $selectedTypes, true)) />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -79,12 +86,12 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Промышленный</div>
+                <div class="checkbox__text">{{ Language::t('product.type.industrial') }}</div>
               </label>
             </div>
           </div>
           <div class="catalog-sidebar-filters">
-            <div class="catalog-sidebar-filters__title">Цена</div>
+            <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.price') }}</div>
             <div class="catalog-sidebar-filters__items">
               <div class="range-input">
                 <input class="range-input__control form-control" type="text" placeholder="UZS" readonly />
@@ -93,7 +100,7 @@
                   type="number"
                   min="0"
                   max="123000000"
-                  value="0"
+                  value="{{ $filter->priceMin }}"
                   name="price[]"
                 />
                 <input
@@ -101,7 +108,7 @@
                   type="number"
                   min="0"
                   max="123000000"
-                  value="123000000"
+                  value="{{ $filter->priceMax === PHP_INT_MAX ? 123000000 : $filter->priceMax }}"
                   name="price[]"
                 />
                 <div class="range-input-noUi"></div>
@@ -109,10 +116,11 @@
             </div>
           </div>
           <div class="catalog-sidebar-filters">
-            <div class="catalog-sidebar-filters__title">Площадь</div>
+            <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.area') }}</div>
             <div class="catalog-sidebar-filters__items">
+              @foreach ([20, 30, 50, 100] as $value)
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="area[]" value="30" />
+                <input class="checkbox__control" type="checkbox" name="area[]" value="{{ $value }}" @checked(in_array($value, $selectedAreas, true)) />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -123,57 +131,16 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">до 30 м²</div>
+                <div class="checkbox__text">{{ Language::t('catalog.area.up_to', ['area' => $value]) }}</div>
               </label>
-              <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="area[]" value="30" />
-                <div class="checkbox__icon">
-                  <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M8.5 0.5L3 6L0.5 3.5"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div class="checkbox__text">до 30 м²</div>
-              </label>
-              <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="area[]" value="30" />
-                <div class="checkbox__icon">
-                  <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M8.5 0.5L3 6L0.5 3.5"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div class="checkbox__text">до 30 м²</div>
-              </label>
-              <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="area[]" value="30" />
-                <div class="checkbox__icon">
-                  <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M8.5 0.5L3 6L0.5 3.5"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div class="checkbox__text">до 30 м²</div>
-              </label>
+              @endforeach
             </div>
           </div>
           <div class="catalog-sidebar-filters">
-            <div class="catalog-sidebar-filters__title">Инверторный двигатель</div>
+            <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.inverter') }}</div>
             <div class="catalog-sidebar-filters__items">
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="inverter_motor[]" value="yes" />
+                <input class="checkbox__control" type="checkbox" name="inverter_motor[]" value="yes" @checked($inverterValue === 'yes') />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -184,10 +151,10 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Да</div>
+                <div class="checkbox__text">{{ Language::t('catalog.filter.yes') }}</div>
               </label>
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="inverter_motor[]" value="no" />
+                <input class="checkbox__control" type="checkbox" name="inverter_motor[]" value="no" @checked($inverterValue === 'no') />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -203,10 +170,10 @@
             </div>
           </div>
           <div class="catalog-sidebar-filters">
-            <div class="catalog-sidebar-filters__title">Хит продаж</div>
+            <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.bestseller') }}</div>
             <div class="catalog-sidebar-filters__items">
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="bestseller[]" value="yes" />
+                <input class="checkbox__control" type="checkbox" name="bestseller[]" value="yes" @checked($bestsellerValue === 'yes') />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -217,10 +184,10 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Да</div>
+                <div class="checkbox__text">{{ Language::t('catalog.filter.yes') }}</div>
               </label>
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="bestseller[]" value="no" />
+                <input class="checkbox__control" type="checkbox" name="bestseller[]" value="no" @checked($bestsellerValue === 'no') />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -236,10 +203,11 @@
             </div>
           </div>
           <div class="catalog-sidebar-filters">
-            <div class="catalog-sidebar-filters__title">Цвет</div>
+            <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.color') }}</div>
             <div class="catalog-sidebar-filters__items">
+              @foreach (\Gree\Enum\Color::cases() as $color)
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="color[]" value="black" />
+                <input class="checkbox__control" type="checkbox" name="color[]" value="{{ $color->value }}" @checked(in_array($color->value, $selectedColors, true)) />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -250,40 +218,13 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Чёрный</div>
+                <div class="checkbox__text">{{ Language::t('color.' . $color->value) }}</div>
               </label>
-              <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="color[]" value="white" />
-                <div class="checkbox__icon">
-                  <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M8.5 0.5L3 6L0.5 3.5"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div class="checkbox__text">Белый</div>
-              </label>
-              <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="color[]" value="gray" />
-                <div class="checkbox__icon">
-                  <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M8.5 0.5L3 6L0.5 3.5"
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div class="checkbox__text">Серый</div>
-              </label>
+              @endforeach
             </div>
           </div>
           <div class="catalog-sidebar-filters">
-            <div class="catalog-sidebar-filters__title">Тип хладагента</div>
+            <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.refrigerant') }}</div>
             <div class="catalog-sidebar-filters__items">
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="refrigerant_type[]" value="r32" />
@@ -316,7 +257,7 @@
             </div>
           </div>
           <div class="catalog-sidebar-filters">
-            <div class="catalog-sidebar-filters__title">Функции</div>
+            <div class="catalog-sidebar-filters__title">{{ Language::t('catalog.filter.functions') }}</div>
             <div class="catalog-sidebar-filters__items">
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="functions[]" value="wifi" />
@@ -330,7 +271,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Wi-Fi</div>
+                <div class="checkbox__text">{{ Language::t('function.wifi') }}</div>
               </label>
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="functions[]" value="130v" />
@@ -344,7 +285,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Работа от 130V</div>
+                <div class="checkbox__text">{{ Language::t('function.130v') }}</div>
               </label>
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="functions[]" value="energy-saving" />
@@ -358,7 +299,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Энергосбережение</div>
+                <div class="checkbox__text">{{ Language::t('function.energy_saving') }}</div>
               </label>
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="functions[]" value="turbo-mode" />
@@ -372,7 +313,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Турборежим</div>
+                <div class="checkbox__text">{{ Language::t('function.turbo') }}</div>
               </label>
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="functions[]" value="silent-mode" />
@@ -386,7 +327,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Тихий режим</div>
+                <div class="checkbox__text">{{ Language::t('function.silent') }}</div>
               </label>
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="functions[]" value="eco-mode" />
@@ -400,7 +341,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Экорежим</div>
+                <div class="checkbox__text">{{ Language::t('function.eco') }}</div>
               </label>
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="functions[]" value="smart-home" />
@@ -414,7 +355,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Умный дом</div>
+                <div class="checkbox__text">{{ Language::t('function.smart_home') }}</div>
               </label>
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="functions[]" value="ai" />
@@ -428,18 +369,18 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">Искусственный интеллект</div>
+                <div class="checkbox__text">{{ Language::t('function.ai') }}</div>
               </label>
             </div>
           </div>
           <div class="catalog-sidebar-buttons">
             <button class="catalog-sidebar__submit-button" type="submit"></button>
-            <button class="catalog-sidebar__reset-button" type="reset" disabled>Сбросить все</button>
+            <button class="catalog-sidebar__reset-button" type="reset" disabled>{{ Language::t('catalog.reset') }}</button>
           </div>
         </form>
         <div class="catalog-wrapper">
           <div class="catalog-header">
-            <div class="catalog-header__title">Найдено {{ $total }} моделей</div>
+            <div class="catalog-header__title">{{ Language::t('catalog.found', ['count' => $total]) }}</div>
             <div class="catalog-sort-button">
               <div class="catalog-sort-button__text"></div>
               <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -452,32 +393,19 @@
                 />
               </svg>
               <select class="catalog-sort-button__control" name="sort" form="filters-form">
-                <option value="popular">По популярности</option>
+                <option value="popular" @selected($filter->sortField === \Gree\Enum\SortField::Popular)>{{ Language::t('catalog.sort.popular') }}</option>
+                <option value="price_asc" @selected($filter->sortField === \Gree\Enum\SortField::PriceAsc)>{{ Language::t('catalog.sort.price_asc') }}</option>
+                <option value="price_desc" @selected($filter->sortField === \Gree\Enum\SortField::PriceDesc)>{{ Language::t('catalog.sort.price_desc') }}</option>
               </select>
             </div>
           </div>
           <div class="catalog-items">
             @foreach ($products as $product)
-            <div class="product-card">
-              @if ($product->isBestseller)
-              <div class="product-card__badge product-card__badge--bestseller">Хит продаж</div>
-              @endif
-              @if ($product->image)
-              <img class="product-card__image" src="{{ $product->image }}" alt="{{ $product->name }}" />
-              @endif
-              <div class="product-card__name">{{ $product->name }}</div>
-              <div class="product-card-meta">
-                @if ($product->area)
-                <div class="product-card-meta__text">Площадь — {{ $product->area }} м²</div>
-                @endif
-              </div>
-              <div class="product-card__price">от {{ number_format($product->price, 0, '.', ' ') }} UZS</div>
-              <a class="product-card__button" href="/catalog/{{ $product->code }}/">Подробнее</a>
-            </div>
+              @include('partials.product-card', ['product' => $product])
             @endforeach
           </div>
-          @php $pages = ($total > 0 && $filter->perPage > 0) ? (int) ceil($total / $filter->perPage) : 0; @endphp
-          <div class="catalog-pagination pagination" data-total-pages="{{ $pages }}" data-current-page="{{ $filter->page }}">
+          @php $pages = max(1, ($total > 0 && $filter->perPage > 0) ? (int) ceil($total / $filter->perPage) : 1); @endphp
+          <div class="catalog-pagination pagination" data-total-pages="{{ $pages }}" data-current-page="{{ max(1, $filter->page) }}">
             <button class="pagination__button pagination__button--previous" type="button">
               <svg width="5" height="8" viewBox="0 0 5 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path

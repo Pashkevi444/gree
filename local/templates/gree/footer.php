@@ -1,5 +1,7 @@
 <?php
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
+
+use Gree\Helpers\Language;
 ?>
 <footer class="footer container">
       <div class="footer-columns">
@@ -21,9 +23,7 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
             </svg>
           </a>
           <div class="footer__description">
-            My Gree Group — официальный
-            <br />
-            дистрибьютор Gree в Узбекистане
+            <?= Language::t('footer.description') ?>
           </div>
           <div class="footer-social">
             <div class="footer-social__numbers">
@@ -86,22 +86,22 @@ if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
         </div>
         <nav class="footer-column">
           <div class="footer-navigation">
-            <div class="footer-navigation__title">Каталог</div>
+            <div class="footer-navigation__title"><?= Language::t('footer.col.catalog') ?></div>
             <div class="footer-navigation-items">
-              <a class="footer-navigation__item" href="/catalog/">Настенные</a>
-              <a class="footer-navigation__item" href="/catalog/">Колонные</a>
-              <a class="footer-navigation__item" href="/catalog/">Промышленные</a>
+              <a class="footer-navigation__item" href="/catalog/?type%5B%5D=wall"><?= Language::t('footer.nav.wall') ?></a>
+              <a class="footer-navigation__item" href="/catalog/?type%5B%5D=column"><?= Language::t('footer.nav.column') ?></a>
+              <a class="footer-navigation__item" href="/catalog/?type%5B%5D=industrial"><?= Language::t('footer.nav.industrial') ?></a>
             </div>
           </div>
           <div class="footer-navigation">
-            <div class="footer-navigation__title">Компания</div>
+            <div class="footer-navigation__title"><?= Language::t('footer.col.company') ?></div>
             <div class="footer-navigation-items">
-              <a class="footer-navigation__item" href="/brand/gree/">О бренде</a>
-              <a class="footer-navigation__item" href="">Оплата </a>
-              <a class="footer-navigation__item" href="">Доставка</a>
-              <a class="footer-navigation__item" href="">Обмен</a>
-              <a class="footer-navigation__item" href="">Возврат</a>
-              <a class="footer-navigation__item" href="">Сервисный центр</a>
+              <a class="footer-navigation__item" href="/brand/gree/"><?= Language::t('footer.nav.about') ?></a>
+              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.payment') ?></a>
+              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.delivery') ?></a>
+              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.exchange') ?></a>
+              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.return') ?></a>
+              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.service') ?></a>
             </div>
           </div>
         </nav>

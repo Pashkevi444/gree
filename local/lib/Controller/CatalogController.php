@@ -7,6 +7,7 @@ namespace Gree\Controller;
 use Bitrix\Main\HttpResponse;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\DTO\FilterDto;
+use Gree\DTO\ProductDto;
 use Gree\View\CatalogViewData;
 
 final class CatalogController extends BaseController
@@ -30,14 +31,40 @@ final class CatalogController extends BaseController
         $filter = FilterDto::fromRequest($this->getRequest());
         $products = $this->catalogService->getList($filter);
         $total = $this->catalogService->count($filter);
-        $pages = ($total > 0 && $filter->perPage > 0) ? (int) ceil($total / $filter->perPage) : 0;
 
         return $this->json([
-            'products' => array_map(fn($p) => $p->toArray(), $products->toArray()),
-            'total' => $total,
-            'page' => $filter->page,
-            'per_page' => $filter->perPage,
-            'pages' => $pages,
+            'items' => array_map(self::buildItemPayload(...), $products->toArray()),
+            'pagination' => self::buildPagination($total, $filter->perPage, $filter->page),
         ]);
+    }
+
+    public static function buildItemPayload(ProductDto $product): array
+    {
+        $payload = [
+            'image' => $product->image,
+            'name' => $product->name,
+            'meta' => [
+                'text' => $product->area > 0 ? "Площадь — {$product->area} м²" : '',
+                'colors' => $product->colors,
+            ],
+            'price' => $product->price,
+            'href' => "/catalog/{$product->code}/",
+        ];
+
+        if ($product->isBestseller) {
+            $payload['badge'] = ['type' => 'bestseller', 'text' => 'Хит продаж'];
+        }
+
+        return $payload;
+    }
+
+    public static function buildPagination(int $total, int $perPage, int $page): array
+    {
+        $totalPages = ($total > 0 && $perPage > 0) ? (int) ceil($total / $perPage) : 1;
+
+        return [
+            'totalPages' => max(1, $totalPages),
+            'currentPage' => max(1, $page),
+        ];
     }
 }
