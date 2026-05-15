@@ -4,30 +4,71 @@ declare(strict_types=1);
 
 namespace Gree\Service;
 
+use Gree\Collection\GreeCardCollection;
+use Gree\Collection\GreeStatCollection;
 use Gree\Collection\ProductCollection;
+use Gree\Contract\Repository\GreeCardsRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\DTO\FilterDto;
 use Gree\DTO\ProductDto;
+use Gree\Enum\IblockCode;
+use Gree\Logging\FileLogger;
 
 final class CatalogService extends BaseService implements CatalogServiceInterface
 {
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
+        private readonly GreeCardsRepositoryInterface $greeCardsRepository,
     ) {}
 
     public function getList(FilterDto $filter): ProductCollection
     {
-        return $this->productRepository->getList($filter);
+        try {
+            return $this->productRepository->getList($filter);
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function count(FilterDto $filter): int
     {
-        return $this->productRepository->count($filter);
+        try {
+            return $this->productRepository->count($filter);
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getByCode(string $code): ?ProductDto
     {
-        return $this->productRepository->getByCode($code);
+        try {
+            return $this->productRepository->getByCode($code);
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['code' => $code, 'exception' => $e]);
+            throw $e;
+        }
+    }
+
+    public function getGreeCards(): GreeCardCollection
+    {
+        try {
+            return $this->greeCardsRepository->getCards(IblockCode::CatalogGreeCards);
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
+    }
+
+    public function getGreeStats(): GreeStatCollection
+    {
+        try {
+            return $this->greeCardsRepository->getStats(IblockCode::CatalogGreeStats);
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 }

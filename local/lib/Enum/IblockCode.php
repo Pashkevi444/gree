@@ -9,6 +9,8 @@ enum IblockCode: string
     // Каталог
     case Brands = 'Brands';
     case Products = 'Products';
+    case CatalogGreeCards = 'CatalogGreeCards';
+    case CatalogGreeStats = 'CatalogGreeStats';
 
     // Контент
     case Blog = 'Blog';

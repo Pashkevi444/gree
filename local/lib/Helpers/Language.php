@@ -25,10 +25,7 @@ final class Language
      */
     public static function t(string $code, array $params = []): string
     {
-        $container = App::container();
-        $translator = $container->get(TranslatorServiceInterface::class);
-        $language = $container->get(LanguageServiceInterface::class);
-
-        return $translator->translate($code, $language->get(), $params);
+        return App::get(TranslatorServiceInterface::class)
+            ->translate($code, App::get(LanguageServiceInterface::class)->get(), $params);
     }
 }

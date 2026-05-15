@@ -22,8 +22,16 @@ final class CatalogController extends BaseController
         $filter = FilterDto::fromRequest($this->getRequest());
         $products = $this->catalogService->getList($filter);
         $total = $this->catalogService->count($filter);
+        $greeCards = $this->catalogService->getGreeCards();
+        $greeStats = $this->catalogService->getGreeStats();
 
-        return $this->view('catalog/index', new CatalogViewData($products, $filter, $total));
+        return $this->view('catalog/index', new CatalogViewData(
+            products: $products,
+            filter: $filter,
+            total: $total,
+            greeCards: $greeCards,
+            greeStats: $greeStats,
+        ));
     }
 
     public function filter(): HttpResponse

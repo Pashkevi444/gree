@@ -18,8 +18,7 @@ final class Module
 
         // Auto-detect locale on first visit (CIS Accept-Language → ru, else → en),
         // store it in the session — subsequent requests respect the stored value.
-        \Gree\Core\App::container()
-            ->get(\Gree\Contract\Service\LanguageServiceInterface::class)
+        \Gree\Core\App::get(\Gree\Contract\Service\LanguageServiceInterface::class)
             ->detectAndStore(\Bitrix\Main\Application::getInstance()->getContext()->getRequest());
     }
 

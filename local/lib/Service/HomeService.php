@@ -11,6 +11,7 @@ use Gree\Collection\SliderItemCollection;
 use Gree\Collection\TechnologyCollection;
 use Gree\Contract\Repository\HomeRepositoryInterface;
 use Gree\Contract\Service\HomeServiceInterface;
+use Gree\Logging\FileLogger;
 
 final class HomeService extends BaseService implements HomeServiceInterface
 {
@@ -18,26 +19,51 @@ final class HomeService extends BaseService implements HomeServiceInterface
 
     public function getSlider(): SliderItemCollection
     {
-        return $this->homeRepository->getSlider();
+        try {
+            return $this->homeRepository->getSlider();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getGreeCards(): GreeCardCollection
     {
-        return $this->homeRepository->getGreeCards();
+        try {
+            return $this->homeRepository->getGreeCards();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getGreeStats(): GreeStatCollection
     {
-        return $this->homeRepository->getGreeStats();
+        try {
+            return $this->homeRepository->getGreeStats();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getAppFeatures(): AppFeatureCollection
     {
-        return $this->homeRepository->getAppFeatures();
+        try {
+            return $this->homeRepository->getAppFeatures();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getTechnologies(): TechnologyCollection
     {
-        return $this->homeRepository->getTechnologies();
+        try {
+            return $this->homeRepository->getTechnologies();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 }

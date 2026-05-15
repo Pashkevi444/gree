@@ -114,3 +114,6 @@ core.*
 
 # Composer dependencies
 /vendor/
+
+# Per-environment config (committed template lives in .env.example)
+/.env

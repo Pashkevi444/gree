@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Gree\Tests\Unit\View;
 
+use Gree\Collection\GreeCardCollection;
+use Gree\Collection\GreeStatCollection;
 use Gree\Collection\ProductCollection;
 use Gree\DTO\FilterDto;
 use Gree\View\BaseViewData;
@@ -14,39 +16,52 @@ final class CatalogViewDataTest extends TestCase
 {
     public function testExtendsBaseViewData(): void
     {
-        $data = new CatalogViewData(new ProductCollection(), new FilterDto(), 0);
-
-        $this->assertInstanceOf(BaseViewData::class, $data);
+        $this->assertInstanceOf(BaseViewData::class, $this->build());
     }
 
-    public function testHoldsProductsFilterAndTotal(): void
+    public function testHoldsAllFields(): void
     {
         $products = new ProductCollection();
         $filter = new FilterDto();
+        $cards = new GreeCardCollection();
+        $stats = new GreeStatCollection();
 
-        $data = new CatalogViewData($products, $filter, 42);
+        $data = new CatalogViewData($products, $filter, 42, $cards, $stats);
 
         $this->assertSame($products, $data->products);
         $this->assertSame($filter, $data->filter);
         $this->assertSame(42, $data->total);
+        $this->assertSame($cards, $data->greeCards);
+        $this->assertSame($stats, $data->greeStats);
     }
 
     public function testToArrayContainsExpectedKeys(): void
     {
-        $data = new CatalogViewData(new ProductCollection(), new FilterDto(), 10);
-
-        $array = $data->toArray();
+        $array = $this->build()->toArray();
 
         $this->assertArrayHasKey('products', $array);
         $this->assertArrayHasKey('filter', $array);
         $this->assertArrayHasKey('total', $array);
+        $this->assertArrayHasKey('greeCards', $array);
+        $this->assertArrayHasKey('greeStats', $array);
     }
 
     public function testIsReadonly(): void
     {
-        $data = new CatalogViewData(new ProductCollection(), new FilterDto(), 0);
+        $data = $this->build();
 
         $this->expectException(\Error::class);
         $data->total = 1; // @phpstan-ignore-line
+    }
+
+    private function build(): CatalogViewData
+    {
+        return new CatalogViewData(
+            new ProductCollection(),
+            new FilterDto(),
+            0,
+            new GreeCardCollection(),
+            new GreeStatCollection(),
+        );
     }
 }

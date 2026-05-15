@@ -19,7 +19,7 @@ return static function (RoutingConfigurator $routes): void {
 
     // Frontend-pinned endpoints (paths fixed by the JS bundle in /dist).
     $routes
-        ->get('/api/catalog', static fn() => App::container()->get(CatalogController::class)->filter())
+        ->get('/api/catalog', static fn() => App::get(CatalogController::class)->filter())
         ->name('api.catalog.filter');
 
 };

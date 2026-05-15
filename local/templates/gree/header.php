@@ -6,7 +6,7 @@ use Gree\Core\App;
 use Gree\Enum\Locale;
 use Gree\Helpers\Language;
 
-$currentLocale = App::container()->get(LanguageServiceInterface::class)->get();
+$currentLocale = App::get(LanguageServiceInterface::class)->get();
 ?>
 <!doctype html>
 <html lang="<?= $currentLocale->value ?>">

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Gree\Contract\Repository\BrandRepositoryInterface;
+use Gree\Contract\Repository\GreeCardsRepositoryInterface;
 use Gree\Contract\Repository\HomeRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
 use Gree\Contract\Service\BrandServiceInterface;
@@ -18,6 +19,7 @@ use Gree\Controller\HomeController;
 use Gree\Controller\LanguageController;
 use Gree\Controller\ProductController;
 use Gree\Repository\BrandRepository;
+use Gree\Repository\GreeCardsRepository;
 use Gree\Repository\HomeRepository;
 use Gree\Repository\ProductRepository;
 use Gree\Repository\TranslationRepository;
@@ -31,117 +33,91 @@ use Symfony\Component\DependencyInjection\Reference;
 
 $container = new ContainerBuilder();
 
-// i18n — register first so repositories can depend on it
-$container
-    ->register(LanguageService::class, LanguageService::class)
-    ->setPublic(true);
+// ─── i18n ─────────────────────────────────────────────────────────────────
+$container->register(LanguageService::class)->setPublic(true);
+$container->setAlias(LanguageServiceInterface::class, LanguageService::class)->setPublic(true);
 
+// ─── Repositories ─────────────────────────────────────────────────────────
 $container
-    ->setAlias(LanguageServiceInterface::class, LanguageService::class)
-    ->setPublic(true);
-
-// Repositories — every repo extends BaseRepository which takes LanguageServiceInterface
-$container
-    ->register(BrandRepository::class, BrandRepository::class)
+    ->register(BrandRepository::class)
     ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
+$container->setAlias(BrandRepositoryInterface::class, BrandRepository::class)->setPublic(true);
 
 $container
-    ->setAlias(BrandRepositoryInterface::class, BrandRepository::class)
-    ->setPublic(true);
-
-$container
-    ->register(HomeRepository::class, HomeRepository::class)
+    ->register(HomeRepository::class)
     ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
+$container->setAlias(HomeRepositoryInterface::class, HomeRepository::class)->setPublic(true);
 
 $container
-    ->setAlias(HomeRepositoryInterface::class, HomeRepository::class)
-    ->setPublic(true);
-
-$container
-    ->register(ProductRepository::class, ProductRepository::class)
+    ->register(ProductRepository::class)
     ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
+$container->setAlias(ProductRepositoryInterface::class, ProductRepository::class)->setPublic(true);
 
 $container
-    ->setAlias(ProductRepositoryInterface::class, ProductRepository::class)
+    ->register(GreeCardsRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
+$container->setAlias(GreeCardsRepositoryInterface::class, GreeCardsRepository::class)->setPublic(true);
 
-// Translator stack — TranslationRepository reads UI strings from the HL Translations block
-$container
-    ->register(TranslationRepository::class, TranslationRepository::class)
-    ->setPublic(true);
-
-$container
-    ->setAlias(TranslationLoaderInterface::class, TranslationRepository::class)
-    ->setPublic(true);
+// ─── Translator stack ─────────────────────────────────────────────────────
+$container->register(TranslationRepository::class)->setPublic(true);
+$container->setAlias(TranslationLoaderInterface::class, TranslationRepository::class)->setPublic(true);
 
 $container
-    ->register(TranslatorService::class, TranslatorService::class)
+    ->register(TranslatorService::class)
     ->addArgument(new Reference(TranslationLoaderInterface::class))
     ->setPublic(true);
+$container->setAlias(TranslatorServiceInterface::class, TranslatorService::class)->setPublic(true);
 
+// ─── Domain services ──────────────────────────────────────────────────────
 $container
-    ->setAlias(TranslatorServiceInterface::class, TranslatorService::class)
-    ->setPublic(true);
-
-// Services
-$container
-    ->register(HomeService::class, HomeService::class)
+    ->register(HomeService::class)
     ->addArgument(new Reference(HomeRepositoryInterface::class))
     ->setPublic(true);
+$container->setAlias(HomeServiceInterface::class, HomeService::class)->setPublic(true);
 
 $container
-    ->setAlias(HomeServiceInterface::class, HomeService::class)
-    ->setPublic(true);
-
-$container
-    ->register(CatalogService::class, CatalogService::class)
+    ->register(CatalogService::class)
     ->addArgument(new Reference(ProductRepositoryInterface::class))
+    ->addArgument(new Reference(GreeCardsRepositoryInterface::class))
     ->setPublic(true);
+$container->setAlias(CatalogServiceInterface::class, CatalogService::class)->setPublic(true);
 
 $container
-    ->setAlias(CatalogServiceInterface::class, CatalogService::class)
-    ->setPublic(true);
-
-$container
-    ->register(BrandService::class, BrandService::class)
+    ->register(BrandService::class)
     ->addArgument(new Reference(BrandRepositoryInterface::class))
     ->setPublic(true);
+$container->setAlias(BrandServiceInterface::class, BrandService::class)->setPublic(true);
 
+// ─── Controllers ──────────────────────────────────────────────────────────
 $container
-    ->setAlias(BrandServiceInterface::class, BrandService::class)
-    ->setPublic(true);
-
-// Controllers
-$container
-    ->register(HomeController::class, HomeController::class)
+    ->register(HomeController::class)
     ->addArgument(new Reference(HomeServiceInterface::class))
     ->addArgument(new Reference(CatalogServiceInterface::class))
     ->setPublic(true);
 
 $container
-    ->register(BrandController::class, BrandController::class)
+    ->register(BrandController::class)
     ->addArgument(new Reference(BrandServiceInterface::class))
     ->setPublic(true);
 
-$container
-    ->register(BlogController::class, BlogController::class)
-    ->setPublic(true);
+$container->register(BlogController::class)->setPublic(true);
 
 $container
-    ->register(CatalogController::class, CatalogController::class)
+    ->register(CatalogController::class)
     ->addArgument(new Reference(CatalogServiceInterface::class))
     ->setPublic(true);
 
 $container
-    ->register(ProductController::class, ProductController::class)
+    ->register(ProductController::class)
     ->addArgument(new Reference(CatalogServiceInterface::class))
     ->setPublic(true);
 
 $container
-    ->register(LanguageController::class, LanguageController::class)
+    ->register(LanguageController::class)
     ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
 

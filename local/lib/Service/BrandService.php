@@ -12,6 +12,7 @@ use Gree\Contract\Repository\BrandRepositoryInterface;
 use Gree\Contract\Service\BrandServiceInterface;
 use Gree\DTO\BrandHistoryDto;
 use Gree\DTO\BrandWhyGreeDto;
+use Gree\Logging\FileLogger;
 
 final class BrandService extends BaseService implements BrandServiceInterface
 {
@@ -19,31 +20,61 @@ final class BrandService extends BaseService implements BrandServiceInterface
 
     public function getHistory(): ?BrandHistoryDto
     {
-        return $this->repo->getHistory();
+        try {
+            return $this->repo->getHistory();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getWhyGree(): ?BrandWhyGreeDto
     {
-        return $this->repo->getWhyGree();
+        try {
+            return $this->repo->getWhyGree();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getGreeCards(): GreeCardCollection
     {
-        return $this->repo->getGreeCards();
+        try {
+            return $this->repo->getGreeCards();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getGreeStats(): GreeStatCollection
     {
-        return $this->repo->getGreeStats();
+        try {
+            return $this->repo->getGreeStats();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getAboutCards(): BrandAboutCardCollection
     {
-        return $this->repo->getAboutCards();
+        try {
+            return $this->repo->getAboutCards();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 
     public function getTechnologies(): TechnologyCollection
     {
-        return $this->repo->getTechnologies();
+        try {
+            return $this->repo->getTechnologies();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
     }
 }

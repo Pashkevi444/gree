@@ -7,6 +7,7 @@ namespace Gree\Service;
 use Gree\Contract\Service\TranslationLoaderInterface;
 use Gree\Contract\Service\TranslatorServiceInterface;
 use Gree\Enum\Locale;
+use Gree\Logging\FileLogger;
 
 final class TranslatorService extends BaseService implements TranslatorServiceInterface
 {
@@ -17,9 +18,19 @@ final class TranslatorService extends BaseService implements TranslatorServiceIn
 
     public function translate(string $code, Locale $locale, array $params = []): string
     {
-        $entries = $this->cache ??= $this->loader->all();
-        $entry = $entries[$code] ?? null;
+        // Fail-soft: a broken HL/translation store must not break the page.
+        // Return the code itself so layouts keep rendering.
+        try {
+            $entries = $this->cache ??= $this->loader->all();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed to load translations', [
+                'code' => $code,
+                'exception' => $e,
+            ]);
+            return $this->interpolate($code, $params);
+        }
 
+        $entry = $entries[$code] ?? null;
         if ($entry === null) {
             return $this->interpolate($code, $params);
         }

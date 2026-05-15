@@ -13,27 +13,27 @@ use Gree\Core\App;
 
 return static function (RoutingConfigurator $routes): void {
 
-    $routes->get('/', static fn() => App::container()->get(HomeController::class)->index())->name('home');
+    $routes->get('/', static fn() => App::get(HomeController::class)->index())->name('home');
 
-    $routes->get('/catalog/', static fn() => App::container()->get(CatalogController::class)->index())->name('catalog.index');
+    $routes->get('/catalog/', static fn() => App::get(CatalogController::class)->index())->name('catalog.index');
     $routes
-        ->get('/catalog/{code}/', static fn(string $code) => App::container()->get(ProductController::class)->show($code))
+        ->get('/catalog/{code}/', static fn(string $code) => App::get(ProductController::class)->show($code))
         ->where('code', '[\w\d\-]+')
         ->name('catalog.product');
 
     $routes
-        ->get('/brand/{code}/', static fn(string $code) => App::container()->get(BrandController::class)->show($code))
+        ->get('/brand/{code}/', static fn(string $code) => App::get(BrandController::class)->show($code))
         ->where('code', '[\w\d\-]+')
         ->name('brand');
 
-    $routes->get('/blog/', static fn() => App::container()->get(BlogController::class)->index())->name('blog.index');
+    $routes->get('/blog/', static fn() => App::get(BlogController::class)->index())->name('blog.index');
     $routes
-        ->get('/blog/{code}/', static fn(string $code) => App::container()->get(BlogController::class)->show($code))
+        ->get('/blog/{code}/', static fn(string $code) => App::get(BlogController::class)->show($code))
         ->where('code', '[\w\d\-]+')
         ->name('blog.show');
 
     $routes
-        ->get('/lang/{locale}/', static fn(string $locale) => App::container()->get(LanguageController::class)->switch($locale))
+        ->get('/lang/{locale}/', static fn(string $locale) => App::get(LanguageController::class)->switch($locale))
         ->where('locale', 'ru|en')
         ->name('lang.switch');
 
