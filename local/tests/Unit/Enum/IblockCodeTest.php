@@ -44,7 +44,7 @@ final class IblockCodeTest extends TestCase
 
     public function testCasesCount(): void
     {
-        $this->assertCount(17, IblockCode::cases());
+        $this->assertCount(18, IblockCode::cases());
     }
 
     public function testTryFromReturnsNullOnInvalid(): void

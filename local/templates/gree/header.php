@@ -2,11 +2,22 @@
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
 
 use Gree\Contract\Service\LanguageServiceInterface;
+use Gree\Contract\Service\MenuServiceInterface;
 use Gree\Core\App;
 use Gree\Enum\Locale;
 use Gree\Helpers\Language;
 
 $currentLocale = App::get(LanguageServiceInterface::class)->get();
+$menu = App::get(MenuServiceInterface::class)->getHeaderMenu();
+$catalogItem = null;
+$navItems = [];
+foreach ($menu as $item) {
+    if ($item->code === 'catalog') {
+        $catalogItem = $item;
+    } else {
+        $navItems[] = $item;
+    }
+}
 ?>
 <!doctype html>
 <html lang="<?= $currentLocale->value ?>">
@@ -108,23 +119,34 @@ $currentLocale = App::get(LanguageServiceInterface::class)->get();
             />
           </svg>
         </a>
-        <a class="header__catalog-button" href="/catalog/">
-          <svg width="14" height="12" viewBox="0 0 14 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M0 1C0 0.734784 0.105357 0.48043 0.292893 0.292893C0.48043 0.105357 0.734784 0 1 0H13C13.2652 0 13.5196 0.105357 13.7071 0.292893C13.8946 0.48043 14 0.734784 14 1C14 1.26522 13.8946 1.51957 13.7071 1.70711C13.5196 1.89464 13.2652 2 13 2H1C0.734784 2 0.48043 1.89464 0.292893 1.70711C0.105357 1.51957 0 1.26522 0 1ZM0 6C0 5.73478 0.105357 5.48043 0.292893 5.29289C0.48043 5.10536 0.734784 5 1 5H13C13.2652 5 13.5196 5.10536 13.7071 5.29289C13.8946 5.48043 14 5.73478 14 6C14 6.26522 13.8946 6.51957 13.7071 6.70711C13.5196 6.89464 13.2652 7 13 7H1C0.734784 7 0.48043 6.89464 0.292893 6.70711C0.105357 6.51957 0 6.26522 0 6ZM0 11C0 10.7348 0.105357 10.4804 0.292893 10.2929C0.48043 10.1054 0.734784 10 1 10H13C13.2652 10 13.5196 10.1054 13.7071 10.2929C13.8946 10.4804 14 10.7348 14 11C14 11.2652 13.8946 11.5196 13.7071 11.7071C13.5196 11.8946 13.2652 12 13 12H1C0.734784 12 0.48043 11.8946 0.292893 11.7071C0.105357 11.5196 0 11.2652 0 11Z"
-              fill="currentColor"
-            />
-          </svg>
-          <?= Language::t('header.catalog') ?>
-        </a>
+<?php if ($catalogItem !== null): ?>
+          <?php
+          $catalogTag = $catalogItem->hasUrl() ? 'a' : 'button';
+          $catalogAttr = $catalogItem->hasUrl()
+              ? 'href="' . htmlspecialchars($catalogItem->url, ENT_QUOTES) . '"'
+              : 'type="button"';
+          $catalogPopup = $catalogItem->hasChildren() ? ' data-popup-menu="catalog"' : '';
+          ?>
+          <<?= $catalogTag ?> class="header__catalog-button" <?= $catalogAttr ?><?= $catalogPopup ?>>
+            <svg width="14" height="12" viewBox="0 0 14 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                fill-rule="evenodd"
+                clip-rule="evenodd"
+                d="M0 1C0 0.734784 0.105357 0.48043 0.292893 0.292893C0.48043 0.105357 0.734784 0 1 0H13C13.2652 0 13.5196 0.105357 13.7071 0.292893C13.8946 0.48043 14 0.734784 14 1C14 1.26522 13.8946 1.51957 13.7071 1.70711C13.5196 1.89464 13.2652 2 13 2H1C0.734784 2 0.48043 1.89464 0.292893 1.70711C0.105357 1.51957 0 1.26522 0 1ZM0 6C0 5.73478 0.105357 5.48043 0.292893 5.29289C0.48043 5.10536 0.734784 5 1 5H13C13.2652 5 13.5196 5.10536 13.7071 5.29289C13.8946 5.48043 14 5.73478 14 6C14 6.26522 13.8946 6.51957 13.7071 6.70711C13.5196 6.89464 13.2652 7 13 7H1C0.734784 7 0.48043 6.89464 0.292893 6.70711C0.105357 6.51957 0 6.26522 0 6ZM0 11C0 10.7348 0.105357 10.4804 0.292893 10.2929C0.48043 10.1054 0.734784 10 1 10H13C13.2652 10 13.5196 10.1054 13.7071 10.2929C13.8946 10.4804 14 10.7348 14 11C14 11.2652 13.8946 11.5196 13.7071 11.7071C13.5196 11.8946 13.2652 12 13 12H1C0.734784 12 0.48043 11.8946 0.292893 11.7071C0.105357 11.5196 0 11.2652 0 11Z"
+                fill="currentColor"
+              />
+            </svg>
+            <?= htmlspecialchars($catalogItem->label) ?>
+          </<?= $catalogTag ?>>
+        <?php endif; ?>
         <nav class="header-navigation">
-          <a class="header-navigation__item" href="/brand/gree/"><?= Language::t('header.nav.brand') ?></a>
-          <a class="header-navigation__item" href="/help.html"><?= Language::t('header.nav.help') ?></a>
-          <a class="header-navigation__item" href="/buy.html"><?= Language::t('header.nav.buy') ?></a>
-          <a class="header-navigation__item" href="/partners.html"><?= Language::t('header.nav.partners') ?></a>
-          <a class="header-navigation__item" href="/contacts.html"><?= Language::t('header.nav.contacts') ?></a>
+          <?php foreach ($navItems as $item): ?>
+            <a
+              class="header-navigation__item"
+              href="<?= htmlspecialchars($item->hasUrl() ? $item->url : '#', ENT_QUOTES) ?>"
+              <?= $item->hasChildren() ? ' data-popup-menu="' . htmlspecialchars($item->code, ENT_QUOTES) . '"' : '' ?>
+            ><?= htmlspecialchars($item->label) ?></a>
+          <?php endforeach; ?>
         </nav>
         <a class="header__cart-button" href="/cart.html">
           <svg width="18" height="17" viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -139,4 +161,12 @@ $currentLocale = App::get(LanguageServiceInterface::class)->get();
           <?= Language::t('header.cart') ?>
         </a>
       </div>
+      <?php foreach ($menu as $item): ?>
+        <?php if (!$item->hasChildren()) continue; ?>
+        <div class="header-popup-menu" data-popup-menu="<?= htmlspecialchars($item->code, ENT_QUOTES) ?>">
+          <?php foreach ($item->children as $child): ?>
+            <a class="header-popup-menu__item" href="<?= htmlspecialchars($child->hasUrl() ? $child->url : '#', ENT_QUOTES) ?>"><?= htmlspecialchars($child->label) ?></a>
+          <?php endforeach; ?>
+        </div>
+      <?php endforeach; ?>
     </header>

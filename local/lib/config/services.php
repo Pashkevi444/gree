@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Gree\Contract\Repository\BrandRepositoryInterface;
 use Gree\Contract\Repository\CatalogRepositoryInterface;
 use Gree\Contract\Repository\HomeRepositoryInterface;
+use Gree\Contract\Repository\MenuRepositoryInterface;
 use Gree\Contract\Repository\OfferRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
 use Gree\Contract\Service\BrandServiceInterface;
@@ -12,6 +13,7 @@ use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\Contract\Service\HomeServiceInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
+use Gree\Contract\Service\MenuServiceInterface;
 use Gree\Contract\Service\TranslationLoaderInterface;
 use Gree\Contract\Service\TranslatorServiceInterface;
 use Gree\Controller\BlogController;
@@ -23,6 +25,7 @@ use Gree\Controller\ProductController;
 use Gree\Repository\BrandRepository;
 use Gree\Repository\CatalogRepository;
 use Gree\Repository\HomeRepository;
+use Gree\Repository\MenuRepository;
 use Gree\Repository\OfferRepository;
 use Gree\Repository\ProductRepository;
 use Gree\Repository\TranslationRepository;
@@ -31,6 +34,7 @@ use Gree\Service\BreadcrumbsService;
 use Gree\Service\CatalogService;
 use Gree\Service\HomeService;
 use Gree\Service\LanguageService;
+use Gree\Service\MenuService;
 use Gree\Service\TranslatorService;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
@@ -73,6 +77,12 @@ $container
     ->setPublic(true);
 $container->setAlias(CatalogRepositoryInterface::class, CatalogRepository::class)->setPublic(true);
 
+$container
+    ->register(MenuRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(MenuRepositoryInterface::class, MenuRepository::class)->setPublic(true);
+
 // ─── Translator stack ─────────────────────────────────────────────────────
 $container->register(TranslationRepository::class)->setPublic(true);
 $container->setAlias(TranslationLoaderInterface::class, TranslationRepository::class)->setPublic(true);
@@ -109,6 +119,12 @@ $container
     ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
 $container->setAlias(BreadcrumbsServiceInterface::class, BreadcrumbsService::class)->setPublic(true);
+
+$container
+    ->register(MenuService::class)
+    ->addArgument(new Reference(MenuRepositoryInterface::class))
+    ->setPublic(true);
+$container->setAlias(MenuServiceInterface::class, MenuService::class)->setPublic(true);
 
 // ─── Controllers ──────────────────────────────────────────────────────────
 $container

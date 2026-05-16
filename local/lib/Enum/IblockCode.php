@@ -15,6 +15,7 @@ enum IblockCode: string
 
     // Контент
     case Blog = 'Blog';
+    case Menu = 'Menu';
 
     // Страница бренда
     case BrandHistory = 'BrandHistory';
