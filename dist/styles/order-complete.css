@@ -1,0 +1,33 @@
+.main {
+  padding-block: 30px 150px;
+}
+.hero__image {
+  object-fit: cover;
+  width: 535px;
+  height: 235px;
+  margin-inline: auto;
+}
+.hero__title {
+  text-align: center;
+  margin-top: 40px;
+  font-size: 44px;
+  font-weight: 500;
+}
+.hero__description {
+  text-align: center;
+  max-width: 720px;
+  margin: 15px auto 0;
+  font-size: 24px;
+}
+.hero__button {
+  color: #33348e;
+  background-color: #f4f5ff;
+  border-radius: 16px;
+  width: fit-content;
+  margin: 40px auto 0;
+  padding-inline: 25px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 50px;
+  display: block;
+}
