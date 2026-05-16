@@ -8,8 +8,10 @@ use Gree\Collection\BreadcrumbCollection;
 use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
 use Gree\Contract\Service\TranslatorServiceInterface;
+use Gree\DTO\BlogArticleDto;
 use Gree\DTO\BreadcrumbDto;
 use Gree\DTO\ProductDto;
+use Gree\Enum\BlogCategory;
 use Gree\Enum\ProductType;
 use Gree\Logging\FileLogger;
 
@@ -65,6 +67,39 @@ final class BreadcrumbsService extends BaseService implements BreadcrumbsService
         } catch (\Throwable $e) {
             FileLogger::getInstance()->critical(__METHOD__ . ' failed', [
                 'product' => $product->code,
+                'exception' => $e,
+            ]);
+            throw $e;
+        }
+    }
+
+    public function blog(): BreadcrumbCollection
+    {
+        try {
+            return new BreadcrumbCollection(
+                $this->home(),
+                new BreadcrumbDto(label: $this->t('blog.section')),
+            );
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
+    }
+
+    public function blogArticle(BlogArticleDto $article): BreadcrumbCollection
+    {
+        try {
+            $categoryKey = $article->category === BlogCategory::News ? 'blog.news' : 'blog.title';
+
+            return new BreadcrumbCollection(
+                $this->home(),
+                new BreadcrumbDto(label: $this->t('blog.section'), url: '/blog/'),
+                new BreadcrumbDto(label: $this->t($categoryKey), url: '/blog/'),
+                new BreadcrumbDto(label: $article->title),
+            );
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', [
+                'article' => $article->code,
                 'exception' => $e,
             ]);
             throw $e;

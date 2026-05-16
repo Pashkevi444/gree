@@ -96,11 +96,46 @@ foreach ($menu as $item) {
             example@example.com
           </a>
         </div>
-        <div class="language-select">
-          <a class="language-select__option <?= $currentLocale === Locale::Ru ? 'language-select__option--active' : '' ?>" href="/lang/ru/"><?= Language::t('header.lang.ru') ?></a>
-          <span class="language-select__divider">/</span>
-          <a class="language-select__option <?= $currentLocale === Locale::En ? 'language-select__option--active' : '' ?>" href="/lang/en/"><?= Language::t('header.lang.en') ?></a>
-        </div>
+        <?php
+        $isRu = $currentLocale === Locale::Ru;
+        $otherLocaleUrl = $isRu ? '/lang/en/' : '/lang/ru/';
+        $currentLabel = $isRu ? Language::t('header.lang.ru') : Language::t('header.lang.en');
+        ?>
+        <a class="language-select" href="<?= $otherLocaleUrl ?>" title="<?= $isRu ? Language::t('header.lang.en') : Language::t('header.lang.ru') ?>">
+          <div class="language-select__country-icon">
+            <?php if ($isRu): ?>
+              <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="russian">
+                <g clip-path="url(#clip0_lang_ru)">
+                  <path d="M0 0H18V6.00117H0V0Z" fill="white" />
+                  <path d="M0 6.00119H18V11.9988H0V6.00119Z" fill="#729AE6" />
+                  <path d="M0 11.9988H18V18H0V11.9988Z" fill="#C64F45" />
+                </g>
+                <defs>
+                  <clipPath id="clip0_lang_ru"><rect width="18" height="18" fill="white" /></clipPath>
+                </defs>
+              </svg>
+            <?php else: ?>
+              <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="english">
+                <g clip-path="url(#clip0_lang_en)">
+                  <path d="M0 0H18V18H0V0Z" fill="#012169" />
+                  <path d="M0 0L18 18M18 0L0 18" stroke="white" stroke-width="2.4" />
+                  <path d="M0 0L18 18M18 0L0 18" stroke="#C8102E" stroke-width="1.2" />
+                  <path d="M9 0V18M0 9H18" stroke="white" stroke-width="3.6" />
+                  <path d="M9 0V18M0 9H18" stroke="#C8102E" stroke-width="2.1" />
+                </g>
+                <defs>
+                  <clipPath id="clip0_lang_en"><rect width="18" height="18" fill="white" /></clipPath>
+                </defs>
+              </svg>
+            <?php endif; ?>
+          </div>
+          <div class="language-select__text"><?= $currentLabel ?></div>
+          <div class="language-select__icon">
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0.75 0.75L4.75 4.75L8.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+        </a>
       </div>
       <div class="header-body">
         <a class="header__logotype" href="/">

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Bitrix\Main\Routing\RoutingConfigurator;
+use Gree\Controller\BlogController;
 use Gree\Controller\CatalogController;
 use Gree\Core\App;
 
@@ -21,5 +22,10 @@ return static function (RoutingConfigurator $routes): void {
     $routes
         ->get('/api/catalog', static fn() => App::get(CatalogController::class)->filter())
         ->name('api.catalog.filter');
+
+    // Blog pagination: /api/v1/blog?category=tips&offset=3&limit=3
+    $routes
+        ->get('/api/v1/blog', static fn() => App::get(BlogController::class)->paginate())
+        ->name('api.blog.paginate');
 
 };

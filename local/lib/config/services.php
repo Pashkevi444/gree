@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use Gree\Contract\Repository\BlogRepositoryInterface;
 use Gree\Contract\Repository\BrandRepositoryInterface;
 use Gree\Contract\Repository\CatalogRepositoryInterface;
 use Gree\Contract\Repository\HomeRepositoryInterface;
 use Gree\Contract\Repository\MenuRepositoryInterface;
 use Gree\Contract\Repository\OfferRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
+use Gree\Contract\Service\BlogServiceInterface;
 use Gree\Contract\Service\BrandServiceInterface;
 use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
@@ -22,6 +24,7 @@ use Gree\Controller\CatalogController;
 use Gree\Controller\HomeController;
 use Gree\Controller\LanguageController;
 use Gree\Controller\ProductController;
+use Gree\Repository\BlogRepository;
 use Gree\Repository\BrandRepository;
 use Gree\Repository\CatalogRepository;
 use Gree\Repository\HomeRepository;
@@ -29,6 +32,7 @@ use Gree\Repository\MenuRepository;
 use Gree\Repository\OfferRepository;
 use Gree\Repository\ProductRepository;
 use Gree\Repository\TranslationRepository;
+use Gree\Service\BlogService;
 use Gree\Service\BrandService;
 use Gree\Service\BreadcrumbsService;
 use Gree\Service\CatalogService;
@@ -83,6 +87,12 @@ $container
     ->setPublic(true);
 $container->setAlias(MenuRepositoryInterface::class, MenuRepository::class)->setPublic(true);
 
+$container
+    ->register(BlogRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(BlogRepositoryInterface::class, BlogRepository::class)->setPublic(true);
+
 // ─── Translator stack ─────────────────────────────────────────────────────
 $container->register(TranslationRepository::class)->setPublic(true);
 $container->setAlias(TranslationLoaderInterface::class, TranslationRepository::class)->setPublic(true);
@@ -126,6 +136,12 @@ $container
     ->setPublic(true);
 $container->setAlias(MenuServiceInterface::class, MenuService::class)->setPublic(true);
 
+$container
+    ->register(BlogService::class)
+    ->addArgument(new Reference(BlogRepositoryInterface::class))
+    ->setPublic(true);
+$container->setAlias(BlogServiceInterface::class, BlogService::class)->setPublic(true);
+
 // ─── Controllers ──────────────────────────────────────────────────────────
 $container
     ->register(HomeController::class)
@@ -138,7 +154,11 @@ $container
     ->addArgument(new Reference(BrandServiceInterface::class))
     ->setPublic(true);
 
-$container->register(BlogController::class)->setPublic(true);
+$container
+    ->register(BlogController::class)
+    ->addArgument(new Reference(BlogServiceInterface::class))
+    ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->setPublic(true);
 
 $container
     ->register(CatalogController::class)
