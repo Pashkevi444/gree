@@ -10,6 +10,7 @@ class BitrixHttpRequest
         private array $query = [],
         private array $post = [],
         private string $method = 'GET',
+        private array $headers = [],
     ) {}
 
     public function getQueryList(): BitrixParameterDictionary
@@ -30,5 +31,10 @@ class BitrixHttpRequest
     public function getRequestMethod(): string
     {
         return $this->method;
+    }
+
+    public function getHeader(string $name): ?string
+    {
+        return $this->headers[strtolower($name)] ?? null;
     }
 }

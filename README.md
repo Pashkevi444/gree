@@ -1,64 +1,73 @@
-# Gree — сайт официального дистрибьютора
+# Gree — сайт официального дистрибьютора в Узбекистане
 
-PHP 8.4 · Bitrix CMS · Blade · Composer · PHPUnit 11
+PHP 8.4 · Bitrix CMS · Blade · Symfony DI · Composer · PHPUnit 11
 
 ---
 
 ## Быстрый старт
 
-### Установить зависимости
 ```bash
 composer install
+./vendor/bin/phpunit                       # все тесты (Unit + Integration)
+./vendor/bin/phpunit --testsuite Unit      # только юниты, без живого HTTP
+./vendor/bin/phpunit --testsuite Integration   # требует live-сервер
+./vendor/bin/phpunit --filter testStaticPageRendersSeoFromHlblock
 ```
 
-### Запустить тесты
+Интеграционные тесты по умолчанию стучатся на `https://gree:8890`. Сменить host:
+
 ```bash
-# Все юнит-тесты
-./vendor/bin/phpunit
-
-# Один файл
-./vendor/bin/phpunit local/tests/Unit/Controller/HomeControllerTest.php
-
-# Один метод
-./vendor/bin/phpunit --filter testIndexReturnsHttp200
-```
-
-### Добавить пакет
-```bash
-composer require vendor/package
+TEST_BASE_URL=https://staging.example.com ./vendor/bin/phpunit --testsuite Integration
 ```
 
 ---
 
 ## Архитектура
 
-### Как работает запрос
+### Жизненный цикл запроса
 
 ```
-HTTP-запрос
-    │
-    ▼
-.htaccess → /bitrix/routing_index.php   (Bitrix bootstrap)
-    │
-    ▼
-local/routes/web.php  или  local/routes/api.php
-    │
-    ▼
-Controller::action()
-    │
-    ├── $this->setMeta('Title')               // до view() — попадёт в ShowHead()
-    ├── $this->addPageAssets('page')          // регистрирует page.css + page.js
-    └── return $this->view('home/index', new HomeViewData(...))
-                │
-                └── Blade::factory()->make('home.index', $data->toArray())
-                        │
-                        └── local/views/layouts/app.blade.php
-                              ├── require header.php    // <!doctype> + <head> + <header>
-                              ├── @yield('content')     // содержимое страницы
-                              └── require footer.php    // <footer> + </body></html>
+HTTP → .htaccess → /bitrix/routing_index.php
+  → local/routes/web.php | api.php
+  → Closure → App::get(Controller::class)->method(...)
+        ├── $this->applySeo($this->seo->forPage('home'))   // SEO (HL «Seo» + IPROPERTY)
+        ├── $this->addPageAssets('home')                   // /dist/styles/*.css + /dist/scripts/*.js
+        └── return $this->view('home/index', new HomeViewData(...))
+                   └── Blade::factory()->make() → render() → HttpResponse
+                          + security headers
+                          + outgoing cookies (CSRF, cart_token) flushed
 ```
 
-API-маршруты возвращают `$this->json($data)` — шаблон не подключается.
+API-маршруты возвращают `$this->json($data, $status)` — Blade-рендер пропускается.
+
+### Слои
+
+| Слой | Namespace | Назначение |
+|------|-----------|-----------|
+| Controller | `Gree\Controller` | Тонкий: парсит вход, дёргает сервис, возвращает `view()`/`json()` |
+| Service | `Gree\Service` | Бизнес-логика, оркестрация репозиториев, fail-soft логирование |
+| Repository | `Gree\Repository` | D7 iblock / HL-block запросы, возвращают доменные DTO |
+| DTO | `Gree\DTO` | `final readonly`, `fromArray()` / `toJson()` named constructors |
+| Collection | `Gree\Collection` | Типизированные коллекции (extends `BaseCollection`) |
+| Enum | `Gree\Enum` | Backed string enums с `label()` / `slug()` |
+| View | `Gree\View` | Readonly ViewData DTO (extends `BaseViewData`), идут в Blade |
+| Security | `Gree\Security` | CSRF, ApiGuard, AccessDeniedException |
+| Http | `Gree\Http` | `BitrixHttpContext` / `InMemoryHttpContext` — обёртка над cookies/headers/server |
+| Logging | `Gree\Logging` | `FileLogger` (singleton, фaйлы в `local/logs/`) |
+| Helpers | `Gree\Helpers` | Static facades — `Language::t`, `Route::to` |
+| Routing | `Gree\Helpers\Route` | Генерация URL из именованных маршрутов через Bitrix Router |
+
+### Базовые классы (последний принцип SOLID — depend on abstractions)
+
+| Базовый класс | Используется в |
+|---------------|----------------|
+| `Gree\Controller\BaseController` | Все контроллеры. `view()`, `json()`, `applySeo()`, `addPageAssets()`, `getRequest()` |
+| `Gree\Service\BaseService` | Маркер для всех сервисов (включая security) |
+| `Gree\Repository\BaseRepository` | Для iblock-репозиториев — `resolveIblockId()`, `localizedSelect()`, `localized()` |
+| `Gree\Repository\BaseHlblockRepository` | Для HL-block репозиториев (Cart, CartItem, Translation, Seo). `hlblock(): HlblockCode` указывает enum-кейс; типизированные `query()/addRow()/updateRow()/deleteRow()` — PhpStorm-aware, без скрытого `class-string::method()` chain |
+| `Gree\DTO\BaseDto` | Все DTO, требует `fromArray(array): static` |
+| `Gree\Collection\BaseCollection` | Все коллекции, требует `itemClass()` |
+| `Gree\View\BaseViewData` | Все ViewData, `toArray()` |
 
 ---
 
@@ -67,220 +76,402 @@ API-маршруты возвращают `$this->json($data)` — шаблон 
 ```
 /
 ├── composer.json           # PSR-4: Gree\ → local/lib/
-├── phpunit.xml             # конфиг тестов (bootstrap → local/tests/bootstrap.php)
-├── vendor/                 # Composer-зависимости (не в git)
+├── phpunit.xml             # Unit + Integration suites, env TEST_BASE_URL
+├── deploy.php              # one-shot pull+composer+phpunit без SSH (через web-вызов)
 │
-├── bitrix/                 # ЯДРО БИТРИКС — не трогать
-│   ├── .settings.php       # БД + routing: config: ['web.php', 'api.php']
-│   └── routing_index.php   # точка входа роутинга
+├── bitrix/                 # ядро Bitrix — не трогать
+│   └── .settings.php       # routing: ['config' => ['web.php', 'api.php']]
 │
-├── .htaccess               # перенаправляет все запросы на routing_index.php
-│
-└── local/                  # весь кастомный код
+└── local/
     ├── php_interface/
-    │   └── init.php        # грузит vendor/autoload.php + регистрирует OnBeforeProlog
-    │
-    ├── modules/
-    │   └── gree.core/      # Bitrix-модуль (настройки, события)
-    │       ├── install/    # установка/удаление модуля из админки
-    │       ├── include.php # пустой (автозагрузка через Composer)
-    │       └── options.php # страница настроек в /bitrix/admin/
-    │
-    ├── templates/
-    │   └── gree/           # шаблон сайта
-    │       ├── header.php  # <!doctype>…<header>: Asset::addCss/addJs, ShowHead()
-    │       ├── footer.php  # <footer>…</html>: читает Options::getInstance()
-    │       ├── styles/     # main.css + page-specific CSS
-    │       ├── scripts/    # main.js  + page-specific JS
-    │       ├── fonts/      # HelveticaNeue
-    │       └── images/     # статические изображения (*.png в .gitignore)
-    │
-    ├── routes/
-    │   ├── web.php         # GET-маршруты → HTML-ответы
-    │   └── api.php         # /api/v1/… → JSON-ответы
-    │
-    ├── lib/                # автозагружаемые классы (namespace Gree\)
-    │   ├── Core/
-    │   │   ├── Options.php          # readonly singleton: phone, email, address, TG, VK
-    │   │   ├── Blade.php            # illuminate/view Factory singleton
-    │   │   └── Event/Module.php     # onBeforeProlog, clearTaggedCache
-    │   ├── Controller/
-    │   │   ├── BaseController.php   # view() / json() / setMeta() / addPageAssets()
-    │   │   ├── HomeController.php
-    │   │   ├── CatalogController.php
-    │   │   ├── ProductController.php
-    │   │   ├── BrandController.php
-    │   │   └── BlogController.php
-    │   └── View/
-    │       └── ViewData.php         # abstract readonly base для ViewData DTO
-    │
-    ├── views/              # Blade-шаблоны страниц (.blade.php)
-    │   ├── layouts/
-    │   │   └── app.blade.php        # базовый layout (header + content + footer)
-    │   ├── home/index.blade.php
-    │   ├── catalog/index.blade.php
-    │   ├── catalog/product.blade.php
-    │   ├── brand/show.blade.php
-    │   └── blog/
-    │       ├── index.blade.php
-    │       └── show.blade.php
-    │
-    ├── cache/blade/        # кэш скомпилированных Blade-шаблонов (не в git)
-    │
+    │   ├── init.php        # vendor/autoload.php + OnBeforeProlog → routes
+    │   └── migrations/     # sprint.migration — VersionYYYYMMDDXXXXXX.php
+    ├── modules/gree.core/  # Bitrix-модуль (settings page)
+    ├── templates/gree/     # шаблон сайта (header.php + footer.php)
+    ├── routes/             # web.php (HTML) + api.php (JSON)
+    ├── lib/                # автозагружаемый код, см. слои выше
+    │   ├── Contract/       # интерфейсы (Repository / Service / Http / Security)
+    │   └── config/services.php  # Symfony DI ContainerBuilder
+    ├── views/              # Blade-шаблоны
+    │   ├── layouts/app.blade.php
+    │   ├── partials/breadcrumbs.blade.php
+    │   ├── home/ catalog/ brand/ blog/ cart/ errors/
+    ├── cache/blade/        # компиляция Blade (gitignored)
+    ├── logs/               # FileLogger output (gitignored)
     └── tests/
-        ├── bootstrap.php       # require vendor/autoload.php
-        └── Unit/
-            └── Controller/
-                └── BaseControllerTest.php
+        ├── bootstrap.php
+        ├── Stub/           # Bitrix-классы для unit-тестов
+        ├── Unit/           # 200+ юнит-тестов
+        └── Integration/    # HTTP-тесты против live-сервера
 ```
+
+`/dist/` (на корне) — фронтенд-билд: `styles/*.css`, `scripts/*.js`, `images/*`. Контроллер регистрирует через `addPageAssets('page')`, которое отдаёт `/dist/styles/page.css` + `/dist/scripts/page.js`.
 
 ---
 
 ## Роутинг
 
-Маршруты объявлены в двух файлах:
+Группировка через `prefix(...)->name(...)->group(closure)`. Подводные камни Bitrix Routing:
 
-| Файл | Назначение | Пример |
-|------|-----------|--------|
-| `local/routes/web.php` | Публичные страницы | `GET /catalog/` → `CatalogController::index()` |
-| `local/routes/api.php` | API-эндпоинты | `POST /api/v1/feedback/` → `FeedbackController::store()` |
+- `prefix()` **не** должен начинаться с `/` — иначе компилируется `//api/v1//cart`.
+- URI внутри группы тоже без `/` — конкатенация `prefix + '/' + uri`.
+- Пустой URI (`get('', …)`) даёт trailing slash (`/api/v1/cart/`).
+- После правок роутов **обязательно сноси кэш**: `rm -rf bitrix/cache/routing bitrix/managed_cache`.
 
-Оба файла подключены в `bitrix/.settings.php`:
-```php
-'routing' => ['value' => ['config' => ['web.php', 'api.php']]]
-```
-
-### Текущие маршруты
+### Web (`local/routes/web.php`)
 
 | Метод | URL | Контроллер | Имя |
 |-------|-----|-----------|-----|
 | GET | `/` | `HomeController::index` | `home` |
 | GET | `/catalog/` | `CatalogController::index` | `catalog.index` |
-| GET | `/catalog/{code}/` | `ProductController::show` | `catalog.product` |
-| GET | `/brand/{code}/` | `BrandController::show` | `brand` |
+| GET | `/catalog/{section}/` | `CatalogController::section` | `catalog.section` |
+| GET | `/catalog/{section}/{code}/` | `ProductController::show` | `catalog.product` |
+| GET | `/brand/{code}/` | `BrandController::show` | `brand.show` |
 | GET | `/blog/` | `BlogController::index` | `blog.index` |
 | GET | `/blog/{code}/` | `BlogController::show` | `blog.show` |
+| GET | `/cart/` | `CartController::index` | `cart.index` |
+| GET | `/lang/{locale}/` | `LanguageController::switch` | `lang.switch` |
+
+`{section}` ограничен `nastennie|kolonnye|promyshlennye`, `{locale}` — `ru|en`.
+
+### API (`local/routes/api.php`)
+
+| Метод | URL | Контроллер | Имя |
+|-------|-----|-----------|-----|
+| GET | `/api/catalog` | `CatalogController::filter` | `api.catalog.filter` |
+| GET | `/api/v1/blog` | `BlogController::paginate` | `api.v1.blog.paginate` |
+| GET | `/api/v1/cart/` | `CartController::get` | `api.v1.cart.get` |
+| POST | `/api/v1/cart/items` | `CartController::add` | `api.v1.cart.items.add` |
+| PATCH | `/api/v1/cart/items/{id}` | `CartController::update` | `api.v1.cart.items.update` |
+| DELETE | `/api/v1/cart/items/{id}` | `CartController::remove` | `api.v1.cart.items.remove` |
+
+State-changing методы (POST/PATCH/DELETE) защищены `ApiGuard` (см. ниже).
+
+### Генерация URL — `Gree\Helpers\Route`
+
+Все внутренние ссылки строятся через `Route::to($name, $params)` — никаких хардкод-строк
+`href="/cart/"` в шаблонах/контроллерах/сервисах. Источник правды — имена в
+`local/routes/{web,api}.php`. Поменялся URL — все ссылки автоматом подхватятся.
+
+```php
+Route::to('home')
+  → /
+
+Route::to('catalog.section', ['section' => 'nastennie'])
+  → /catalog/nastennie/
+
+Route::to('catalog.product', ['section' => 'nastennie', 'code' => 'gree-bora-x-07'])
+  → /catalog/nastennie/gree-bora-x-07/
+
+Route::to('api.v1.cart.items.update', ['id' => 42])
+  → /api/v1/cart/items/42
+```
+
+В Blade:
+```blade
+<a href="{{ Route::to('cart.index') }}">{{ Language::t('header.cart') }}</a>
+```
+
+Если имя маршрута неизвестно или нет нужного параметра — `Route::to()` пишет
+critical в лог и возвращает `#`. Лучше битый якорь, чем 500 на рендере.
+
+**Исключение из правила**: интеграционные HTTP-тесты (`local/tests/Integration/SeoHttpTest.php`)
+сознательно хардкодят URL-ы (`'/cart/'`, `'/catalog/'`). Они валидируют **публичный
+контракт** — что внешний пользователь, набравший `/cart/`, получает корзину. Если
+URL мигрирует, тест должен сломаться **громко**, а не пройти за счёт автоматической
+подмены через `Route::to`. Это сторожит совместимость SEO-ссылок и закладок.
 
 ---
 
-## Шаблон сайта
+## SEO
 
-Страница собирается через Blade-layout `layouts/app.blade.php`:
+Двухуровневая модель:
 
+| Что | Где хранится | Чем читается |
+|-----|--------------|--------------|
+| Статические страницы (home, catalog, blog, cart, brand) | HL-блок `Seo`, поля `UF_TITLE_RU/EN`, `UF_DESCRIPTION_RU/EN`, `UF_KEYWORDS_RU/EN`, `UF_OG_TITLE_RU/EN`, `UF_OG_DESCRIPTION_RU/EN`, `UF_OG_IMAGE`, ключ `UF_PAGE_CODE` | `SeoService::forPage('home')` |
+| Карточка товара / статья блога | Bitrix IPROPERTY-шаблоны на iblock-уровне (Products, Blog) — `ELEMENT_META_TITLE`, `ELEMENT_META_KEYWORDS`, `ELEMENT_META_DESCRIPTION`, `ELEMENT_PAGE_TITLE`. Плейсхолдеры `{=this.Name}` / `{=this.PreviewText}`. Поверх шаблона работают per-element overrides в админке Bitrix. | `SeoService::forElement(IblockCode::Products, $id)` через `Bitrix\Iblock\InheritedProperty\ElementValues::getValues()` |
+
+Применение в контроллере:
+
+```php
+$this->applySeo($this->seo->forPage('catalog-nastennie'));
+// или для деталки:
+$seo = $this->seo->forElement(IblockCode::Products, $product->id) ?? new SeoDto(title: $product->name);
+$this->applySeo($seo);
 ```
-layouts/app.blade.php
-  ├── require header.php    →  <!doctype html> + <head> + ShowHead() + <header>
-  ├── @yield('content')     →  содержимое конкретной страницы
-  └── require footer.php    →  <footer> + ShowAjaxHead() + </body></html>
+
+`BaseController::applySeo()` ставит `title`, `meta name="description|keywords"` через `SetPageProperty` (рендерятся `ShowHead()`) и **OG-теги** через `Asset::addString('<meta property="og:*">')` (page property для них не работает).
+
+Коды статических SEO-записей: `home`, `catalog`, `catalog-nastennie`, `catalog-kolonnye`, `catalog-promyshlennye`, `brand`, `blog`, `cart`. Управляются в админке `/bitrix/admin/highloadblock_rows_list.php` для HL `Seo`. IPROPERTY-шаблоны лежат в инфоблоках Products/Blog → таб «Шаблоны полей».
+
+---
+
+## Корзина (анонимная)
+
+Идентификация без личного кабинета:
+
+- HttpOnly-кука **`cart_token`** = UUID v4 (122 бита энтропии), SameSite=Lax, Secure под HTTPS, lifetime 1 год.
+- Сервер при первом обращении выпускает токен → создаёт строку в HL-блоке `Carts` → отдаёт куку.
+- Позиции лежат в HL-блоке `CartItems` (UF_CART_ID, UF_OFFER_ID, UF_QUANTITY).
+- Пара (cart_id, offer_id) уникальна на уровне репозитория: при `add` сначала find, инкремент qty; иначе insert.
+
+DTO: `CartItemDto` (storage-уровень), `CartLineDto` (enriched — product/offer данные для шаблона/API).
+
+Bitrix-нативная работа с куками — через `Gree\Http\HttpContextInterface` (см. ниже), не `$_COOKIE`/`setcookie`.
+
+---
+
+## Безопасность
+
+| Угроза | Защита |
+|--------|--------|
+| CSRF (форсированный POST/PATCH/DELETE) | `Gree\Security\ApiGuard`: Origin/Referer-проверка + double-submit cookie pattern |
+| IDOR (`/cart/items/{X}` чужого id) | `CartService::assertItemBelongsToCurrentCart()` — `findById` + проверка `UF_CART_ID` совпадает с резолвом по cookie |
+| XSS-кража токена корзины | `cart_token` помечен `HttpOnly` |
+| Подделка offer_id с фронта | `CartService::add()` сначала зовёт `OfferRepository::existsActive()`; при false → `OfferNotFoundException` → 422 |
+| Sniffing / mime-confusion / clickjacking | Security headers в `BaseController::applySecurityHeaders()`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-XSS-Protection: 0`, `Permissions-Policy` |
+| Cache отравление JSON | `Cache-Control: no-store` на каждом `$this->json()` |
+| Mass spam корзины | Hard cap `1 ≤ quantity ≤ 999` в `CartController::add` |
+
+CSRF-токен (`Gree\Security\CsrfService`): 64 hex (256 бит), SameSite=Strict, **не** HttpOnly (JS должен прочитать); в `<meta name="csrf-token">` в `<head>`; фронт мирорит в `X-CSRF-Token`. Сравнение `hash_equals`.
+
+`ApiGuard::guardStateChanging($request)` бросает `AccessDeniedException` → контроллер мапит на 403 JSON. GET/HEAD/OPTIONS никогда не валидируются.
+
+---
+
+## Локализация
+
+Текущие языки: `ru`, `en`. Локаль хранится в сессии (Bitrix), переключение через `GET /lang/{locale}/`.
+
+UI-строки — в HL-блоке `Translations` (`UF_CODE`, `UF_VALUE_RU`, `UF_VALUE_EN`). Чтение:
+
+```php
+use Gree\Helpers\Language;
+Language::t('header.catalog');                       // строка по текущей локали
+Language::t('blog.reading_minutes', ['minutes' => 5]);   // :minutes плейсхолдер
 ```
 
-`main.css` и `main.js` добавляются через `Asset` в `header.php`.  
-Страничные `page.css` и `page.js` регистрирует контроллер через `$this->addPageAssets('page')`.
+Текстовые поля iblock-элементов — пара `_RU` / `_EN`, читаются через `BaseRepository::localizedSelect('NAME')` + `localized($row, 'NAME')`. Fallback на противоположный язык, если пусто.
 
-Каждый Blade-шаблон:
+---
 
-```blade
-@extends('layouts.app')
+## Слой HTTP-контекста (без $_COOKIE / $_SERVER)
 
-@section('content')
-    <main class="main">
-        {{-- содержимое страницы --}}
-    </main>
-@endsection
+Все сервисы работают с куками/заголовками/server vars через **`Gree\Contract\Http\HttpContextInterface`**:
+
+```php
+$http->getCookie('cart_token');
+$http->setCookie('csrf_token', $token, new CookieOptions(lifetimeSeconds: 31_536_000, httpOnly: false, sameSite: 'Strict'));
+$http->getHeader('X-CSRF-Token');
+$http->getRequestMethod();
+$http->isHttps();
+$http->flushCookiesInto($response);     // вызывается в BaseController перед return
 ```
+
+Прод: `Gree\Http\BitrixHttpContext` — обёртка над `Application::getInstance()->getContext()`. Кука пишется через `\Bitrix\Main\Web\Cookie(addPrefix=false)` без BITRIX_SM_ префикса, читается через `getCookieRaw()`.
+
+Тесты: `Gree\Http\InMemoryHttpContext` — массивы в памяти, без Bitrix.
+
+**Не использовать в `local/lib/`**: `$_COOKIE`, `$_SERVER`, `$_POST`, `$_GET`, `setcookie()`, `headers_sent()`, `file_get_contents('php://input')`. Всё это уже выпилено и должно оставаться выпиленным.
+
+---
+
+## DTO и Collection
+
+```php
+// Gree\DTO\BlogArticleDto
+final readonly class BlogArticleDto extends BaseDto
+{
+    public function __construct(
+        public int $id,
+        public string $code,
+        public string $title,
+        public string $description,
+        public string $image,
+        public string $url,
+        public string $date,
+        public int $readingTime,
+        public BlogCategory $category,
+    ) {}
+
+    public static function fromArray(array $data): static { /* ... */ }
+    public function toJson(): array { /* ... */ }
+}
+
+// Gree\Collection\BlogArticleCollection
+final class BlogArticleCollection extends BaseCollection
+{
+    public function __construct(BlogArticleDto ...$items) { parent::__construct(array_values($items)); }
+    protected function itemClass(): string { return BlogArticleDto::class; }
+}
+```
+
+`BaseCollection::add()` проверяет тип. `createFrom()` сохраняет тип. Не дублировать в наследниках.
+
+---
 
 ## ViewData
 
-Данные из контроллера в шаблон передаются через типизированные `readonly` DTO, расширяющие `Gree\View\ViewData`:
+Типизированные `readonly` DTO, расширяющие `Gree\View\BaseViewData`. `toArray()` через `(array) $this` → каждое public property становится переменной в Blade.
 
 ```php
-// local/lib/View/HomeViewData.php
-final readonly class HomeViewData extends ViewData
+final readonly class BlogViewData extends BaseViewData
 {
     public function __construct(
-        public string $phone = '',
-    ) {}
-}
-```
-
-`toArray()` преобразует свойства в массив — каждое свойство становится переменной в Blade:
-
-```blade
-{{-- в шаблоне: --}}
-{{ $phone }}
-```
-
----
-
-## Настройки модуля gree.core
-
-Настройки сайта (телефон, email, адрес, TG, VK) хранятся в Bitrix-опциях модуля `gree.core`.
-
-**Путь в админке:** `/bitrix/admin/settings.php?mid=gree.core`
-
-После первой установки Bitrix нужно установить модуль из админки:  
-`Настройки → Управление модулями → Gree Core → Установить`
-
-Читать в коде:
-```php
-$options = \Gree\Core\Options::getInstance();
-echo $options->phone;   // +998 71 500 00 00
-echo $options->email;   // info@gree.uz
-echo $options->tgLink;  // https://t.me/…
-```
-
----
-
-## Написать новый контроллер
-
-1. Создать `ViewData` DTO в `local/lib/View/` с типизированными свойствами
-2. Создать контроллер в `local/lib/Controller/`, namespace `Gree\Controller`, `final`, extends `BaseController`
-3. Зарегистрировать маршрут в `local/routes/web.php` (или `api.php`)
-4. Создать Blade-шаблон в `local/views/`
-5. Написать тест в `local/tests/Unit/Controller/`
-
-```php
-// local/lib/View/ContactsViewData.php
-final readonly class ContactsViewData extends ViewData
-{
-    public function __construct(
-        public string $phone = '',
+        public BreadcrumbCollection $breadcrumbs,
+        public BlogArticleCollection $tips,
+        public bool $hasMoreTips,
+        public BlogArticleCollection $news,
+        public bool $hasMoreNews,
+        public int $pageSize,
     ) {}
 }
 
-// local/lib/Controller/ContactsController.php
-final class ContactsController extends BaseController
+// контроллер:
+return $this->view('blog/index', new BlogViewData(
+    breadcrumbs: $this->breadcrumbs->blog(),
+    tips:        $tips['items'],
+    ...
+));
+```
+
+В Blade: `{{ $hasMoreTips }}`, `@foreach ($tips as $card)`.
+
+---
+
+## Dependency Injection
+
+Symfony DI Container, конфиг — `local/lib/config/services.php`. Контракты в `local/lib/Contract/`.
+
+Типизированный resolve в шаблонах/роутах:
+
+```php
+App::get(HomeController::class);                    // → HomeController (PhpStorm-aware)
+App::get(CartServiceInterface::class);              // → CartService
+App::get(HttpContextInterface::class);              // → BitrixHttpContext
+```
+
+В контроллерах/сервисах/репозиториях — **constructor injection** через интерфейсы. Никаких `new` руками, никаких `App::get` внутри domain-кода. Service-locator (`$this->resolve(...)`) допустим только в контроллерах для случаев, когда Bitrix-роутинг создаёт инстанс без DI.
+
+---
+
+## Имена инфоблоков и HL-блоков — только через enum
+
+Никаких `'products'` / `'Translations'` строк в репозиториях. Источник правды:
+
+- `Gree\Enum\IblockCode` — кейсы iblock'ов по их `API_CODE` (Products, ProductsOffers, Brands, Blog, Menu, …).
+- `Gree\Enum\HlblockCode` — кейсы HL-блоков по их `NAME` (Translations, Seo, Carts, CartItems).
+
+Iblock-репозиторий:
+```php
+$iblockId = $this->resolveIblockId(IblockCode::Products);
+```
+
+HL-block репозиторий — объявляет, какой блок он обслуживает:
+```php
+final class CartRepository extends BaseHlblockRepository implements CartRepositoryInterface
 {
-    public function index(): HttpResponse
+    protected function hlblock(): HlblockCode
     {
-        $this->setMeta('Контакты');
-        $this->addPageAssets('contacts');
-        return $this->view('contacts/index', new ContactsViewData(
-            phone: Options::getInstance()->phone,
-        ));
+        return HlblockCode::Carts;
+    }
+
+    public function findIdByToken(string $token): ?int
+    {
+        $row = $this->query()                       // ← Query, типизированный
+            ->where('UF_TOKEN', $token)
+            ->setSelect(['ID'])->setLimit(1)
+            ->exec()->fetch();
+        return $row ? (int) $row['ID'] : null;
     }
 }
-
-// local/routes/web.php
-$routes->get('/contacts/', [ContactsController::class, 'index'])->name('contacts');
-
-// local/views/contacts/index.blade.php
-@extends('layouts.app')
-
-@section('content')
-    <main class="main">
-        <p>{{ $phone }}</p>
-    </main>
-@endsection
 ```
+
+`query() / addRow() / updateRow() / deleteRow()` живут в `BaseHlblockRepository` и возвращают `Bitrix\Main\ORM\Query\Query` / `AddResult` / `UpdateResult` / `DeleteResult` — PhpStorm видит весь chain. Никакого `$this->dataClass()::method()` в наследниках.
 
 ---
 
-## CI/CD
+## Миграции
+
+`sprint.migration`. Файлы — `local/php_interface/migrations/VersionYYYYMMDDXXXXXX.php`.
+
+```bash
+php bitrix/modules/sprint.migration/tools/migrate.php list
+php bitrix/modules/sprint.migration/tools/migrate.php up
+php bitrix/modules/sprint.migration/tools/migrate.php up=Version20260517000005
+php bitrix/modules/sprint.migration/tools/migrate.php down=Version20260517000005
+```
+
+### Правила для миграций
+
+- При `saveIblock()` — обязательно `saveIblockFields()` с авто-CODE, отключённые `ACTIVE_FROM/TO/XML_ID/TAGS` (см. CLAUDE.md).
+- Для текстовых полей создавать пары `<CODE>_RU` + `<CODE>_EN`.
+- IPROPERTY-шаблоны для SEO деталок — через `new Bitrix\Iblock\InheritedProperty\IblockTemplates($iblockId)->set([...])`.
+- UF-поля на секции — `IBLOCK_<id>_SECTION` entity, `addUserTypeEntitiesIfNotExists()` (множественное число, плоский массив).
+
+---
+
+## Логирование
+
+`Gree\Logging\FileLogger::getInstance()` — singleton. Конфиг в `.env`:
+
+```
+LOG_DIR=local/logs
+LOG_DEBUG=true
+```
+
+Файлы:
+- `local/logs/YYYY-MM-DD.log` — общая лента
+- `local/logs/YYYY-MM-DD-errors.log` — только warning/error/critical
+
+В сервисах: каждый метод с IO оборачивается в try/catch + `FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e])` + rethrow. Fail-soft (UI не падает) — критикал залогирован, в catch возвращён безопасный fallback (см. `TranslatorService::translate`, `MenuService::getHeaderMenu`).
+
+---
+
+## Тесты
+
+```bash
+./vendor/bin/phpunit                       # все
+./vendor/bin/phpunit --testsuite Unit      # юниты — без сети
+./vendor/bin/phpunit --testsuite Integration   # HTTP к live-серверу
+./vendor/bin/phpunit local/tests/Unit/Service/CartServiceTest.php
+```
+
+| Suite | Где | Что валидируется |
+|-------|-----|------------------|
+| Unit | `local/tests/Unit/` | DTO/Collection/Service логика на моках, Controller-конструкторы |
+| Integration | `local/tests/Integration/` | HTTP к сайту (curl): SEO-теги в head, переключение локали, корректность data-provider'ов |
+
+Стабы Bitrix-классов для юнит-тестов — `local/tests/Stub/`.
+
+**TDD**: тест перед реализацией. Не использовать `getMockForAbstractClass` (deprecated в PHPUnit 11) — анонимные классы вместо.
+
+---
+
+## Деплой
 
 | Ветка | Среда | Запуск |
 |-------|-------|--------|
 | `develop` | dev `https://gree.all4it.org` | автоматически при push |
-| `master` | prod `https://gree.all4it.org` | **вручную** в GitLab |
+| `master` | prod `https://gree.all4it.org` | вручную в GitLab |
 
-Деплой: SSH → `git pull --rebase`.
+Деплой: SSH → `git pull --rebase` → `composer install`.
+
+Без SSH (новый сервер, GitLab уже подключён): см. `deploy.php` в корне — pull + composer + phpunit одним HTTP-вызовом или из Bitrix-консоли PHP-кода.
+
+---
+
+## Где править что (быстрый индекс)
+
+| Изменение | Файл/директория |
+|-----------|-----------------|
+| Добавить страницу | `local/routes/web.php` + контроллер + ViewData + Blade |
+| Добавить API-эндпоинт | `local/routes/api.php` + метод контроллера + JSON-сериализация |
+| Поправить SEO статической страницы | админка `/bitrix/admin/highloadblock_rows_list.php`, HL «Seo» |
+| Поправить SEO товара/статьи | админка iblock-элемента, таб «SEO» (per-element override) |
+| Поправить шаблоны SEO для всех товаров/статей | iblock → таб «Шаблоны полей» (IPROPERTY_TEMPLATES) |
+| UI-строка перевода | HL «Translations» в админке (UF_CODE + UF_VALUE_RU/EN) |
+| Новая зависимость DI | `local/lib/config/services.php` |
+| Новый Bitrix-event handler | `local/lib/Core/Event/*.php` + регистрация в `local/php_interface/init.php` |
+| Новая миграция | `local/php_interface/migrations/VersionYYYYMMDDXXXXXX.php` |

@@ -30,7 +30,9 @@ final class Blade
 
     private static function createFactory(): Factory
     {
-        $root = $_SERVER['DOCUMENT_ROOT'];
+        // Use Bitrix's documented accessor so we're not coupled to $_SERVER.
+        // Application::getDocumentRoot() is the framework-native source.
+        $root = \Bitrix\Main\Application::getDocumentRoot();
         $viewsPath = $root . '/local/views';
         $cachePath = $root . '/local/cache/blade';
         $templatePath = $root . '/local/templates/gree';

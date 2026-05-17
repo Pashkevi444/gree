@@ -8,10 +8,12 @@ class BitrixApplication
 {
     private static self $instance;
     private BitrixSession $session;
+    private BitrixRouter $router;
 
     private function __construct()
     {
         $this->session = new BitrixSession();
+        $this->router = new BitrixRouter();
     }
 
     public static function getInstance(): static
@@ -30,5 +32,10 @@ class BitrixApplication
     public function getSession(): BitrixSession
     {
         return $this->session;
+    }
+
+    public function getRouter(): BitrixRouter
+    {
+        return $this->router;
     }
 }

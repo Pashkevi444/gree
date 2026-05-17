@@ -1,4 +1,7 @@
-@php use Gree\Helpers\Language; @endphp
+@php
+    use Gree\Helpers\Language;
+    use Gree\Helpers\Route;
+@endphp
 <div class="product-card">
   @if ($product->isBestseller)
   <div class="product-card__badge product-card__badge--bestseller">{{ Language::t('product.bestseller') }}</div>
@@ -18,5 +21,5 @@
     @endif
   </div>
   <div class="product-card__price">{{ Language::t('product.price_from', ['price' => number_format($product->price, 0, '.', ' ')]) }}</div>
-  <a class="product-card__button" href="/catalog/{{ $product->type->slug() }}/{{ $product->code }}/">{{ Language::t('product.details') }}</a>
+  <a class="product-card__button" href="{{ Route::to('catalog.product', ['section' => $product->type->slug(), 'code' => $product->code]) }}">{{ Language::t('product.details') }}</a>
 </div>

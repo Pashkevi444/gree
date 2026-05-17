@@ -4,6 +4,7 @@
     use Gree\Enum\Color;
     use Gree\Enum\ProductType;
     use Gree\Helpers\Language;
+    use Gree\Helpers\Route;
 @endphp
 
 @section('content')
@@ -14,7 +15,7 @@
         <div class="wrapper container">
           <section class="catalog-section">
             <h1 class="catalog-section__title">{{ Language::t('product.not_found.title') }}</h1>
-            <a class="catalog-section__button" href="/catalog/">{{ Language::t('product.not_found.back') }}</a>
+            <a class="catalog-section__button" href="{{ Route::to('catalog.index') }}">{{ Language::t('product.not_found.back') }}</a>
           </section>
         </div>
       @else
@@ -26,7 +27,7 @@
               @foreach (ProductType::cases() as $type)
                 <a
                   class="catalog__item @if ($product->type === $type)catalog__item--active @endif"
-                  href="/catalog/{{ $type->slug() }}/"
+                  href="{{ Route::to('catalog.section', ['section' => $type->slug()]) }}"
                 >
                   <svg viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -87,6 +88,7 @@
 
               <form id="product-form" class="product-right" method="post" autocomplete="off">
                 <input type="hidden" name="product_id" value="{{ $product->id }}" />
+                <input type="hidden" name="offer_id" value="" data-offer-id />
                 <h1 class="product__title">{{ $product->name }}</h1>
 
                 @if ($product->colors)
@@ -259,7 +261,7 @@
         <section class="gree container">
           <h2 class="gree__title">{{ Language::t('home.gree.title') }}</h2>
           <p class="gree__description">{{ Language::t('home.gree.description') }}</p>
-          <a class="gree__button" href="/brand/gree/">{{ Language::t('home.gree.cta') }}</a>
+          <a class="gree__button" href="{{ Route::to('brand.show', ['code' => 'gree']) }}">{{ Language::t('home.gree.cta') }}</a>
 
           @if ($greeCards->count())
             <div class="gree-cards">
@@ -332,11 +334,15 @@
             return m || offers[0];
           }
 
+          const offerIdInput = form.querySelector('[data-offer-id]');
+
           function update() {
             const color = form.querySelector('input[name="color"]:checked')?.value;
             const area  = form.querySelector('input[name="area"]:checked')?.value;
             const offer = findOffer(color, area);
             if (!offer) return;
+
+            if (offerIdInput) offerIdInput.value = offer.id;
 
             if (priceEl) {
               const suffix = priceEl.dataset.priceSuffix || '';
@@ -361,6 +367,33 @@
             if (e.target.name === 'color' || e.target.name === 'area') update();
           });
           update();
+
+          form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const offerId = parseInt(offerIdInput?.value || '0', 10);
+            if (!offerId) return;
+            if (submitBtn) submitBtn.disabled = true;
+            try {
+              const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+              const addUrl = '{{ Route::to('api.v1.cart.items.add') }}';
+              const cartUrl = '{{ Route::to('cart.index') }}';
+              const r = await fetch(addUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'X-CSRF-Token': csrf,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ offer_id: offerId, quantity: 1 }),
+              });
+              if (!r.ok) throw new Error('add-to-cart ' + r.status);
+              location.href = cartUrl;
+            } catch (err) {
+              console.error(err);
+              if (submitBtn) submitBtn.disabled = false;
+            }
+          });
         })();
       </script>
     @endif

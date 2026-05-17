@@ -13,6 +13,7 @@ use Gree\DTO\BreadcrumbDto;
 use Gree\DTO\ProductDto;
 use Gree\Enum\BlogCategory;
 use Gree\Enum\ProductType;
+use Gree\Helpers\Route;
 use Gree\Logging\FileLogger;
 
 final class BreadcrumbsService extends BaseService implements BreadcrumbsServiceInterface
@@ -40,7 +41,7 @@ final class BreadcrumbsService extends BaseService implements BreadcrumbsService
         try {
             return new BreadcrumbCollection(
                 $this->home(),
-                new BreadcrumbDto(label: $this->t('breadcrumbs.catalog'), url: '/catalog/'),
+                new BreadcrumbDto(label: $this->t('breadcrumbs.catalog'), url: Route::to('catalog.index')),
                 new BreadcrumbDto(label: $this->t('product.types.' . $type->value)),
             );
         } catch (\Throwable $e) {
@@ -57,10 +58,10 @@ final class BreadcrumbsService extends BaseService implements BreadcrumbsService
         try {
             return new BreadcrumbCollection(
                 $this->home(),
-                new BreadcrumbDto(label: $this->t('breadcrumbs.catalog'), url: '/catalog/'),
+                new BreadcrumbDto(label: $this->t('breadcrumbs.catalog'), url: Route::to('catalog.index')),
                 new BreadcrumbDto(
                     label: $this->t('product.types.' . $product->type->value),
-                    url: '/catalog/' . $product->type->slug() . '/',
+                    url: Route::to('catalog.section', ['section' => $product->type->slug()]),
                 ),
                 new BreadcrumbDto(label: $product->name),
             );
@@ -93,8 +94,8 @@ final class BreadcrumbsService extends BaseService implements BreadcrumbsService
 
             return new BreadcrumbCollection(
                 $this->home(),
-                new BreadcrumbDto(label: $this->t('blog.section'), url: '/blog/'),
-                new BreadcrumbDto(label: $this->t($categoryKey), url: '/blog/'),
+                new BreadcrumbDto(label: $this->t('blog.section'), url: Route::to('blog.index')),
+                new BreadcrumbDto(label: $this->t($categoryKey), url: Route::to('blog.index')),
                 new BreadcrumbDto(label: $article->title),
             );
         } catch (\Throwable $e) {
@@ -102,6 +103,19 @@ final class BreadcrumbsService extends BaseService implements BreadcrumbsService
                 'article' => $article->code,
                 'exception' => $e,
             ]);
+            throw $e;
+        }
+    }
+
+    public function cart(): BreadcrumbCollection
+    {
+        try {
+            return new BreadcrumbCollection(
+                $this->home(),
+                new BreadcrumbDto(label: $this->t('breadcrumbs.cart')),
+            );
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
             throw $e;
         }
     }

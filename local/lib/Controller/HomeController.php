@@ -7,6 +7,7 @@ namespace Gree\Controller;
 use Bitrix\Main\HttpResponse;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\Contract\Service\HomeServiceInterface;
+use Gree\Contract\Service\SeoServiceInterface;
 use Gree\DTO\FilterDto;
 use Gree\Enum\ProductType;
 use Gree\View\HomeViewData;
@@ -18,11 +19,12 @@ final class HomeController extends BaseController
     public function __construct(
         private readonly HomeServiceInterface $homeService,
         private readonly CatalogServiceInterface $catalogService,
+        private readonly SeoServiceInterface $seo,
     ) {}
 
     public function index(): HttpResponse
     {
-        $this->setMeta('Gree — официальный дистрибьютор в Узбекистане');
+        $this->applySeo($this->seo->forPage('home'));
         $this->addPageAssets('home');
 
         $data = new HomeViewData(

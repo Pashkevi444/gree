@@ -2,43 +2,62 @@
 
 declare(strict_types=1);
 
+use Gree\Contract\Http\HttpContextInterface;
+use Gree\Contract\Security\ApiGuardInterface;
+use Gree\Contract\Service\CsrfServiceInterface;
 use Gree\Contract\Repository\BlogRepositoryInterface;
 use Gree\Contract\Repository\BrandRepositoryInterface;
+use Gree\Contract\Repository\CartItemRepositoryInterface;
+use Gree\Contract\Repository\CartRepositoryInterface;
 use Gree\Contract\Repository\CatalogRepositoryInterface;
 use Gree\Contract\Repository\HomeRepositoryInterface;
 use Gree\Contract\Repository\MenuRepositoryInterface;
 use Gree\Contract\Repository\OfferRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
+use Gree\Contract\Repository\SeoRepositoryInterface;
 use Gree\Contract\Service\BlogServiceInterface;
 use Gree\Contract\Service\BrandServiceInterface;
 use Gree\Contract\Service\BreadcrumbsServiceInterface;
+use Gree\Contract\Service\CartServiceInterface;
+use Gree\Contract\Service\CartTokenServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\Contract\Service\HomeServiceInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
 use Gree\Contract\Service\MenuServiceInterface;
+use Gree\Contract\Service\SeoServiceInterface;
 use Gree\Contract\Service\TranslationLoaderInterface;
 use Gree\Contract\Service\TranslatorServiceInterface;
 use Gree\Controller\BlogController;
 use Gree\Controller\BrandController;
+use Gree\Controller\CartController;
 use Gree\Controller\CatalogController;
 use Gree\Controller\HomeController;
 use Gree\Controller\LanguageController;
 use Gree\Controller\ProductController;
+use Gree\Http\BitrixHttpContext;
 use Gree\Repository\BlogRepository;
+use Gree\Security\ApiGuard;
+use Gree\Security\CsrfService;
 use Gree\Repository\BrandRepository;
+use Gree\Repository\CartItemRepository;
+use Gree\Repository\CartRepository;
 use Gree\Repository\CatalogRepository;
 use Gree\Repository\HomeRepository;
 use Gree\Repository\MenuRepository;
 use Gree\Repository\OfferRepository;
 use Gree\Repository\ProductRepository;
+use Gree\Repository\SeoRepository;
 use Gree\Repository\TranslationRepository;
 use Gree\Service\BlogService;
 use Gree\Service\BrandService;
 use Gree\Service\BreadcrumbsService;
+use Gree\Service\CartService;
+use Gree\Service\CartTokenService;
 use Gree\Service\CatalogService;
 use Gree\Service\HomeService;
 use Gree\Service\LanguageService;
 use Gree\Service\MenuService;
+use Gree\Service\SeoService;
 use Gree\Service\TranslatorService;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
@@ -93,6 +112,9 @@ $container
     ->setPublic(true);
 $container->setAlias(BlogRepositoryInterface::class, BlogRepository::class)->setPublic(true);
 
+$container->register(SeoRepository::class)->setPublic(true);
+$container->setAlias(SeoRepositoryInterface::class, SeoRepository::class)->setPublic(true);
+
 // ─── Translator stack ─────────────────────────────────────────────────────
 $container->register(TranslationRepository::class)->setPublic(true);
 $container->setAlias(TranslationLoaderInterface::class, TranslationRepository::class)->setPublic(true);
@@ -142,39 +164,107 @@ $container
     ->setPublic(true);
 $container->setAlias(BlogServiceInterface::class, BlogService::class)->setPublic(true);
 
+$container
+    ->register(SeoService::class)
+    ->addArgument(new Reference(SeoRepositoryInterface::class))
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(SeoServiceInterface::class, SeoService::class)->setPublic(true);
+
+// ─── HTTP context (cookies + headers + request meta) ──────────────────────
+$container->register(BitrixHttpContext::class)->setPublic(true);
+$container->setAlias(HttpContextInterface::class, BitrixHttpContext::class)->setPublic(true);
+
+// ─── Security ─────────────────────────────────────────────────────────────
+$container
+    ->register(CsrfService::class)
+    ->addArgument(new Reference(HttpContextInterface::class))
+    ->setPublic(true);
+$container->setAlias(CsrfServiceInterface::class, CsrfService::class)->setPublic(true);
+
+// HTTP_HOST sourced from the Bitrix request — the only place it's permitted to
+// peek at the underlying super-global is the DI bootstrap, which has no access
+// to the request object yet. Resolves to "localhost" in CLI / tests.
+$allowedHost = \Bitrix\Main\Application::getInstance()
+    ->getContext()->getServer()->getHttpHost() ?: 'localhost';
+
+$container
+    ->register(ApiGuard::class)
+    ->addArgument(new Reference(CsrfServiceInterface::class))
+    ->addArgument(new Reference(HttpContextInterface::class))
+    ->addArgument($allowedHost)
+    ->setPublic(true);
+$container->setAlias(ApiGuardInterface::class, ApiGuard::class)->setPublic(true);
+
+// ─── Cart ─────────────────────────────────────────────────────────────────
+$container->register(CartRepository::class)->setPublic(true);
+$container->setAlias(CartRepositoryInterface::class, CartRepository::class)->setPublic(true);
+
+$container->register(CartItemRepository::class)->setPublic(true);
+$container->setAlias(CartItemRepositoryInterface::class, CartItemRepository::class)->setPublic(true);
+
+$container
+    ->register(CartTokenService::class)
+    ->addArgument(new Reference(HttpContextInterface::class))
+    ->setPublic(true);
+$container->setAlias(CartTokenServiceInterface::class, CartTokenService::class)->setPublic(true);
+
+$container
+    ->register(CartService::class)
+    ->addArgument(new Reference(CartRepositoryInterface::class))
+    ->addArgument(new Reference(CartItemRepositoryInterface::class))
+    ->addArgument(new Reference(OfferRepositoryInterface::class))
+    ->addArgument(new Reference(ProductRepositoryInterface::class))
+    ->addArgument(new Reference(CartTokenServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(CartServiceInterface::class, CartService::class)->setPublic(true);
+
 // ─── Controllers ──────────────────────────────────────────────────────────
 $container
     ->register(HomeController::class)
     ->addArgument(new Reference(HomeServiceInterface::class))
     ->addArgument(new Reference(CatalogServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
     ->setPublic(true);
 
 $container
     ->register(BrandController::class)
     ->addArgument(new Reference(BrandServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
     ->setPublic(true);
 
 $container
     ->register(BlogController::class)
     ->addArgument(new Reference(BlogServiceInterface::class))
     ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
     ->setPublic(true);
 
 $container
     ->register(CatalogController::class)
     ->addArgument(new Reference(CatalogServiceInterface::class))
     ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
     ->setPublic(true);
 
 $container
     ->register(ProductController::class)
     ->addArgument(new Reference(CatalogServiceInterface::class))
     ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
     ->setPublic(true);
 
 $container
     ->register(LanguageController::class)
     ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+
+$container
+    ->register(CartController::class)
+    ->addArgument(new Reference(CartServiceInterface::class))
+    ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->addArgument(new Reference(ApiGuardInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
     ->setPublic(true);
 
 $container->compile();

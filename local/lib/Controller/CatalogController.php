@@ -7,6 +7,7 @@ namespace Gree\Controller;
 use Bitrix\Main\HttpResponse;
 use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
+use Gree\Contract\Service\SeoServiceInterface;
 use Gree\DTO\FilterDto;
 use Gree\DTO\ProductDto;
 use Gree\Enum\Color;
@@ -18,6 +19,7 @@ final class CatalogController extends BaseController
     public function __construct(
         private readonly CatalogServiceInterface $catalogService,
         private readonly BreadcrumbsServiceInterface $breadcrumbs,
+        private readonly SeoServiceInterface $seo,
     ) {}
 
     public function index(): HttpResponse
@@ -56,7 +58,10 @@ final class CatalogController extends BaseController
 
     private function render(?ProductType $lockedType): HttpResponse
     {
-        $this->setMeta('Каталог кондиционеров Gree');
+        // Section pages have their own SEO record (e.g. "catalog-nastennie").
+        // Hub /catalog/ uses the generic "catalog" code.
+        $seoCode = $lockedType !== null ? 'catalog-' . $lockedType->slug() : 'catalog';
+        $this->applySeo($this->seo->forPage($seoCode));
         $this->addPageAssets('catalog');
 
         $filter = FilterDto::fromRequest($this->getRequest());
@@ -100,7 +105,10 @@ final class CatalogController extends BaseController
 
     public static function buildItemPayload(ProductDto $product): array
     {
-        $href = '/catalog/' . $product->type->slug() . '/' . $product->code . '/';
+        $href = \Gree\Helpers\Route::to('catalog.product', [
+            'section' => $product->type->slug(),
+            'code'    => $product->code,
+        ]);
         $payload = [
             'image' => $product->image,
             'name' => $product->name,

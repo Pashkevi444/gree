@@ -180,7 +180,7 @@ final class BlogRepository extends BaseRepository implements BlogRepositoryInter
             title:       $this->localized($row, 'NAME'),
             description: $description,
             image:       !empty($row['PREVIEW_PICTURE']) ? \CFile::GetPath($row['PREVIEW_PICTURE']) : '',
-            url:         $code !== '' ? '/blog/' . $code . '/' : '',
+            url:         $code !== '' ? \Gree\Helpers\Route::to('blog.show', ['code' => $code]) : '',
             date:        $this->formatDate($row['ACTIVE_FROM'] ?? null),
             readingTime: (int) ($row['READING_TIME_VALUE'] ?? 0),
             category:    $category,

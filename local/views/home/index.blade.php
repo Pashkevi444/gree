@@ -1,6 +1,9 @@
 @extends('layouts.app')
 
-@php use Gree\Helpers\Language; @endphp
+@php
+    use Gree\Helpers\Language;
+    use Gree\Helpers\Route;
+@endphp
 
 @section('content')
     <main class="main">
@@ -51,7 +54,7 @@
               @include('partials.product-card', ['product' => $product])
             @endforeach
           </div>
-          <a class="catalog-section__button" href="/catalog/nastennie/">{{ Language::t('home.section.viewAll') }}</a>
+          <a class="catalog-section__button" href="{{ Route::to('catalog.section', ['section' => 'nastennie']) }}">{{ Language::t('home.section.viewAll') }}</a>
         </div>
         <div id="catalog-column" class="catalog-section">
           <h2 class="catalog-section__title">{{ Language::t('home.section.column.title') }}</h2>
@@ -61,7 +64,7 @@
               @include('partials.product-card', ['product' => $product])
             @endforeach
           </div>
-          <a class="catalog-section__button" href="/catalog/kolonnye/">{{ Language::t('home.section.viewAll') }}</a>
+          <a class="catalog-section__button" href="{{ Route::to('catalog.section', ['section' => 'kolonnye']) }}">{{ Language::t('home.section.viewAll') }}</a>
         </div>
         <div id="catalog-industry" class="catalog-section">
           <h2 class="catalog-section__title">{{ Language::t('home.section.industrial.title') }}</h2>
@@ -71,7 +74,7 @@
               @include('partials.product-card', ['product' => $product])
             @endforeach
           </div>
-          <a class="catalog-section__button" href="/catalog/promyshlennye/">{{ Language::t('home.section.viewAll') }}</a>
+          <a class="catalog-section__button" href="{{ Route::to('catalog.section', ['section' => 'promyshlennye']) }}">{{ Language::t('home.section.viewAll') }}</a>
         </div>
       </section>
 
@@ -79,7 +82,7 @@
       <section class="gree container">
         <h2 class="gree__title">{{ Language::t('home.gree.title') }}</h2>
         <p class="gree__description">{{ Language::t('home.gree.description') }}</p>
-        <a class="gree__button" href="/brand/gree/">{{ Language::t('home.gree.cta') }}</a>
+        <a class="gree__button" href="{{ Route::to('brand.show', ['code' => 'gree']) }}">{{ Language::t('home.gree.cta') }}</a>
 
         <div class="gree-cards">
           @foreach ($greeCards as $card)

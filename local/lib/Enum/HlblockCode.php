@@ -7,4 +7,7 @@ namespace Gree\Enum;
 enum HlblockCode: string
 {
     case Translations = 'Translations';
+    case Seo = 'Seo';
+    case Carts = 'Carts';
+    case CartItems = 'CartItems';
 }

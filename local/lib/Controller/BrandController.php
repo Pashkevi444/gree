@@ -6,15 +6,19 @@ namespace Gree\Controller;
 
 use Bitrix\Main\HttpResponse;
 use Gree\Contract\Service\BrandServiceInterface;
+use Gree\Contract\Service\SeoServiceInterface;
 use Gree\View\BrandViewData;
 
 final class BrandController extends BaseController
 {
-    public function __construct(private readonly BrandServiceInterface $brandService) {}
+    public function __construct(
+        private readonly BrandServiceInterface $brandService,
+        private readonly SeoServiceInterface $seo,
+    ) {}
 
     public function show(string $code): HttpResponse
     {
-        $this->setMeta('О бренде Gree');
+        $this->applySeo($this->seo->forPage('brand'));
         $this->addPageAssets('brand');
 
         $data = new BrandViewData(

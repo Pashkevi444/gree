@@ -25,4 +25,18 @@ interface OfferRepositoryInterface
      * @return int[]
      */
     public function findProductIds(FilterDto $filter): array;
+
+    /**
+     * Load offers by ID. Returns a single flat collection — each OfferDto
+     * carries its productId, so the cart layer can resolve parent products.
+     *
+     * @param int[] $offerIds
+     */
+    public function getByIds(array $offerIds): OfferCollection;
+
+    /**
+     * Lightweight existence check — used by the cart layer to validate
+     * client-supplied offer IDs without hydrating the full DTO graph.
+     */
+    public function existsActive(int $offerId): bool;
 }

@@ -7,7 +7,10 @@ namespace Gree\Controller;
 use Bitrix\Main\HttpResponse;
 use Gree\Contract\Service\BlogServiceInterface;
 use Gree\Contract\Service\BreadcrumbsServiceInterface;
+use Gree\Contract\Service\SeoServiceInterface;
+use Gree\DTO\SeoDto;
 use Gree\Enum\BlogCategory;
+use Gree\Enum\IblockCode;
 use Gree\Helpers\Language;
 use Gree\View\BlogArticleViewData;
 use Gree\View\BlogViewData;
@@ -19,11 +22,12 @@ final class BlogController extends BaseController
     public function __construct(
         private readonly BlogServiceInterface $blogService,
         private readonly BreadcrumbsServiceInterface $breadcrumbs,
+        private readonly SeoServiceInterface $seo,
     ) {}
 
     public function index(): HttpResponse
     {
-        $this->setMeta('Блог Gree');
+        $this->applySeo($this->seo->forPage('blog'));
         $this->addPageAssets('blog');
 
         $tips = $this->blogService->paginate(BlogCategory::Tips, 0, self::PAGE_SIZE);
@@ -46,7 +50,9 @@ final class BlogController extends BaseController
             return $this->view('errors/404')->setStatus('404 Not Found');
         }
 
-        $this->setMeta($article->title);
+        $seo = $this->seo->forElement(IblockCode::Blog, $article->id)
+            ?? new SeoDto(title: $article->title, description: $article->description);
+        $this->applySeo($seo);
         $this->addPageAssets('blog-item');
 
         $categoryKey = $article->category === BlogCategory::News ? 'blog.news' : 'blog.title';

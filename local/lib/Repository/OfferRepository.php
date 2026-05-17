@@ -113,6 +113,80 @@ final class OfferRepository extends BaseRepository implements OfferRepositoryInt
         return array_values($ids);
     }
 
+    public function existsActive(int $offerId): bool
+    {
+        if ($offerId <= 0) {
+            return false;
+        }
+        \Bitrix\Main\Loader::includeModule('iblock');
+
+        $iblockId = $this->resolveIblockId(IblockCode::ProductsOffers);
+        if (!$iblockId) {
+            return false;
+        }
+
+        $entity = \Bitrix\Iblock\Iblock::wakeUp($iblockId)->getEntityDataClass();
+
+        $row = $entity::query()
+            ->where('ACTIVE', 'Y')
+            ->where('ID', $offerId)
+            ->setSelect(['ID'])
+            ->setLimit(1)
+            ->setCacheTtl(self::TTL)
+            ->exec()
+            ->fetch();
+
+        return (bool) $row;
+    }
+
+    public function getByIds(array $offerIds): OfferCollection
+    {
+        \Bitrix\Main\Loader::includeModule('iblock');
+
+        if (!$offerIds) {
+            return new OfferCollection();
+        }
+
+        $iblockId = $this->resolveIblockId(IblockCode::ProductsOffers);
+        if (!$iblockId) {
+            return new OfferCollection();
+        }
+
+        $entity = \Bitrix\Iblock\Iblock::wakeUp($iblockId)->getEntityDataClass();
+
+        $result = $entity::query()
+            ->where('ACTIVE', 'Y')
+            ->whereIn('ID', $offerIds)
+            ->setSelect(array_merge(
+                [
+                    'ID',
+                    'CML2_LINK_VALUE' => 'CML2_LINK.VALUE',
+                    'PRICE_VALUE' => 'PRICE.VALUE',
+                    'AREA_VALUE' => 'AREA.VALUE',
+                    'COLOR_XML_ID' => 'COLOR.ITEM.XML_ID',
+                    'IN_STOCK_XML_ID' => 'IN_STOCK.ITEM.XML_ID',
+                ],
+                $this->localizedSelect('COOLING_POWER'),
+                $this->localizedSelect('HEATING_POWER'),
+                $this->localizedSelect('NOISE'),
+                $this->localizedSelect('INDOOR_DIMENSIONS'),
+                $this->localizedSelect('OUTDOOR_DIMENSIONS'),
+                $this->localizedSelect('INDOOR_WEIGHT'),
+                $this->localizedSelect('OUTDOOR_WEIGHT'),
+            ))
+            ->setCacheTtl(self::TTL)
+            ->cacheJoins(true)
+            ->exec();
+
+        $offers = [];
+        while ($row = $result->fetch()) {
+            $productId = (int) ($row['CML2_LINK_VALUE'] ?? 0);
+            $offers[] = $this->hydrate($row, $productId);
+        }
+
+        return new OfferCollection(...$offers);
+    }
+
     private function hydrate(array $row, int $productId): OfferDto
     {
         $colorXml = (string) ($row['COLOR_XML_ID'] ?? '');

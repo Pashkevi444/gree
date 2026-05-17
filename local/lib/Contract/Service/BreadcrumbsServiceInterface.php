@@ -35,4 +35,9 @@ interface BreadcrumbsServiceInterface
      * Home → Blog → <category> → <article title> (current).
      */
     public function blogArticle(BlogArticleDto $article): BreadcrumbCollection;
+
+    /**
+     * Home → Cart (current).
+     */
+    public function cart(): BreadcrumbCollection;
 }

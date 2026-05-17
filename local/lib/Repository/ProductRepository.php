@@ -54,6 +54,44 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
         return $this->fetchByCode($code);
     }
 
+    public function getByIds(array $ids): array
+    {
+        \Bitrix\Main\Loader::includeModule('iblock');
+
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        if (!$ids) {
+            return [];
+        }
+
+        $iblockId = $this->resolveIblockId(IblockCode::Products);
+        if (!$iblockId) {
+            return [];
+        }
+
+        $entity = \Bitrix\Iblock\Iblock::wakeUp($iblockId)->getEntityDataClass();
+
+        $result = $entity::query()
+            ->where('ACTIVE', 'Y')
+            ->whereIn('ID', $ids)
+            ->setSelect($this->selectFieldsBrief())
+            ->setCacheTtl(self::TTL)
+            ->cacheJoins(true)
+            ->exec();
+
+        $rows = [];
+        while ($row = $result->fetch()) {
+            $rows[(int) $row['ID']] = $row;
+        }
+
+        // Cart enrichment doesn't need offers/gallery/functions — hydrate with
+        // empty collections to keep ProductDto contract happy.
+        $out = [];
+        foreach ($rows as $id => $row) {
+            $out[$id] = $this->hydrate($row, new OfferCollection());
+        }
+        return $out;
+    }
+
     // ---- D7 fetch methods ---------------------------------------------------
 
     private function fetchList(FilterDto $filter): ProductCollection

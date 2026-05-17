@@ -1,13 +1,16 @@
 <?php
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
 
+use Gree\Contract\Service\CsrfServiceInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
 use Gree\Contract\Service\MenuServiceInterface;
 use Gree\Core\App;
 use Gree\Enum\Locale;
 use Gree\Helpers\Language;
+use Gree\Helpers\Route;
 
 $currentLocale = App::get(LanguageServiceInterface::class)->get();
+$csrfToken = App::get(CsrfServiceInterface::class)->readOrIssue();
 $menu = App::get(MenuServiceInterface::class)->getHeaderMenu();
 $catalogItem = null;
 $navItems = [];
@@ -24,6 +27,7 @@ foreach ($menu as $item) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES) ?>" />
     <?php $APPLICATION->ShowHead(); ?>
     <title><?php $APPLICATION->ShowTitle(); ?></title>
   </head>
@@ -98,7 +102,7 @@ foreach ($menu as $item) {
         </div>
         <?php
         $isRu = $currentLocale === Locale::Ru;
-        $otherLocaleUrl = $isRu ? '/lang/en/' : '/lang/ru/';
+        $otherLocaleUrl = Route::to('lang.switch', ['locale' => $isRu ? 'en' : 'ru']);
         $currentLabel = $isRu ? Language::t('header.lang.ru') : Language::t('header.lang.en');
         ?>
         <a class="language-select" href="<?= $otherLocaleUrl ?>" title="<?= $isRu ? Language::t('header.lang.en') : Language::t('header.lang.ru') ?>">
@@ -138,7 +142,7 @@ foreach ($menu as $item) {
         </a>
       </div>
       <div class="header-body">
-        <a class="header__logotype" href="/">
+        <a class="header__logotype" href="<?= Route::to('home') ?>">
           <svg width="155" height="30" viewBox="0 0 155 30" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
               fill-rule="evenodd"
@@ -183,7 +187,7 @@ foreach ($menu as $item) {
             ><?= htmlspecialchars($item->label) ?></a>
           <?php endforeach; ?>
         </nav>
-        <a class="header__cart-button" href="/cart.html">
+        <a class="header__cart-button" href="<?= Route::to('cart.index') ?>">
           <svg width="18" height="17" viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
               d="M0.727051 0.727272H3.63614L5.58523 10.4655C5.65174 10.8003 5.83389 11.1011 6.09981 11.3151C6.36573 11.5292 6.69847 11.6429 7.03978 11.6364H14.1089C14.4502 11.6429 14.7829 11.5292 15.0488 11.3151C15.3148 11.1011 15.4969 10.8003 15.5634 10.4655L16.7271 4.36364H4.36341M7.27251 15.2727C7.27251 15.6744 6.94689 16 6.54523 16C6.14357 16 5.81796 15.6744 5.81796 15.2727C5.81796 14.8711 6.14357 14.5455 6.54523 14.5455C6.94689 14.5455 7.27251 14.8711 7.27251 15.2727ZM15.2725 15.2727C15.2725 15.6744 14.9469 16 14.5452 16C14.1436 16 13.818 15.6744 13.818 15.2727C13.818 14.8711 14.1436 14.5455 14.5452 14.5455C14.9469 14.5455 15.2725 14.8711 15.2725 15.2727Z"

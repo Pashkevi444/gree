@@ -10,6 +10,9 @@ use Gree\Collection\GreeCardCollection;
 use Gree\Collection\GreeStatCollection;
 use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
+use Gree\Contract\Service\SeoServiceInterface;
+use Gree\DTO\SeoDto;
+use Gree\Enum\IblockCode;
 use Gree\Enum\ProductType;
 use Gree\View\ProductViewData;
 
@@ -18,6 +21,7 @@ final class ProductController extends BaseController
     public function __construct(
         private readonly CatalogServiceInterface $catalogService,
         private readonly BreadcrumbsServiceInterface $breadcrumbs,
+        private readonly SeoServiceInterface $seo,
     ) {}
 
     /**
@@ -31,7 +35,15 @@ final class ProductController extends BaseController
     {
         $product = $this->catalogService->getByCode($code);
 
-        $this->setMeta($product?->name ?? 'Кондиционер Gree');
+        // Per-element SEO from iblock IPROPERTY (templates + per-element overrides
+        // in Bitrix admin). Falls back to product name when templates are empty.
+        if ($product !== null) {
+            $seo = $this->seo->forElement(IblockCode::Products, $product->id)
+                ?? new SeoDto(title: $product->name);
+            $this->applySeo($seo);
+        } else {
+            $this->setMeta('Кондиционер Gree');
+        }
         $this->addPageAssets('product');
 
         $crumbs = $product

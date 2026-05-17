@@ -2,6 +2,7 @@
 
 @php
     use Gree\Helpers\Language;
+    use Gree\Helpers\Route;
     $selectedTypes = array_map(fn($t) => $t->value, $filter->types);
     $selectedAreas = $filter->areas;
     $selectedColors = array_map(fn($c) => $c->value, $filter->colors);
@@ -20,7 +21,7 @@
         <p class="main__description container">{{ Language::t('catalog.description') }}</p>
       @endif
       <section class="catalog container">
-        <form id="filters-form" class="catalog-sidebar" action="/api/catalog" autocomplete="off">
+        <form id="filters-form" class="catalog-sidebar" action="{{ Route::to('api.catalog.filter') }}" autocomplete="off">
           <div class="catalog-sidebar__title">{{ Language::t('catalog.filters') }}</div>
           @if ($lockedType === null)
           {{-- Type group hidden on section pages — URL already pins the type --}}
@@ -420,7 +421,7 @@
       <section class="gree container">
         <h2 class="gree__title">{{ Language::t('home.gree.title') }}</h2>
         <p class="gree__description">{{ Language::t('home.gree.description') }}</p>
-        <a class="gree__button" href="/brand/gree/">{{ Language::t('home.gree.cta') }}</a>
+        <a class="gree__button" href="{{ Route::to('brand.show', ['code' => 'gree']) }}">{{ Language::t('home.gree.cta') }}</a>
         @if ($greeCards->count())
         <div class="gree-cards">
           @foreach ($greeCards as $card)

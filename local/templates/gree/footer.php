@@ -2,11 +2,12 @@
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
 
 use Gree\Helpers\Language;
+use Gree\Helpers\Route;
 ?>
 <footer class="footer container">
       <div class="footer-columns">
         <div class="footer-column">
-          <a class="footer__logotype" href="/">
+          <a class="footer__logotype" href="<?= Route::to('home') ?>">
             <svg width="155" height="30" viewBox="0 0 155 30" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 fill-rule="evenodd"
@@ -88,15 +89,15 @@ use Gree\Helpers\Language;
           <div class="footer-navigation">
             <div class="footer-navigation__title"><?= Language::t('footer.col.catalog') ?></div>
             <div class="footer-navigation-items">
-              <a class="footer-navigation__item" href="/catalog/nastennie/"><?= Language::t('footer.nav.wall') ?></a>
-              <a class="footer-navigation__item" href="/catalog/kolonnye/"><?= Language::t('footer.nav.column') ?></a>
-              <a class="footer-navigation__item" href="/catalog/promyshlennye/"><?= Language::t('footer.nav.industrial') ?></a>
+              <a class="footer-navigation__item" href="<?= Route::to('catalog.section', ['section' => 'nastennie']) ?>"><?= Language::t('footer.nav.wall') ?></a>
+              <a class="footer-navigation__item" href="<?= Route::to('catalog.section', ['section' => 'kolonnye']) ?>"><?= Language::t('footer.nav.column') ?></a>
+              <a class="footer-navigation__item" href="<?= Route::to('catalog.section', ['section' => 'promyshlennye']) ?>"><?= Language::t('footer.nav.industrial') ?></a>
             </div>
           </div>
           <div class="footer-navigation">
             <div class="footer-navigation__title"><?= Language::t('footer.col.company') ?></div>
             <div class="footer-navigation-items">
-              <a class="footer-navigation__item" href="/brand/gree/"><?= Language::t('footer.nav.about') ?></a>
+              <a class="footer-navigation__item" href="<?= Route::to('brand.show', ['code' => 'gree']) ?>"><?= Language::t('footer.nav.about') ?></a>
               <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.payment') ?></a>
               <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.delivery') ?></a>
               <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.exchange') ?></a>

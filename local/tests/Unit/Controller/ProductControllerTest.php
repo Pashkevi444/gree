@@ -6,6 +6,7 @@ namespace Gree\Tests\Unit\Controller;
 
 use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
+use Gree\Contract\Service\SeoServiceInterface;
 use Gree\Controller\ProductController;
 use PHPUnit\Framework\TestCase;
 
@@ -15,7 +16,8 @@ final class ProductControllerTest extends TestCase
     {
         $service    = $this->createMock(CatalogServiceInterface::class);
         $crumbs     = $this->createMock(BreadcrumbsServiceInterface::class);
-        $controller = new ProductController($service, $crumbs);
+        $seo        = $this->createMock(SeoServiceInterface::class);
+        $controller = new ProductController($service, $crumbs, $seo);
 
         $this->assertInstanceOf(ProductController::class, $controller);
     }

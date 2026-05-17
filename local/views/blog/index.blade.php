@@ -2,8 +2,11 @@
 
 @php
     use Gree\Helpers\Language;
+    use Gree\Helpers\Route;
     /** @var \Gree\Collection\BlogArticleCollection $tips */
     /** @var \Gree\Collection\BlogArticleCollection $news */
+
+    $blogApiUrl = Route::to('api.v1.blog.paginate');
 @endphp
 
 @section('content')
@@ -62,7 +65,8 @@
 
                     btn.setAttribute('disabled', 'disabled');
                     try {
-                        const res = await fetch(`/api/v1/blog?category=${category}&offset=${offset}&limit=${limit}`);
+                        const apiUrl = @json($blogApiUrl);
+                        const res = await fetch(`${apiUrl}?category=${category}&offset=${offset}&limit=${limit}`);
                         const data = await res.json();
                         data.items.forEach(function (item) {
                             container.appendChild(renderCard(item));
