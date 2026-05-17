@@ -27,12 +27,23 @@ use Gree\Service\BaseService;
  */
 final class ApiGuard extends BaseService implements ApiGuardInterface
 {
+    /** @var array<int, string> normalised allowed hosts ('host' or 'host:port') */
+    private readonly array $allowedHosts;
+
+    /**
+     * @param string|array<int, string> $allowedHosts один хост или список —
+     *
+     */
     public function __construct(
         private readonly CsrfServiceInterface $csrf,
         private readonly HttpContextInterface $http,
-        /** Hostname this site is served as (e.g. "gree:8890"). Compared against Origin/Referer. */
-        private readonly string $allowedHost,
-    ) {}
+        string|array $allowedHosts,
+    ) {
+        $list = is_string($allowedHosts) ? [$allowedHosts] : $allowedHosts;
+        $this->allowedHosts = array_values(array_filter(
+            array_map(static fn(string $h) => strtolower(trim($h)), $list),
+        ));
+    }
 
     public function guardStateChanging(object $request): void
     {
@@ -54,9 +65,14 @@ final class ApiGuard extends BaseService implements ApiGuardInterface
         if ($sourceHost === null) {
             $this->deny('missing Origin/Referer on state-changing request');
         }
-        if (!hash_equals($this->allowedHost, $sourceHost)) {
-            $this->deny('foreign origin: ' . $sourceHost);
+
+        $normalised = strtolower($sourceHost);
+        foreach ($this->allowedHosts as $allowed) {
+            if (hash_equals($allowed, $normalised)) {
+                return;
+            }
         }
+        $this->deny('foreign origin: ' . $sourceHost);
     }
 
     private function assertCsrf(): void

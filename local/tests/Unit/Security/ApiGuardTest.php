@@ -20,7 +20,7 @@ final class ApiGuardTest extends TestCase
     {
         $this->http = new InMemoryHttpContext(requestMethod: 'POST');
         $this->csrf = new CsrfService($this->http);
-        $this->guard = new ApiGuard($this->csrf, $this->http, allowedHost: 'gree:8890');
+        $this->guard = new ApiGuard($this->csrf, $this->http, allowedHosts: 'gree:8890');
     }
 
     public function testStateChangingRequestRejectsForeignOrigin(): void
@@ -79,6 +79,36 @@ final class ApiGuardTest extends TestCase
 
         $this->expectException(AccessDeniedException::class);
         $this->guard->guardStateChanging((object) []);
+    }
+
+    public function testAcceptsAnyHostFromMultiHostAllowList(): void
+    {
+        $http = new InMemoryHttpContext(requestMethod: 'POST');
+        $csrf = new CsrfService($http);
+        $guard = new ApiGuard($csrf, $http, allowedHosts: ['gree:8890', 'gree.all4it.org']);
+
+        $token = $csrf->issue();
+        $http->setHeader('Origin', 'https://gree.all4it.org');
+        $http->setHeader('X-CSRF-Token', $token);
+
+        $guard->guardStateChanging((object) []);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testNormalisesHostCaseBeforeComparison(): void
+    {
+        // ENV/конфиг могут хранить хост в любом регистре. Origin браузер тоже
+        // присылает «как есть». Сравнение должно быть case-insensitive.
+        $http = new InMemoryHttpContext(requestMethod: 'POST');
+        $csrf = new CsrfService($http);
+        $guard = new ApiGuard($csrf, $http, allowedHosts: 'GREE.all4it.ORG');
+
+        $token = $csrf->issue();
+        $http->setHeader('Origin', 'https://gree.all4it.org');
+        $http->setHeader('X-CSRF-Token', $token);
+
+        $guard->guardStateChanging((object) []);
+        $this->addToAssertionCount(1);
     }
 
     public function testSafeMethodIsNeverGated(): void

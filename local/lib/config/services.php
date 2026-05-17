@@ -200,21 +200,46 @@ $container
     ->setPublic(true);
 $container->setAlias(CsrfServiceInterface::class, CsrfService::class)->setPublic(true);
 
-// HTTP_HOST sourced from the Bitrix request — only place permitted to peek at
-// the underlying super-global is this DI bootstrap, which has no access to the
-// request object yet. Under HTTP the context is set; under CLI (PHPUnit
-// integration suite, sprint.migration) it isn't — fall back to "localhost"
-// so the container compiles either way.
+// Список хостов, которым ApiGuard разрешает выступать Origin/Referer'ом.
+// Источники (в порядке слияния):
+//   1. ENV `GREE_ALLOWED_HOSTS` (через запятую) — основной способ задать прод,
+//      особенно за reverse proxy/CDN, где `HTTP_HOST` приходит чужой
+//      (внутренний/IP), а браузер шлёт `Origin: https://gree.all4it.org`.
+//   2. `HTTP_HOST` из текущего запроса — авто-дефолт для локалки, где никакого
+//      proxy нет и оба значения совпадают.
+//   3. `X-Forwarded-Host` (если ставит proxy) — даём поддержку из коробки.
+//   4. Дефолт `localhost` под CLI (PHPUnit, sprint.migration).
+$allowedHosts = [];
 $context = \Bitrix\Main\Application::getInstance()->getContext();
-$allowedHost = $context !== null && $context->getServer() !== null
-    ? ($context->getServer()->getHttpHost() ?: 'localhost')
-    : 'localhost';
+if ($context !== null && $context->getServer() !== null) {
+    $server = $context->getServer();
+    if (method_exists($server, 'getHttpHost') && $server->getHttpHost()) {
+        $allowedHosts[] = $server->getHttpHost();
+    }
+    $forwarded = $server->get('HTTP_X_FORWARDED_HOST');
+    if (is_string($forwarded) && $forwarded !== '') {
+        // X-Forwarded-Host может содержать список через запятую — берём всё.
+        foreach (explode(',', $forwarded) as $host) {
+            $allowedHosts[] = trim($host);
+        }
+    }
+}
+$envHosts = getenv('GREE_ALLOWED_HOSTS') ?: '';
+if ($envHosts !== '') {
+    foreach (explode(',', $envHosts) as $host) {
+        $allowedHosts[] = trim($host);
+    }
+}
+$allowedHosts = array_values(array_unique(array_filter($allowedHosts)));
+if (empty($allowedHosts)) {
+    $allowedHosts = ['localhost'];
+}
 
 $container
     ->register(ApiGuard::class)
     ->addArgument(new Reference(CsrfServiceInterface::class))
     ->addArgument(new Reference(HttpContextInterface::class))
-    ->addArgument($allowedHost)
+    ->addArgument($allowedHosts)
     ->setPublic(true);
 $container->setAlias(ApiGuardInterface::class, ApiGuard::class)->setPublic(true);
 
