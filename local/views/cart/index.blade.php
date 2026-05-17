@@ -97,7 +97,7 @@
                         <div class="cart-sidebar-total__title">{{ Language::t('cart.summary.total') }}</div>
                         <div class="cart-sidebar-total__price" data-cart-grand-total>{{ number_format($total, 0, '.', ' ') }} UZS</div>
                     </div>
-                    <a class="cart-sidebar__button" href="">{{ Language::t('cart.checkout') }}</a>
+                    <a class="cart-sidebar__button" href="{{ Route::to('order.checkout') }}">{{ Language::t('cart.checkout') }}</a>
                 </div>
             </section>
         @endif

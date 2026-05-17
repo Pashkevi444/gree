@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Gree\Tests\Integration;
 
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 
 /**
  * Hits the live site via cURL and asserts SEO is wired correctly.
@@ -18,31 +17,18 @@ use PHPUnit\Framework\TestCase;
  *
  * Skips itself when the dev server is unreachable so unit-only runs aren't
  * blocked. Override TEST_BASE_URL env to point at a different host.
+ *
+ * `useDbTransaction` остаётся false — этот тест cross-process, транзакция на
+ * стороне PHPUnit не повлияет на коннекшен веб-процесса.
  */
-final class SeoHttpTest extends TestCase
+final class SeoHttpTest extends IntegrationTestCase
 {
-    private string $baseUrl;
-    private string $cookieJar;
-
     protected function setUp(): void
     {
-        $this->baseUrl = rtrim((string) ($_ENV['TEST_BASE_URL'] ?? 'https://gree:8890'), '/');
+        parent::setUp();
 
-        if (!$this->serverIsUp()) {
-            $this->markTestSkipped('Dev server ' . $this->baseUrl . ' is not reachable');
-        }
-
-        // Fresh cookie jar per test, default locale = RU.
         // Server stores locale in session; sticky cookie jar carries it forward.
-        $this->cookieJar = tempnam(sys_get_temp_dir(), 'gree-seo-test-');
         $this->fetch('/lang/ru/');
-    }
-
-    protected function tearDown(): void
-    {
-        if (isset($this->cookieJar) && is_file($this->cookieJar)) {
-            @unlink($this->cookieJar);
-        }
     }
 
     /**
@@ -123,49 +109,6 @@ final class SeoHttpTest extends TestCase
             $title,
             "EN home <title> should use the English SEO record; got: '$title'"
         );
-    }
-
-    /**
-     * Issues a GET and returns the response body. The cookie jar is shared
-     * across the whole test, so /lang/* persistence works.
-     */
-    private function fetch(string $path): string
-    {
-        $ch = curl_init($this->baseUrl . $path);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_TIMEOUT        => 10,
-            CURLOPT_USERAGENT      => 'Gree-Integration-Test/1.0',
-            CURLOPT_COOKIEJAR      => $this->cookieJar,
-            CURLOPT_COOKIEFILE     => $this->cookieJar,
-        ]);
-        $body = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        $this->assertSame(200, $code, "GET $path returned HTTP $code");
-        $this->assertIsString($body);
-        return $body;
-    }
-
-    private function serverIsUp(): bool
-    {
-        $ch = curl_init($this->baseUrl . '/');
-        curl_setopt_array($ch, [
-            CURLOPT_NOBODY         => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_CONNECTTIMEOUT => 3,
-            CURLOPT_TIMEOUT        => 5,
-        ]);
-        curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        return $code >= 200 && $code < 500;
     }
 
     private function extractTitle(string $html): string

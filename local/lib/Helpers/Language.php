@@ -18,7 +18,7 @@ use Gree\Core\App;
  * Inside services / controllers / repositories prefer injecting
  * TranslatorServiceInterface + LanguageServiceInterface explicitly.
  */
-final class Language
+final class Language extends BaseHelper
 {
     /**
      * @param array<string, string|int|float> $params

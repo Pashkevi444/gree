@@ -10,4 +10,4 @@ namespace Gree\Security;
  * HTTP status 403 — semantically "forbidden". Don't use 419 (laravel-style
  * "page expired"), it's not standard and Bitrix doesn't know it.
  */
-final class AccessDeniedException extends \RuntimeException {}
+final class AccessDeniedException extends BaseSecurityException {}

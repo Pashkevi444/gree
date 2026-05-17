@@ -7,6 +7,7 @@ use Gree\Controller\BlogController;
 use Gree\Controller\BrandController;
 use Gree\Controller\CartController;
 use Gree\Controller\CatalogController;
+use Gree\Controller\OrderController;
 use Gree\Controller\HomeController;
 use Gree\Controller\LanguageController;
 use Gree\Controller\ProductController;
@@ -69,6 +70,17 @@ return static function (RoutingConfigurator $routes): void {
     $routes
         ->get('/cart/', static fn() => App::get(CartController::class)->index())
         ->name('cart.index');
+
+    // ─── Checkout ────────────────────────────────────────────────────────────
+    $routes->prefix('order')->name('order.')->group(static function (RoutingConfigurator $routes): void {
+        $routes
+            ->get('', static fn() => App::get(OrderController::class)->checkout())
+            ->name('checkout');
+        $routes
+            ->get('success/{publicId}/', static fn(string $publicId) => App::get(OrderController::class)->success($publicId))
+            ->where('publicId', '[a-f0-9]{8,16}')
+            ->name('success');
+    });
 
     // ─── Language switch ─────────────────────────────────────────────────────
     $routes

@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace Gree\Http;
 
 use Bitrix\Main\HttpResponse;
-use Gree\Contract\Http\HttpContextInterface;
 
 /**
  * In-memory HttpContext for unit tests. Holds cookies and headers as plain
  * arrays; flushCookiesInto() is a no-op (tests assert on the queue directly
  * if they need to).
  */
-final class InMemoryHttpContext implements HttpContextInterface
+final class InMemoryHttpContext extends BaseHttpContext
 {
     /** @var array<string, string> */
     private array $cookies = [];

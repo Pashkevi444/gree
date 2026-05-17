@@ -7,7 +7,6 @@ namespace Gree\Http;
 use Bitrix\Main\Application;
 use Bitrix\Main\HttpResponse;
 use Bitrix\Main\Web\Cookie;
-use Gree\Contract\Http\HttpContextInterface;
 
 /**
  * Bitrix-backed HttpContext.
@@ -23,7 +22,7 @@ use Gree\Contract\Http\HttpContextInterface;
  * cache, so `setCookie('x', 'y')` followed by `getCookie('x')` returns `'y'`
  * even though Bitrix's request cookie list is immutable.
  */
-final class BitrixHttpContext implements HttpContextInterface
+final class BitrixHttpContext extends BaseHttpContext
 {
     /** @var array<string, string> Cookies queued for the outgoing response. */
     private array $queued = [];
@@ -36,7 +35,15 @@ final class BitrixHttpContext implements HttpContextInterface
         if (array_key_exists($name, $this->queued)) {
             return $this->queued[$name];
         }
-        $raw = $this->request()->getCookieRaw($name);
+        // В CLI (интеграционные тесты с bootstrap'ом Bitrix без HTTP-контекста)
+        // request() == null. Туда читаем напрямую из $_COOKIE — тест-кейс уже
+        // выставляет в него значения. Прод-режим всегда идёт через Bitrix.
+        $request = $this->request();
+        if ($request === null) {
+            $raw = $_COOKIE[$name] ?? null;
+            return is_string($raw) ? $raw : null;
+        }
+        $raw = $request->getCookieRaw($name);
         return is_string($raw) ? $raw : null;
     }
 
@@ -48,29 +55,45 @@ final class BitrixHttpContext implements HttpContextInterface
 
     public function getHeader(string $name): ?string
     {
-        $val = $this->request()->getHeader($name);
+        $request = $this->request();
+        if ($request === null) {
+            return null;
+        }
+        $val = $request->getHeader($name);
         return $val !== null && $val !== '' ? (string) $val : null;
     }
 
     public function getRequestMethod(): string
     {
-        return $this->request()->getRequestMethod();
+        $request = $this->request();
+        // CLI без HTTP-контекста — отдаём GET (безопасный безопасный метод; для
+        // тестов он не state-changing, ApiGuard его не валидирует).
+        return $request !== null ? $request->getRequestMethod() : 'GET';
     }
 
     public function isHttps(): bool
     {
-        return $this->request()->isHttps();
+        $request = $this->request();
+        return $request !== null && $request->isHttps();
     }
 
     public function getRemoteAddress(): ?string
     {
-        $addr = $this->request()->getRemoteAddress();
+        $request = $this->request();
+        if ($request === null) {
+            return null;
+        }
+        $addr = $request->getRemoteAddress();
         return $addr !== '' ? $addr : null;
     }
 
     public function getRequestUri(): ?string
     {
-        $uri = $this->request()->getRequestUri();
+        $request = $this->request();
+        if ($request === null) {
+            return null;
+        }
+        $uri = $request->getRequestUri();
         return $uri !== '' ? $uri : null;
     }
 
@@ -96,8 +119,18 @@ final class BitrixHttpContext implements HttpContextInterface
         $this->queuedOptions = [];
     }
 
-    private function request(): \Bitrix\Main\HttpRequest
+    /**
+     * Returns the Bitrix HttpRequest if one is available. Under CLI (PHPUnit
+     * integration runs, sprint.migration, agents) the request/context isn't
+     * initialised — callers must handle null.
+     */
+    private function request(): ?\Bitrix\Main\HttpRequest
     {
-        return Application::getInstance()->getContext()->getRequest();
+        $context = Application::getInstance()->getContext();
+        if ($context === null) {
+            return null;
+        }
+        $request = $context->getRequest();
+        return $request instanceof \Bitrix\Main\HttpRequest ? $request : null;
     }
 }

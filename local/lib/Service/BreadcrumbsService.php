@@ -120,6 +120,20 @@ final class BreadcrumbsService extends BaseService implements BreadcrumbsService
         }
     }
 
+    public function checkout(): BreadcrumbCollection
+    {
+        try {
+            return new BreadcrumbCollection(
+                $this->home(),
+                new BreadcrumbDto(label: $this->t('breadcrumbs.cart'), url: Route::to('cart.index')),
+                new BreadcrumbDto(label: $this->t('breadcrumbs.order')),
+            );
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
+    }
+
     private function home(): BreadcrumbDto
     {
         return new BreadcrumbDto(label: $this->t('breadcrumbs.home'), url: '/');

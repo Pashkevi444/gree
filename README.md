@@ -8,16 +8,46 @@ PHP 8.4 · Bitrix CMS · Blade · Symfony DI · Composer · PHPUnit 11
 
 ```bash
 composer install
-./vendor/bin/phpunit                       # все тесты (Unit + Integration)
-./vendor/bin/phpunit --testsuite Unit      # только юниты, без живого HTTP
-./vendor/bin/phpunit --testsuite Integration   # требует live-сервер
-./vendor/bin/phpunit --filter testStaticPageRendersSeoFromHlblock
+composer test:unit          # юниты на стабах Bitrix — мгновенно, без БД
+composer test:integration   # реальные репозитории через bootstrap Bitrix + транзакция-rollback
+composer test               # оба прогона подряд
+
+./vendor/bin/phpunit --filter testHappyPathPlacesOrderAndEmptiesCart
 ```
 
-Интеграционные тесты по умолчанию стучатся на `https://gree:8890`. Сменить host:
+**Запустить интеграцию напрямую, не через composer** (понадобится подкинуть `-d short_open_tag=On` для Bitrix `tools.php`):
 
 ```bash
-TEST_BASE_URL=https://staging.example.com ./vendor/bin/phpunit --testsuite Integration
+php -d short_open_tag=On vendor/bin/phpunit --testsuite Integration
+```
+
+Два режима ходят через **один** `local/tests/bootstrap.php`. Переключение —
+env `GREE_TEST_INTEGRATION=1` ИЛИ argv (`--testsuite Integration`,
+`local/tests/Integration/...`).
+
+- **unit (по умолчанию)** — `class_alias` на стабы из `local/tests/Stub/`, без живой БД.
+- **integration** — bootstrap'ит настоящий `prolog_before.php` Bitrix, репозитории идут к живой БД, **каждый тест обёрнут в транзакцию** через `TransactionService` → автоматический rollback в tearDown.
+
+**Почему `./vendor/bin/phpunit` без аргументов запускает только Unit:** `class_alias` стабов и боевые `\Bitrix\…` классы нельзя смешивать в одном php-процессе (alias необратим). Поэтому в `phpunit.xml` стоит `defaultTestSuite="Unit"`, а оба сьюта вместе гоняется через `composer test`, который запускает unit и integration в **разных** php-процессах.
+
+Что распознаётся как «integration»:
+- composer-скрипт `test:integration` (он же выставляет `GREE_TEST_INTEGRATION=1` и `-d short_open_tag=On`);
+- ручной `./vendor/bin/phpunit --testsuite Integration` (bootstrap сам видит argv);
+- ручной `./vendor/bin/phpunit local/tests/Integration/SomeTest.php` — тоже.
+
+При ручном запуске нужно вручную подкинуть `-d short_open_tag=On` (или прописать в php.ini), иначе bootstrap сразу остановится с понятным сообщением. Bitrix `tools.php` использует короткие теги `<?`, PHP 8.4 CLI их по умолчанию отключает.
+
+Bootstrap (`local/tests/bootstrap.php`) также:
+- авто-детектит MySQL-сокет (MAMP / brew / apt / rpm дефолтные пути; override через `GREE_TEST_MYSQL_SOCKET=...`);
+- объявляет `LANGUAGE_ID`/`SITE_ID` константы, которые обычно ставит HTTP-обёртка;
+- снимает Bitrix exception handler — он в CLI ломается в собственной обработке (LogFormatter падает на `new DateTime()` в shutdown), маскируя реальные исключения.
+
+Если сокет ну никак не находится — интеграционные тесты грейс-скипаются с сообщением «поменяй `host` на `127.0.0.1` в `bitrix/.settings.php` или запусти из FPM-окружения».
+
+Интеграционные тесты по умолчанию стучатся на `https://gree:8890` (через cURL — только для read-only проверок типа SEO). Сменить:
+
+```bash
+TEST_BASE_URL=https://staging.example.com composer test:integration
 ```
 
 ---
@@ -68,6 +98,15 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
 | `Gree\DTO\BaseDto` | Все DTO, требует `fromArray(array): static` |
 | `Gree\Collection\BaseCollection` | Все коллекции, требует `itemClass()` |
 | `Gree\View\BaseViewData` | Все ViewData, `toArray()` |
+| `Gree\Service\Exception\BaseServiceException` | Маркер-база доменных сервисных исключений (CheckoutValidation, EmptyCart, OfferNotFound). Контроллер может ловить базу и единообразно мапить в 422. |
+| `Gree\Security\BaseSecurityException` | Маркер-база security-исключений (AccessDenied и др.) → 403 в контроллере. |
+| `Gree\Http\BaseHttpContext` | Абстрактный родитель реализаций `HttpContextInterface` (BitrixHttpContext / InMemoryHttpContext). |
+| `Gree\Helpers\BaseHelper` | Маркер static-facade хелперов (Language, Route). Конструктор приватный — `new` запрещён. |
+| `Gree\DB\BaseDbService` | Маркер сервисов слоя БД (TransactionService и будущие). |
+
+Все базовые классы — `abstract`. Сейчас тела часть из них пусты — это сознательно: создан слот для общей логики на будущее, не размазывая её по наследникам, когда придёт необходимость.
+
+`Gree\Enum\*` — без базы: PHP-enum'ы не могут наследовать классы. Для них точка расширения — interface (`UnitEnum` уже встроен).
 
 ---
 
@@ -130,6 +169,8 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
 | GET | `/blog/` | `BlogController::index` | `blog.index` |
 | GET | `/blog/{code}/` | `BlogController::show` | `blog.show` |
 | GET | `/cart/` | `CartController::index` | `cart.index` |
+| GET | `/order/` | `OrderController::checkout` | `order.checkout` |
+| GET | `/order/success/{publicId}/` | `OrderController::success` | `order.success` |
 | GET | `/lang/{locale}/` | `LanguageController::switch` | `lang.switch` |
 
 `{section}` ограничен `nastennie|kolonnye|promyshlennye`, `{locale}` — `ru|en`.
@@ -144,6 +185,7 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
 | POST | `/api/v1/cart/items` | `CartController::add` | `api.v1.cart.items.add` |
 | PATCH | `/api/v1/cart/items/{id}` | `CartController::update` | `api.v1.cart.items.update` |
 | DELETE | `/api/v1/cart/items/{id}` | `CartController::remove` | `api.v1.cart.items.remove` |
+| POST | `/api/v1/order` | `OrderController::place` | `api.v1.order.place` |
 
 State-changing методы (POST/PATCH/DELETE) защищены `ApiGuard` (см. ниже).
 
@@ -219,6 +261,60 @@ $this->applySeo($seo);
 DTO: `CartItemDto` (storage-уровень), `CartLineDto` (enriched — product/offer данные для шаблона/API).
 
 Bitrix-нативная работа с куками — через `Gree\Http\HttpContextInterface` (см. ниже), не `$_COOKIE`/`setcookie`.
+
+---
+
+## Оформление заказа
+
+Анонимный чекаут — без личного кабинета. Из `/cart/` пользователь идёт на `/order/`, заполняет 3 секции формы (контакты, доставка, оплата), `POST /api/v1/order` создаёт заказ и редиректит на `/order/success/{publicId}/`.
+
+### Хранение — нормализованно, 2 HL-блока
+
+**`Orders`** — шапка:
+
+| Поле | Назначение |
+|------|-----------|
+| `UF_PUBLIC_ID` | 12-char hex (48 бит). Внешний идентификатор для URL `/order/success/{publicId}/`. Числовой ID наружу не светим — анти-IDOR, анти-перебор. |
+| `UF_CART_TOKEN` | Снапшот куки корзины на момент оформления (аудит/анализ). |
+| `UF_STATUS` | `new → confirmed → shipped → delivered` / `cancelled`. Старт — `new`. |
+| `UF_CUSTOMER_NAME/PHONE/TELEGRAM` | Имя/телефон обязательны. Телефон нормализуется в коде (`+998901234567` без пробелов и скобок). |
+| `UF_DELIVERY_CITY/STREET/HOUSE/APARTMENT/COMMENT` | Город (slug), улица, дом обязательны. |
+| `UF_PAYMENT_METHOD` | `card` / `uzum_bank` / `anor_bank` — enum `PaymentMethod`. |
+| `UF_TOTAL`, `UF_ITEMS_COUNT` | Snapshot на шапке. Даже если строки `OrderItems` потеряются — итог сохраняется. |
+| `UF_LOCALE` | Снимок локали пользователя — менеджеру/email на том же языке. |
+| `UF_IP`, `UF_USER_AGENT` | Аудит/анти-фрод, UA обрезается до 500 символов в коде. |
+
+**`OrderItems`** — позиции. Все поля — **snapshot**: `UF_PRODUCT_NAME`, `UF_PRODUCT_CODE`, `UF_OFFER_AREA`, `UF_OFFER_COLOR`, `UF_UNIT_PRICE`. Переименование товара, удаление, изменение цены в каталоге **не** рерайтят историю.
+
+### Валидация
+
+`Gree\Service\OrderService` ловит проблемные сабмиты до записи:
+
+| Что | Реакция |
+|------|---------|
+| Имя пустое или > 100 символов | `CheckoutValidationException` → 422 с `fields: {name: 'invalid'}` |
+| Телефон не пройдёт regex `^\+?[0-9\s\-()]{9,32}$` | то же, `fields: {phone}` |
+| Город/улица/дом пустые | то же |
+| Способ оплаты вне enum | 422 с `fields: {payment}` |
+| Корзина пустая или потеряны все офферы | `EmptyCartException` → 422 `error: 'empty_cart'` |
+| Origin/Referer чужой | 403 (ApiGuard) |
+| CSRF не совпал | 403 |
+
+### Жизненный цикл place()
+
+1. Валидация инпутов
+2. `cartToken->read()` → `carts->findIdByToken()` → `cartItems->listByCart()`
+3. **Snapshot** — для каждой строки корзины подтягиваем свежий offer + product, фиксируем цену+имя+цвет+площадь
+4. Генерируем уникальный `publicId` (12-hex, ретрай при коллизии)
+5. Транзакционно: `orders->insert` → `orderItems->insert` × N → `cartItems->delete` × N (очищаем корзину чтоб второй раз не сабмитнул)
+6. Возвращаем `OrderDto` с `publicId`
+
+### DTO
+
+- `OrderCustomerDto` — name/phone/telegram
+- `OrderDeliveryDto` — city/street/house/apartment/comment
+- `OrderItemDto` — snapshot позиции
+- `OrderDto` — агрегат-корень, объединяет всё + items collection
 
 ---
 
@@ -412,6 +508,22 @@ php bitrix/modules/sprint.migration/tools/migrate.php down=Version20260517000005
 
 ---
 
+## Переменные окружения
+
+Источник правды — `.env.example` в корне репозитория, скопируй в `.env` локально и поправь под себя.
+
+| Переменная | Где читается | Зачем |
+|------------|--------------|-------|
+| `LOG_DIR` | `Gree\Logging\FileLogger` | Папка для логов; абсолютная или относительно корня проекта. |
+| `LOG_DEBUG` | `Gree\Logging\FileLogger` | `true` включает debug-уровень. Warning/Error/Critical пишутся всегда. |
+| `TEST_BASE_URL` | `IntegrationTestCase::setUp` | Хост для cURL-интеграций (SEO read-only тесты). Дефолт `https://gree:8890`. |
+| `GREE_TEST_INTEGRATION` | `local/tests/bootstrap.php` | `1` → boot Bitrix-пролог вместо стабов. Выставляется composer-скриптом `test:integration`, в `.env` обычно не нужна. |
+| `GREE_TEST_MYSQL_SOCKET` | `local/tests/bootstrap.php` | Явный путь к unix-socket MySQL для CLI. Bootstrap пробует MAMP/brew/apt/rpm дефолты сам — задавай только если у тебя сокет в нестандартном месте. |
+
+Любая новая `getenv()` в коде → строка в `.env.example` (это требование закреплено в CLAUDE.md).
+
+---
+
 ## Логирование
 
 `Gree\Logging\FileLogger::getInstance()` — singleton. Конфиг в `.env`:
@@ -429,21 +541,60 @@ LOG_DEBUG=true
 
 ---
 
+## Транзакции БД
+
+Любая операция, которая делает > 1 запись в БД, идёт через `Gree\Contract\DB\TransactionServiceInterface` — `Gree\DB\TransactionService` под капотом. Singleton, общий стейт savepoint'ов на запрос. Поддерживает **вложенность** через `SAVEPOINT` (MySQL не имеет нативных вложенных транзакций), безопасен к неявному rollback от MySQL (deadlock / lock-timeout / constraint violation сносят все savepoint'ы — сервис ловит и сбрасывает свой стейт + пишет critical).
+
+Идиоматичное использование — `run(callable)`:
+
+```php
+$orderId = $this->tx->run(function () use ($orderDto, $items, $cartLines) {
+    $id = $this->orders->insert($orderDto);
+    foreach ($items as $item) {
+        $this->orderItems->insert(...);
+    }
+    foreach ($cartLines as $row) {
+        $this->cartItems->delete($row->id);
+    }
+    return $id;
+});
+```
+
+Поведение: success → автоматический commit; любое исключение → rollback + rethrow. Если внутри уже была транзакция — кладётся вложенный SAVEPOINT, внешняя транзакция продолжается.
+
+Где используется: `OrderService::place()` (шапка + позиции + очистка корзины — три атомарных операции, не должна оставаться полу-заказа).
+
+Куда добавлять дальше: любой сервис-метод, делающий несколько `addRow`/`updateRow`/`deleteRow` подряд. Одиночные вставки/апдейты — обходятся без транзакции (автокоммит MySQL).
+
+---
+
 ## Тесты
 
 ```bash
-./vendor/bin/phpunit                       # все
-./vendor/bin/phpunit --testsuite Unit      # юниты — без сети
-./vendor/bin/phpunit --testsuite Integration   # HTTP к live-серверу
-./vendor/bin/phpunit local/tests/Unit/Service/CartServiceTest.php
+composer test:unit          # юниты — стабы, без живой БД
+composer test:integration   # bootstrap Bitrix + транзакция-rollback
+composer test               # оба прогона
+./vendor/bin/phpunit local/tests/Unit/Service/CartServiceTest.php   # один файл
 ```
 
-| Suite | Где | Что валидируется |
-|-------|-----|------------------|
-| Unit | `local/tests/Unit/` | DTO/Collection/Service логика на моках, Controller-конструкторы |
-| Integration | `local/tests/Integration/` | HTTP к сайту (curl): SEO-теги в head, переключение локали, корректность data-provider'ов |
+| Suite | Где | Bootstrap | Что валидируется |
+|-------|-----|-----------|------------------|
+| Unit | `local/tests/Unit/` | class_alias-стабы Bitrix | DTO/Collection/Service логика на моках, Controller-конструкторы |
+| Integration | `local/tests/Integration/` | настоящий `bitrix/modules/main/start.php` | Репозитории к живой БД, сервисный чекаут-флоу с rollback'ом, HTTP read-only проверки (SEO) |
 
-Стабы Bitrix-классов для юнит-тестов — `local/tests/Stub/`.
+Все интеграционные тесты наследуют `Gree\Tests\Integration\IntegrationTestCase`. База даёт:
+
+- **Транзакцию вокруг каждого теста.** setUp дёргает `TransactionService::startTransaction()`, tearDown катит её назад. Любая запись через наши репозитории (`OrderRepository`, `CartItemRepository`, …) откатывается автоматом — БД остаётся чистой. **Никакого ручного DELETE, никакого mysqli.**
+- Доступ к настоящему DI-контейнеру через `App::get(SomeService::class)`.
+- cURL-помощники для **read-only** HTTP-тестов (SEO, рендер head). Они не покрываются rollback'ом — у веб-процесса отдельный коннекшен. Поэтому всё, что мутирует БД, идёт in-process через `App::get(...)`, а не curl.
+
+Бутстрап Bitrix из CLI имеет квирки:
+
+- Bitrix `tools.php` использует короткие теги `<?` → composer-скрипт `test:integration` запускается с `php -d short_open_tag=On`.
+- `Application::getInstance()->getContext()` в CLI не существует — `services.php` падает обратно на `localhost` для `allowedHost` (см. секцию ApiGuard ниже).
+- MySQL-сокет CLI ≠ FPM — если падает `(2002) No such file or directory`, поменяй в `bitrix/.settings.php` `'host' => '127.0.0.1'`. База ловит ConnectionException и грейс-скипает тесты с инструкцией.
+
+Стабы Bitrix для юнит-тестов — `local/tests/Stub/`.
 
 **TDD**: тест перед реализацией. Не использовать `getMockForAbstractClass` (deprecated в PHPUnit 11) — анонимные классы вместо.
 

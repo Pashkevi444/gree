@@ -28,7 +28,7 @@ use Gree\Logging\FileLogger;
  * If the name is unknown or required parameters are missing — returns "#" and
  * logs critical. Better a broken link than a 500 on render.
  */
-final class Route
+final class Route extends BaseHelper
 {
     /**
      * @param array<string, scalar> $parameters

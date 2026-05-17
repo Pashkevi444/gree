@@ -24,5 +24,18 @@
         "vendor-dir": "vendor",
         "optimize-autoloader": true,
         "sort-packages": true
+    },
+    "scripts": {
+        "test:unit": "phpunit --testsuite Unit",
+        "test:integration": "GREE_TEST_INTEGRATION=1 php -d short_open_tag=On vendor/bin/phpunit --testsuite Integration",
+        "test": [
+            "@test:unit",
+            "@test:integration"
+        ]
+    },
+    "scripts-descriptions": {
+        "test:unit": "Run unit tests with Bitrix stubs (no DB / network).",
+        "test:integration": "Bootstrap Bitrix and run integration tests against the live DB. Each test wraps its work in a transaction that's rolled back in tearDown — DB stays clean.",
+        "test": "Run both suites (unit, then integration)."
     }
 }

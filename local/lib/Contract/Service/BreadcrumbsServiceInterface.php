@@ -40,4 +40,9 @@ interface BreadcrumbsServiceInterface
      * Home → Cart (current).
      */
     public function cart(): BreadcrumbCollection;
+
+    /**
+     * Home → Cart → Checkout (current).
+     */
+    public function checkout(): BreadcrumbCollection;
 }

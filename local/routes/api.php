@@ -6,6 +6,7 @@ use Bitrix\Main\Routing\RoutingConfigurator;
 use Gree\Controller\BlogController;
 use Gree\Controller\CartController;
 use Gree\Controller\CatalogController;
+use Gree\Controller\OrderController;
 use Gree\Core\App;
 
 /**
@@ -58,5 +59,10 @@ return static function (RoutingConfigurator $routes): void {
                 ->where('id', '\d+')
                 ->name('items.remove');
         });
+
+        // Order: place from current cart + checkout form payload
+        $routes
+            ->post('order', static fn() => App::get(OrderController::class)->place())
+            ->name('order.place');
     });
 };

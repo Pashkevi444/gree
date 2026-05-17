@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Gree\Contract\DB\TransactionServiceInterface;
 use Gree\Contract\Http\HttpContextInterface;
 use Gree\Contract\Security\ApiGuardInterface;
 use Gree\Contract\Service\CsrfServiceInterface;
@@ -13,6 +14,8 @@ use Gree\Contract\Repository\CatalogRepositoryInterface;
 use Gree\Contract\Repository\HomeRepositoryInterface;
 use Gree\Contract\Repository\MenuRepositoryInterface;
 use Gree\Contract\Repository\OfferRepositoryInterface;
+use Gree\Contract\Repository\OrderItemRepositoryInterface;
+use Gree\Contract\Repository\OrderRepositoryInterface;
 use Gree\Contract\Repository\ProductRepositoryInterface;
 use Gree\Contract\Repository\SeoRepositoryInterface;
 use Gree\Contract\Service\BlogServiceInterface;
@@ -24,6 +27,7 @@ use Gree\Contract\Service\CatalogServiceInterface;
 use Gree\Contract\Service\HomeServiceInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
 use Gree\Contract\Service\MenuServiceInterface;
+use Gree\Contract\Service\OrderServiceInterface;
 use Gree\Contract\Service\SeoServiceInterface;
 use Gree\Contract\Service\TranslationLoaderInterface;
 use Gree\Contract\Service\TranslatorServiceInterface;
@@ -32,8 +36,10 @@ use Gree\Controller\BrandController;
 use Gree\Controller\CartController;
 use Gree\Controller\CatalogController;
 use Gree\Controller\HomeController;
+use Gree\Controller\OrderController;
 use Gree\Controller\LanguageController;
 use Gree\Controller\ProductController;
+use Gree\DB\TransactionService;
 use Gree\Http\BitrixHttpContext;
 use Gree\Repository\BlogRepository;
 use Gree\Security\ApiGuard;
@@ -45,6 +51,8 @@ use Gree\Repository\CatalogRepository;
 use Gree\Repository\HomeRepository;
 use Gree\Repository\MenuRepository;
 use Gree\Repository\OfferRepository;
+use Gree\Repository\OrderItemRepository;
+use Gree\Repository\OrderRepository;
 use Gree\Repository\ProductRepository;
 use Gree\Repository\SeoRepository;
 use Gree\Repository\TranslationRepository;
@@ -57,6 +65,7 @@ use Gree\Service\CatalogService;
 use Gree\Service\HomeService;
 use Gree\Service\LanguageService;
 use Gree\Service\MenuService;
+use Gree\Service\OrderService;
 use Gree\Service\SeoService;
 use Gree\Service\TranslatorService;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -171,6 +180,15 @@ $container
     ->setPublic(true);
 $container->setAlias(SeoServiceInterface::class, SeoService::class)->setPublic(true);
 
+// ─── DB ───────────────────────────────────────────────────────────────────
+// Singleton — стейт savepoint'ов общий на запрос. Factory регистрирует
+// геттер, чтобы контейнер выдавал один и тот же инстанс.
+$container
+    ->register(TransactionService::class)
+    ->setFactory([TransactionService::class, 'getInstance'])
+    ->setPublic(true);
+$container->setAlias(TransactionServiceInterface::class, TransactionService::class)->setPublic(true);
+
 // ─── HTTP context (cookies + headers + request meta) ──────────────────────
 $container->register(BitrixHttpContext::class)->setPublic(true);
 $container->setAlias(HttpContextInterface::class, BitrixHttpContext::class)->setPublic(true);
@@ -182,11 +200,15 @@ $container
     ->setPublic(true);
 $container->setAlias(CsrfServiceInterface::class, CsrfService::class)->setPublic(true);
 
-// HTTP_HOST sourced from the Bitrix request — the only place it's permitted to
-// peek at the underlying super-global is the DI bootstrap, which has no access
-// to the request object yet. Resolves to "localhost" in CLI / tests.
-$allowedHost = \Bitrix\Main\Application::getInstance()
-    ->getContext()->getServer()->getHttpHost() ?: 'localhost';
+// HTTP_HOST sourced from the Bitrix request — only place permitted to peek at
+// the underlying super-global is this DI bootstrap, which has no access to the
+// request object yet. Under HTTP the context is set; under CLI (PHPUnit
+// integration suite, sprint.migration) it isn't — fall back to "localhost"
+// so the container compiles either way.
+$context = \Bitrix\Main\Application::getInstance()->getContext();
+$allowedHost = $context !== null && $context->getServer() !== null
+    ? ($context->getServer()->getHttpHost() ?: 'localhost')
+    : 'localhost';
 
 $container
     ->register(ApiGuard::class)
@@ -218,6 +240,28 @@ $container
     ->addArgument(new Reference(CartTokenServiceInterface::class))
     ->setPublic(true);
 $container->setAlias(CartServiceInterface::class, CartService::class)->setPublic(true);
+
+// ─── Orders ───────────────────────────────────────────────────────────────
+$container->register(OrderRepository::class)->setPublic(true);
+$container->setAlias(OrderRepositoryInterface::class, OrderRepository::class)->setPublic(true);
+
+$container->register(OrderItemRepository::class)->setPublic(true);
+$container->setAlias(OrderItemRepositoryInterface::class, OrderItemRepository::class)->setPublic(true);
+
+$container
+    ->register(OrderService::class)
+    ->addArgument(new Reference(OrderRepositoryInterface::class))
+    ->addArgument(new Reference(OrderItemRepositoryInterface::class))
+    ->addArgument(new Reference(CartTokenServiceInterface::class))
+    ->addArgument(new Reference(CartRepositoryInterface::class))
+    ->addArgument(new Reference(CartItemRepositoryInterface::class))
+    ->addArgument(new Reference(OfferRepositoryInterface::class))
+    ->addArgument(new Reference(ProductRepositoryInterface::class))
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->addArgument(new Reference(HttpContextInterface::class))
+    ->addArgument(new Reference(TransactionServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(OrderServiceInterface::class, OrderService::class)->setPublic(true);
 
 // ─── Controllers ──────────────────────────────────────────────────────────
 $container
@@ -265,6 +309,15 @@ $container
     ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
     ->addArgument(new Reference(ApiGuardInterface::class))
     ->addArgument(new Reference(SeoServiceInterface::class))
+    ->setPublic(true);
+
+$container
+    ->register(OrderController::class)
+    ->addArgument(new Reference(OrderServiceInterface::class))
+    ->addArgument(new Reference(CartServiceInterface::class))
+    ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
+    ->addArgument(new Reference(ApiGuardInterface::class))
     ->setPublic(true);
 
 $container->compile();

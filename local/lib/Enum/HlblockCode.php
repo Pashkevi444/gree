@@ -10,4 +10,6 @@ enum HlblockCode: string
     case Seo = 'Seo';
     case Carts = 'Carts';
     case CartItems = 'CartItems';
+    case Orders = 'Orders';
+    case OrderItems = 'OrderItems';
 }
