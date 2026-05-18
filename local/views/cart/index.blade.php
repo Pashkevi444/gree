@@ -53,7 +53,7 @@
                                 </div>
                             </div>
                             <div class="cart-item-end">
-                                <div class="cart-item__price" data-line-total>
+                                <div class="cart-item__price" data-line-total data-postfix="UZS">
                                     {{ number_format($line->totalPrice, 0, '.', ' ') }} UZS
                                 </div>
                                 <div class="cart-item-amount">

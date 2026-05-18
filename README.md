@@ -519,6 +519,7 @@ php bitrix/modules/sprint.migration/tools/migrate.php down=Version20260517000005
 | `TEST_BASE_URL` | `IntegrationTestCase::setUp` | Хост для cURL-интеграций (SEO read-only тесты). Дефолт `https://gree:8890`. |
 | `GREE_TEST_INTEGRATION` | `local/tests/bootstrap.php` | `1` → boot Bitrix-пролог вместо стабов. Выставляется composer-скриптом `test:integration`, в `.env` обычно не нужна. |
 | `GREE_TEST_MYSQL_SOCKET` | `local/tests/bootstrap.php` | Явный путь к unix-socket MySQL для CLI. Bootstrap пробует MAMP/brew/apt/rpm дефолты сам — задавай только если у тебя сокет в нестандартном месте. |
+| `GREE_ALLOWED_HOSTS` | `services.php` → `ApiGuard` | Список хостов через запятую (`gree.all4it.org,www.gree.uz`), которым ApiGuard верит как Origin/Referer для state-changing API. За reverse proxy/CDN `HTTP_HOST` приходит внутренним, а браузер шлёт публичное имя → без этой ENV получаешь 403 «foreign origin». На localhost ENV не нужна — фоллбек на `HTTP_HOST` текущего запроса + `X-Forwarded-Host` если proxy его ставит. |
 
 Любая новая `getenv()` в коде → строка в `.env.example` (это требование закреплено в CLAUDE.md).
 
