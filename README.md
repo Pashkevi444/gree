@@ -42,12 +42,9 @@ Bootstrap (`local/tests/bootstrap.php`) также:
 - объявляет `LANGUAGE_ID`/`SITE_ID` константы, которые обычно ставит HTTP-обёртка;
 - снимает Bitrix exception handler — он в CLI ломается в собственной обработке (LogFormatter падает на `new DateTime()` в shutdown), маскируя реальные исключения.
 
-Если сокет ну никак не находится — интеграционные тесты грейс-скипаются с сообщением «поменяй `host` на `127.0.0.1` в `bitrix/.settings.php` или запусти из FPM-окружения».
-
-Интеграционные тесты по умолчанию стучатся на `https://gree:8890` (через cURL — только для read-only проверок типа SEO). Сменить:
-
+тут записать необходимо сервер для интеграционных тестов
 ```bash
-TEST_BASE_URL=https://staging.example.com composer test:integration
+TEST_BASE_URL=https://staging.example.com composer test:integration 
 ```
 
 ---
@@ -104,9 +101,7 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
 | `Gree\Helpers\BaseHelper` | Маркер static-facade хелперов (Language, Route). Конструктор приватный — `new` запрещён. |
 | `Gree\DB\BaseDbService` | Маркер сервисов слоя БД (TransactionService и будущие). |
 
-Все базовые классы — `abstract`. Сейчас тела часть из них пусты — это сознательно: создан слот для общей логики на будущее, не размазывая её по наследникам, когда придёт необходимость.
-
-`Gree\Enum\*` — без базы: PHP-enum'ы не могут наследовать классы. Для них точка расширения — interface (`UnitEnum` уже встроен).
+Все базовые классы — `abstract`.
 
 ---
 
@@ -150,7 +145,7 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
 
 ## Роутинг
 
-Группировка через `prefix(...)->name(...)->group(closure)`. Подводные камни Bitrix Routing:
+Группировка через `prefix(...)->name(...)->group(closure)`. Подводные камни:
 
 - `prefix()` **не** должен начинаться с `/` — иначе компилируется `//api/v1//cart`.
 - URI внутри группы тоже без `/` — конкатенация `prefix + '/' + uri`.
@@ -216,12 +211,6 @@ Route::to('api.v1.cart.items.update', ['id' => 42])
 
 Если имя маршрута неизвестно или нет нужного параметра — `Route::to()` пишет
 critical в лог и возвращает `#`. Лучше битый якорь, чем 500 на рендере.
-
-**Исключение из правила**: интеграционные HTTP-тесты (`local/tests/Integration/SeoHttpTest.php`)
-сознательно хардкодят URL-ы (`'/cart/'`, `'/catalog/'`). Они валидируют **публичный
-контракт** — что внешний пользователь, набравший `/cart/`, получает корзину. Если
-URL мигрирует, тест должен сломаться **громко**, а не пройти за счёт автоматической
-подмены через `Route::to`. Это сторожит совместимость SEO-ссылок и закладок.
 
 ---
 
@@ -542,33 +531,6 @@ LOG_DEBUG=true
 
 ---
 
-## Транзакции БД
-
-Любая операция, которая делает > 1 запись в БД, идёт через `Gree\Contract\DB\TransactionServiceInterface` — `Gree\DB\TransactionService` под капотом. Singleton, общий стейт savepoint'ов на запрос. Поддерживает **вложенность** через `SAVEPOINT` (MySQL не имеет нативных вложенных транзакций), безопасен к неявному rollback от MySQL (deadlock / lock-timeout / constraint violation сносят все savepoint'ы — сервис ловит и сбрасывает свой стейт + пишет critical).
-
-Идиоматичное использование — `run(callable)`:
-
-```php
-$orderId = $this->tx->run(function () use ($orderDto, $items, $cartLines) {
-    $id = $this->orders->insert($orderDto);
-    foreach ($items as $item) {
-        $this->orderItems->insert(...);
-    }
-    foreach ($cartLines as $row) {
-        $this->cartItems->delete($row->id);
-    }
-    return $id;
-});
-```
-
-Поведение: success → автоматический commit; любое исключение → rollback + rethrow. Если внутри уже была транзакция — кладётся вложенный SAVEPOINT, внешняя транзакция продолжается.
-
-Где используется: `OrderService::place()` (шапка + позиции + очистка корзины — три атомарных операции, не должна оставаться полу-заказа).
-
-Куда добавлять дальше: любой сервис-метод, делающий несколько `addRow`/`updateRow`/`deleteRow` подряд. Одиночные вставки/апдейты — обходятся без транзакции (автокоммит MySQL).
-
----
-
 ## Тесты
 
 ```bash
@@ -587,30 +549,20 @@ composer test               # оба прогона
 
 - **Транзакцию вокруг каждого теста.** setUp дёргает `TransactionService::startTransaction()`, tearDown катит её назад. Любая запись через наши репозитории (`OrderRepository`, `CartItemRepository`, …) откатывается автоматом — БД остаётся чистой. **Никакого ручного DELETE, никакого mysqli.**
 - Доступ к настоящему DI-контейнеру через `App::get(SomeService::class)`.
-- cURL-помощники для **read-only** HTTP-тестов (SEO, рендер head). Они не покрываются rollback'ом — у веб-процесса отдельный коннекшен. Поэтому всё, что мутирует БД, идёт in-process через `App::get(...)`, а не curl.
 
 Бутстрап Bitrix из CLI имеет квирки:
 
-- Bitrix `tools.php` использует короткие теги `<?` → composer-скрипт `test:integration` запускается с `php -d short_open_tag=On`.
+- Bitrix `tools.php` использует короткие теги `<?`  composer-скрипт `test:integration` запускается с `php -d short_open_tag=On`.
 - `Application::getInstance()->getContext()` в CLI не существует — `services.php` падает обратно на `localhost` для `allowedHost` (см. секцию ApiGuard ниже).
 - MySQL-сокет CLI ≠ FPM — если падает `(2002) No such file or directory`, поменяй в `bitrix/.settings.php` `'host' => '127.0.0.1'`. База ловит ConnectionException и грейс-скипает тесты с инструкцией.
 
 Стабы Bitrix для юнит-тестов — `local/tests/Stub/`.
 
-**TDD**: тест перед реализацией. Не использовать `getMockForAbstractClass` (deprecated в PHPUnit 11) — анонимные классы вместо.
-
 ---
 
-## Деплой
 
-| Ветка | Среда | Запуск |
-|-------|-------|--------|
-| `develop` | dev `https://gree.all4it.org` | автоматически при push |
-| `master` | prod `https://gree.all4it.org` | вручную в GitLab |
 
-Деплой: SSH → `git pull --rebase` → `composer install`.
-
-Без SSH (новый сервер, GitLab уже подключён): см. `deploy.php` в корне — pull + composer + phpunit одним HTTP-вызовом или из Bitrix-консоли PHP-кода.
+Деплой: SSH → `git pull --rebase` и потом  `composer install`.
 
 ---
 
