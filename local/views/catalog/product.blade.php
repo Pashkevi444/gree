@@ -319,8 +319,7 @@
           const stockEl = form.querySelector('.product-stock');
           const submitBtn = form.querySelector('button[type="submit"]');
           const specCells = document.querySelectorAll('[data-spec]');
-          const lang = document.documentElement.lang || 'ru';
-          const fmt = new Intl.NumberFormat(lang.startsWith('en') ? 'en-US' : 'ru-RU');
+          const fmt = new Intl.NumberFormat('ru-RU');
 
           function findOffer(color, area) {
             // 1) exact match

@@ -105,8 +105,7 @@
 
     <script>
         (function () {
-            const lang = document.documentElement.lang || 'ru';
-            const fmt = new Intl.NumberFormat(lang.startsWith('en') ? 'en-US' : 'ru-RU');
+            const fmt = new Intl.NumberFormat('ru-RU');
             const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
             async function api(method, url, body) {

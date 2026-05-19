@@ -28,7 +28,7 @@ final class MenuRepository extends BaseRepository implements MenuRepositoryInter
 
         $result = $sectionClass::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(['ID', 'CODE', 'IBLOCK_SECTION_ID', 'SORT', 'UF_LABEL_RU', 'UF_LABEL_EN', 'UF_URL'])
+            ->setSelect(['ID', 'CODE', 'IBLOCK_SECTION_ID', 'SORT', 'UF_LABEL_RU', 'UF_LABEL_UZ', 'UF_URL'])
             ->setOrder(['DEPTH_LEVEL' => 'ASC', 'SORT' => 'ASC', 'ID' => 'ASC'])
             ->setCacheTtl(self::TTL)
             ->exec();
@@ -68,11 +68,11 @@ final class MenuRepository extends BaseRepository implements MenuRepositoryInter
     private function pickLabel(array $row): string
     {
         $ru = (string) ($row['UF_LABEL_RU'] ?? '');
-        $en = (string) ($row['UF_LABEL_EN'] ?? '');
+        $uz = (string) ($row['UF_LABEL_UZ'] ?? '');
 
-        if ($this->locale() === Locale::En) {
-            return $en !== '' ? $en : $ru;
+        if ($this->locale() === Locale::Uz) {
+            return $uz !== '' ? $uz : $ru;
         }
-        return $ru !== '' ? $ru : $en;
+        return $ru !== '' ? $ru : $uz;
     }
 }

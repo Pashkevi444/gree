@@ -19,11 +19,11 @@ final class LanguageServiceTest extends TestCase
     public function testGetReturnsLocaleFromSession(): void
     {
         $session = \Bitrix\Main\Application::getInstance()->getSession();
-        $session->set('locale', 'en');
+        $session->set('locale', 'uz');
 
         $service = new LanguageService();
 
-        $this->assertSame(Locale::En, $service->get());
+        $this->assertSame(Locale::Uz, $service->get());
     }
 
     public function testGetReturnsDefaultWhenSessionEmpty(): void
@@ -37,11 +37,11 @@ final class LanguageServiceTest extends TestCase
     {
         $service = new LanguageService();
 
-        $service->set(Locale::En);
+        $service->set(Locale::Uz);
 
         $session = \Bitrix\Main\Application::getInstance()->getSession();
-        $this->assertSame('en', $session->get('locale'));
-        $this->assertSame(Locale::En, $service->get());
+        $this->assertSame('uz', $session->get('locale'));
+        $this->assertSame(Locale::Uz, $service->get());
     }
 
     public function testDetectAndStoreWritesDetectedLocaleToSession(): void
@@ -49,15 +49,15 @@ final class LanguageServiceTest extends TestCase
         $request = new class extends BitrixHttpRequest {
             public function getHeader(string $name): ?string
             {
-                return strtolower($name) === 'accept-language' ? 'en-US,en;q=0.9' : null;
+                return strtolower($name) === 'accept-language' ? 'uz-UZ,uz;q=0.9' : null;
             }
         };
 
         $service = new LanguageService();
         $locale = $service->detectAndStore($request);
 
-        $this->assertSame(Locale::En, $locale);
-        $this->assertSame(Locale::En, $service->get());
+        $this->assertSame(Locale::Uz, $locale);
+        $this->assertSame(Locale::Uz, $service->get());
     }
 
     public function testDetectAndStoreSkipsWhenSessionAlreadyHasLocale(): void
@@ -68,7 +68,7 @@ final class LanguageServiceTest extends TestCase
         $request = new class extends BitrixHttpRequest {
             public function getHeader(string $name): ?string
             {
-                return strtolower($name) === 'accept-language' ? 'en-US' : null;
+                return strtolower($name) === 'accept-language' ? 'uz-UZ' : null;
             }
         };
 

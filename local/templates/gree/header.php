@@ -102,10 +102,10 @@ foreach ($menu as $item) {
         </div>
         <?php
         $isRu = $currentLocale === Locale::Ru;
-        $otherLocaleUrl = Route::to('lang.switch', ['locale' => $isRu ? 'en' : 'ru']);
-        $currentLabel = $isRu ? Language::t('header.lang.ru') : Language::t('header.lang.en');
+        $otherLocaleUrl = Route::to('lang.switch', ['locale' => $isRu ? 'uz' : 'ru']);
+        $currentLabel = $isRu ? Language::t('header.lang.ru') : Language::t('header.lang.uz');
         ?>
-        <a class="language-select" href="<?= $otherLocaleUrl ?>" title="<?= $isRu ? Language::t('header.lang.en') : Language::t('header.lang.ru') ?>">
+        <a class="language-select" href="<?= $otherLocaleUrl ?>" title="<?= $isRu ? Language::t('header.lang.uz') : Language::t('header.lang.ru') ?>">
           <div class="language-select__country-icon">
             <?php if ($isRu): ?>
               <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="russian">
@@ -119,16 +119,16 @@ foreach ($menu as $item) {
                 </defs>
               </svg>
             <?php else: ?>
-              <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="english">
-                <g clip-path="url(#clip0_lang_en)">
-                  <path d="M0 0H18V18H0V0Z" fill="#012169" />
-                  <path d="M0 0L18 18M18 0L0 18" stroke="white" stroke-width="2.4" />
-                  <path d="M0 0L18 18M18 0L0 18" stroke="#C8102E" stroke-width="1.2" />
-                  <path d="M9 0V18M0 9H18" stroke="white" stroke-width="3.6" />
-                  <path d="M9 0V18M0 9H18" stroke="#C8102E" stroke-width="2.1" />
+              <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="uzbek">
+                <g clip-path="url(#clip0_lang_uz)">
+                  <path d="M0 0H18V6H0V0Z" fill="#1EB53A" />
+                  <path d="M0 6H18V7H0V6Z" fill="#CE1126" />
+                  <path d="M0 7H18V11H0V7Z" fill="white" />
+                  <path d="M0 11H18V12H0V11Z" fill="#CE1126" />
+                  <path d="M0 12H18V18H0V12Z" fill="#0099B5" />
                 </g>
                 <defs>
-                  <clipPath id="clip0_lang_en"><rect width="18" height="18" fill="white" /></clipPath>
+                  <clipPath id="clip0_lang_uz"><rect width="18" height="18" fill="white" /></clipPath>
                 </defs>
               </svg>
             <?php endif; ?>

@@ -73,7 +73,7 @@ final class BreadcrumbsServiceTest extends TestCase
         );
 
         $language = $this->createMock(LanguageServiceInterface::class);
-        $language->method('get')->willReturn(Locale::En);
+        $language->method('get')->willReturn(Locale::Uz);
 
         return new BreadcrumbsService($translator, $language);
     }

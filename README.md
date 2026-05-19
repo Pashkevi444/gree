@@ -220,7 +220,7 @@ critical в лог и возвращает `#`. Лучше битый якорь
 
 | Что | Где хранится | Чем читается |
 |-----|--------------|--------------|
-| Статические страницы (home, catalog, blog, cart, brand) | HL-блок `Seo`, поля `UF_TITLE_RU/EN`, `UF_DESCRIPTION_RU/EN`, `UF_KEYWORDS_RU/EN`, `UF_OG_TITLE_RU/EN`, `UF_OG_DESCRIPTION_RU/EN`, `UF_OG_IMAGE`, ключ `UF_PAGE_CODE` | `SeoService::forPage('home')` |
+| Статические страницы (home, catalog, blog, cart, brand) | HL-блок `Seo`, поля `UF_TITLE_RU/UZ`, `UF_DESCRIPTION_RU/UZ`, `UF_KEYWORDS_RU/UZ`, `UF_OG_TITLE_RU/UZ`, `UF_OG_DESCRIPTION_RU/UZ`, `UF_OG_IMAGE`, ключ `UF_PAGE_CODE` | `SeoService::forPage('home')` |
 | Карточка товара / статья блога | Bitrix IPROPERTY-шаблоны на iblock-уровне (Products, Blog) — `ELEMENT_META_TITLE`, `ELEMENT_META_KEYWORDS`, `ELEMENT_META_DESCRIPTION`, `ELEMENT_PAGE_TITLE`. Плейсхолдеры `{=this.Name}` / `{=this.PreviewText}`. Поверх шаблона работают per-element overrides в админке Bitrix. | `SeoService::forElement(IblockCode::Products, $id)` через `Bitrix\Iblock\InheritedProperty\ElementValues::getValues()` |
 
 Применение в контроллере:
@@ -327,9 +327,9 @@ CSRF-токен (`Gree\Security\CsrfService`): 64 hex (256 бит), SameSite=Str
 
 ## Локализация
 
-Текущие языки: `ru`, `en`. Локаль хранится в сессии (Bitrix), переключение через `GET /lang/{locale}/`.
+Текущие языки: `ru`, `uz` (latin O'zbek). Локаль хранится в сессии (Bitrix), переключение через `GET /lang/{locale}/` (роут принимает только `ru|uz`).
 
-UI-строки — в HL-блоке `Translations` (`UF_CODE`, `UF_VALUE_RU`, `UF_VALUE_EN`). Чтение:
+UI-строки — в HL-блоке `Translations` (`UF_CODE`, `UF_VALUE_RU`, `UF_VALUE_UZ`). Чтение:
 
 ```php
 use Gree\Helpers\Language;
@@ -337,7 +337,9 @@ Language::t('header.catalog');                       // строка по тек
 Language::t('blog.reading_minutes', ['minutes' => 5]);   // :minutes плейсхолдер
 ```
 
-Текстовые поля iblock-элементов — пара `_RU` / `_EN`, читаются через `BaseRepository::localizedSelect('NAME')` + `localized($row, 'NAME')`. Fallback на противоположный язык, если пусто.
+Текстовые поля iblock-элементов — пара `_RU` / `_UZ`, читаются через `BaseRepository::localizedSelect('NAME')` + `localized($row, 'NAME')`. Fallback на противоположный язык, если пусто.
+
+> Историческая справка: пара была `_RU/_EN`. Миграции `Version20260519000001/000002/000003` переименовали все `_EN` поля (iblock-свойства, HL UF-поля, UF секций menu) в `_UZ` и залили узбекский контент. Английский как локаль больше не поддерживается — `Locale::En` удалён, в `Accept-Language` английские теги фолбэчатся на `ru`.
 
 ---
 
@@ -491,7 +493,7 @@ php bitrix/modules/sprint.migration/tools/migrate.php down=Version20260517000005
 ### Правила для миграций
 
 - При `saveIblock()` — обязательно `saveIblockFields()` с авто-CODE, отключённые `ACTIVE_FROM/TO/XML_ID/TAGS` (см. CLAUDE.md).
-- Для текстовых полей создавать пары `<CODE>_RU` + `<CODE>_EN`.
+- Для текстовых полей создавать пары `<CODE>_RU` + `<CODE>_UZ`.
 - IPROPERTY-шаблоны для SEO деталок — через `new Bitrix\Iblock\InheritedProperty\IblockTemplates($iblockId)->set([...])`.
 - UF-поля на секции — `IBLOCK_<id>_SECTION` entity, `addUserTypeEntitiesIfNotExists()` (множественное число, плоский массив).
 
@@ -575,7 +577,7 @@ composer test               # оба прогона
 | Поправить SEO статической страницы | админка `/bitrix/admin/highloadblock_rows_list.php`, HL «Seo» |
 | Поправить SEO товара/статьи | админка iblock-элемента, таб «SEO» (per-element override) |
 | Поправить шаблоны SEO для всех товаров/статей | iblock → таб «Шаблоны полей» (IPROPERTY_TEMPLATES) |
-| UI-строка перевода | HL «Translations» в админке (UF_CODE + UF_VALUE_RU/EN) |
+| UI-строка перевода | HL «Translations» в админке (UF_CODE + UF_VALUE_RU/UZ) |
 | Новая зависимость DI | `local/lib/config/services.php` |
 | Новый Bitrix-event handler | `local/lib/Core/Event/*.php` + регистрация в `local/php_interface/init.php` |
 | Новая миграция | `local/php_interface/migrations/VersionYYYYMMDDXXXXXX.php` |

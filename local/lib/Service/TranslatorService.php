@@ -11,7 +11,7 @@ use Gree\Logging\FileLogger;
 
 final class TranslatorService extends BaseService implements TranslatorServiceInterface
 {
-    /** @var array<string, array{ru: string, en: string}>|null */
+    /** @var array<string, array{ru: string, uz: string}>|null */
     private ?array $cache = null;
 
     public function __construct(private readonly TranslationLoaderInterface $loader) {}

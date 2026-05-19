@@ -13,11 +13,11 @@ use Gree\Enum\Locale;
 
 /**
  * SEO storage adapter:
- *   - Static pages: Highloadblock «Seo» (UF_PAGE_CODE → SeoDto), paired RU/EN.
+ *   - Static pages: Highloadblock «Seo» (UF_PAGE_CODE → SeoDto), paired RU/UZ.
  *   - Detail pages: Bitrix native IPROPERTY values (b_iblock_element_iprop +
  *     iblock-level templates configured in Version20260517000006).
  *
- * Locale resolution: every RU/EN field has a fallback to the opposite language
+ * Locale resolution: every RU/UZ field has a fallback to the opposite language
  * if the requested one is empty — same rule we use across BaseRepository for
  * property pairs.
  */
@@ -34,11 +34,11 @@ final class SeoRepository extends BaseHlblockRepository implements SeoRepository
             $row = $this->query()
                 ->where('UF_PAGE_CODE', $code)
                 ->setSelect([
-                    'UF_TITLE_RU', 'UF_TITLE_EN',
-                    'UF_DESCRIPTION_RU', 'UF_DESCRIPTION_EN',
-                    'UF_KEYWORDS_RU', 'UF_KEYWORDS_EN',
-                    'UF_OG_TITLE_RU', 'UF_OG_TITLE_EN',
-                    'UF_OG_DESCRIPTION_RU', 'UF_OG_DESCRIPTION_EN',
+                    'UF_TITLE_RU', 'UF_TITLE_UZ',
+                    'UF_DESCRIPTION_RU', 'UF_DESCRIPTION_UZ',
+                    'UF_KEYWORDS_RU', 'UF_KEYWORDS_UZ',
+                    'UF_OG_TITLE_RU', 'UF_OG_TITLE_UZ',
+                    'UF_OG_DESCRIPTION_RU', 'UF_OG_DESCRIPTION_UZ',
                     'UF_OG_IMAGE',
                 ])
                 ->setLimit(1)
@@ -91,7 +91,7 @@ final class SeoRepository extends BaseHlblockRepository implements SeoRepository
     }
 
     /**
-     * Pick the locale-appropriate value from a `_RU` / `_EN` pair, with
+     * Pick the locale-appropriate value from a `_RU` / `_UZ` pair, with
      * fallback to the opposite locale when the preferred one is empty.
      *
      * @param array<string, mixed> $row
@@ -99,11 +99,11 @@ final class SeoRepository extends BaseHlblockRepository implements SeoRepository
     private function pick(array $row, string $base, Locale $locale): string
     {
         $ru = (string) ($row[$base . '_RU'] ?? '');
-        $en = (string) ($row[$base . '_EN'] ?? '');
+        $uz = (string) ($row[$base . '_UZ'] ?? '');
 
-        if ($locale === Locale::En) {
-            return $en !== '' ? $en : $ru;
+        if ($locale === Locale::Uz) {
+            return $uz !== '' ? $uz : $ru;
         }
-        return $ru !== '' ? $ru : $en;
+        return $ru !== '' ? $ru : $uz;
     }
 }

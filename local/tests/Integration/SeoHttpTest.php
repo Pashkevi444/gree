@@ -98,16 +98,16 @@ final class SeoHttpTest extends IntegrationTestCase
         $this->assertStringStartsWith('/', $ogImage, 'og:image should be a site-relative path');
     }
 
-    public function testEnglishLocaleUsesEnglishSeoRecord(): void
+    public function testUzbekLocaleUsesUzbekSeoRecord(): void
     {
-        $this->fetch('/lang/en/');
+        $this->fetch('/lang/uz/');
         $html = $this->fetch('/');
 
         $title = $this->extractTitle($html);
         $this->assertStringContainsStringIgnoringCase(
-            'perfect air conditioners',
+            'mukammal konditsionerlar',
             $title,
-            "EN home <title> should use the English SEO record; got: '$title'"
+            "UZ home <title> should use the Uzbek SEO record; got: '$title'"
         );
     }
 

@@ -85,6 +85,6 @@ return static function (RoutingConfigurator $routes): void {
     // ─── Language switch ─────────────────────────────────────────────────────
     $routes
         ->get('/lang/{locale}/', static fn(string $locale) => App::get(LanguageController::class)->switch($locale))
-        ->where('locale', 'ru|en')
+        ->where('locale', 'ru|uz')
         ->name('lang.switch');
 };
