@@ -44,6 +44,25 @@ final class TranslatorServiceTest extends TestCase
         $this->assertSame('header.catalog', $translator->translate('header.catalog', Locale::Uz));
     }
 
+    public function testFallsBackToUzWhenRuEmptyForRuLocale(): void
+    {
+        // Симметричный fallback: если в предпочтительной локали пусто —
+        // тянем из любой другой непустой. Раньше ru→uz не падал — кейс
+        // вроде header.lang.uz с пустым RU возвращал сам код.
+        $translator = $this->buildTranslator([
+            'header.lang.uz' => ['ru' => '', 'uz' => 'O\'zb'],
+        ]);
+        $this->assertSame('O\'zb', $translator->translate('header.lang.uz', Locale::Ru));
+    }
+
+    public function testReturnsCodeWhenAllLocalesEmpty(): void
+    {
+        $translator = $this->buildTranslator([
+            'header.catalog' => ['ru' => '', 'uz' => ''],
+        ]);
+        $this->assertSame('header.catalog', $translator->translate('header.catalog', Locale::Ru));
+    }
+
     public function testReplacesParameters(): void
     {
         $translator = $this->buildTranslator([

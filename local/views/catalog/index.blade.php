@@ -451,5 +451,11 @@
         </div>
         @endif
       </section>
+
+      {{-- Контейнер мобильного сортировщика. catalog.js делает:
+           document.querySelector('.mobile-sort').innerHTML = '...'
+           — без этого узла бросает TypeError ещё до того, как успеет повесить
+           paginator/фильтры. Полную мобильную drawer-разметку допилим позже. --}}
+      <div class="mobile-sort"></div>
     </main>
 @endsection

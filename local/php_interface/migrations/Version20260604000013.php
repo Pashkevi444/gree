@@ -3,15 +3,18 @@
 namespace Sprint\Migration;
 
 /**
- * UI-переводы для попапа обратной связи (partials/feedback-popup.blade.php).
- * Попап подключается на странице товара (кнопка «Нужна помощь?») и может
- * быть переиспользован на будущих страницах (contacts/partners).
+ * Восстанавливает (upsert) переводы для попапа «Нужна помощь?» на детальной
+ * товара (partials/feedback-popup.blade.php). Раньше эти ключи лежали в
+ * Version20260603000008 — миграция удалена в рамках YAGNI-чистки общего
+ * feedback-стека (Version20260604000012). По первой ревизии 0612 заодно
+ * сносила и feedback.* — что было ошибкой, popup-форму она оставила без
+ * переводов.
  *
- * Идемпотентна — добавляет ключи которых ещё нет в HL «Translations».
+ * Идемпотентно: для каждого UF_CODE — update если есть, add если нет.
  */
-class Version20260603000008 extends Version
+class Version20260604000013 extends Version
 {
-    protected $description = "UI-переводы: feedback.* (попап обратной связи)";
+    protected $description = "Восстановление переводов feedback.* (попап «Нужна помощь?»)";
 
     /** @var array<string, array{ru: string, uz: string}> */
     private array $entries = [
@@ -43,28 +46,29 @@ class Version20260603000008 extends Version
         $hl = \Bitrix\Highloadblock\HighloadBlockTable::getById($hlblockId)->fetch();
         $dataClass = \Bitrix\Highloadblock\HighloadBlockTable::compileEntity($hl)->getDataClass();
 
-        $existing = [];
-        foreach ($dataClass::query()->setSelect(['UF_CODE'])->exec() as $row) {
-            $existing[] = (string) ($row['UF_CODE'] ?? '');
-        }
-
-        $added = 0;
+        $upserted = 0;
         foreach ($this->entries as $code => $values) {
-            if (in_array($code, $existing, true)) {
-                continue;
-            }
-            $helper->Hlblock()->addElement($hlblockId, [
+            $row = $dataClass::query()->where('UF_CODE', $code)->setSelect(['ID'])->exec()->fetch();
+            $fields = [
                 'UF_CODE'     => $code,
                 'UF_VALUE_RU' => $values['ru'],
                 'UF_VALUE_UZ' => $values['uz'],
-            ]);
-            $added++;
+            ];
+            if ($row) {
+                $dataClass::update((int) $row['ID'], $fields);
+            } else {
+                $dataClass::add($fields);
+            }
+            $upserted++;
         }
-        $this->outSuccess('Feedback-переводы: добавлено %d / всего в сидере %d', $added, count($this->entries));
+
+        \Bitrix\Main\Application::getInstance()->getCache()->cleanDir('/hl/');
+
+        $this->outSuccess('Переводы feedback.* восстановлены: %d', $upserted);
     }
 
     public function down(): void
     {
-        $this->outSuccess('Откат не требуется');
+        $this->outSuccess('Откат не имеет смысла — popup-форма без переводов сломается');
     }
 }

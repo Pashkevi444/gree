@@ -116,6 +116,7 @@ final class CatalogControllerTest extends TestCase
     {
         $pag = CatalogController::buildPagination(0, 3, 1);
 
+        $this->assertSame(0, $pag['totalItems']);
         $this->assertSame(1, $pag['totalPages']);
         $this->assertSame(1, $pag['currentPage']);
     }
@@ -124,8 +125,9 @@ final class CatalogControllerTest extends TestCase
     {
         $pag = CatalogController::buildPagination(10, 3, 2);
 
-        $this->assertSame(4, $pag['totalPages']);
-        $this->assertSame(2, $pag['currentPage']);
+        $this->assertSame(10, $pag['totalItems']);
+        $this->assertSame(4,  $pag['totalPages']);
+        $this->assertSame(2,  $pag['currentPage']);
     }
 
     public function testBuildPaginationClampsCurrentPageToOne(): void
@@ -133,5 +135,13 @@ final class CatalogControllerTest extends TestCase
         $pag = CatalogController::buildPagination(10, 3, 0);
 
         $this->assertSame(1, $pag['currentPage']);
+    }
+
+    public function testBuildPaginationNegativeTotalClampedToZero(): void
+    {
+        $pag = CatalogController::buildPagination(-5, 3, 1);
+
+        $this->assertSame(0, $pag['totalItems']);
+        $this->assertSame(1, $pag['totalPages']);
     }
 }

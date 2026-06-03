@@ -136,6 +136,22 @@
                   <button class="product-buttons__item product-buttons__item--add-to-cart" type="submit">
                     {{ Language::t('product.add_to_cart') }}
                   </button>
+                  {{-- product.js делает: input[name="amount"].addEventListener('change', ...).
+                       Без этого блока (number-input + amount) JS падает на null.addEventListener. --}}
+                  <div class="product__number-input number-input" style="display:none">
+                    <button class="number-input__button number-input__button--minus" type="button">
+                      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3.33398 8H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                    <input class="number-input__control" type="number" name="amount" value="0" min="0" readonly />
+                    <button class="number-input__button number-input__button--plus" type="button">
+                      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 3.33334V12.6667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3.33398 8H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
                   <button class="product-buttons__item product-buttons__item--help" type="button" data-popup="feedback">{{ Language::t('product.help') }}</button>
                 </div>
               </form>
