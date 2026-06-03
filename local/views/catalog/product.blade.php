@@ -136,7 +136,7 @@
                   <button class="product-buttons__item product-buttons__item--add-to-cart" type="submit">
                     {{ Language::t('product.add_to_cart') }}
                   </button>
-                  <a class="product-buttons__item product-buttons__item--help" href="">{{ Language::t('product.help') }}</a>
+                  <button class="product-buttons__item product-buttons__item--help" type="button" data-popup="feedback">{{ Language::t('product.help') }}</button>
                 </div>
               </form>
             </div>
@@ -294,6 +294,8 @@
         </section>
       @endif
     </main>
+
+    @include('partials.feedback-popup')
 
     @if ($product !== null && $product->offers !== null && $product->offers->count() > 0)
       @php

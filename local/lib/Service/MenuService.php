@@ -24,4 +24,14 @@ final class MenuService extends BaseService implements MenuServiceInterface
             return new MenuItemCollection();
         }
     }
+
+    public function getFooterMenu(): MenuItemCollection
+    {
+        try {
+            return $this->menuRepository->getFooterTree();
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            return new MenuItemCollection();
+        }
+    }
 }

@@ -11,6 +11,8 @@ use Gree\Contract\Repository\BrandRepositoryInterface;
 use Gree\Contract\Repository\CartItemRepositoryInterface;
 use Gree\Contract\Repository\CartRepositoryInterface;
 use Gree\Contract\Repository\CatalogRepositoryInterface;
+use Gree\Contract\Repository\ContactsRepositoryInterface;
+use Gree\Contract\Repository\HelpRepositoryInterface;
 use Gree\Contract\Repository\HomeRepositoryInterface;
 use Gree\Contract\Repository\MenuRepositoryInterface;
 use Gree\Contract\Repository\OfferRepositoryInterface;
@@ -24,6 +26,8 @@ use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CartServiceInterface;
 use Gree\Contract\Service\CartTokenServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
+use Gree\Contract\Service\ContactsServiceInterface;
+use Gree\Contract\Service\HelpServiceInterface;
 use Gree\Contract\Service\HomeServiceInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
 use Gree\Contract\Service\MenuServiceInterface;
@@ -35,6 +39,9 @@ use Gree\Controller\BlogController;
 use Gree\Controller\BrandController;
 use Gree\Controller\CartController;
 use Gree\Controller\CatalogController;
+use Gree\Controller\ContactsController;
+use Gree\Controller\ErrorController;
+use Gree\Controller\HelpController;
 use Gree\Controller\HomeController;
 use Gree\Controller\OrderController;
 use Gree\Controller\LanguageController;
@@ -48,6 +55,8 @@ use Gree\Repository\BrandRepository;
 use Gree\Repository\CartItemRepository;
 use Gree\Repository\CartRepository;
 use Gree\Repository\CatalogRepository;
+use Gree\Repository\ContactsRepository;
+use Gree\Repository\HelpRepository;
 use Gree\Repository\HomeRepository;
 use Gree\Repository\MenuRepository;
 use Gree\Repository\OfferRepository;
@@ -62,6 +71,8 @@ use Gree\Service\BreadcrumbsService;
 use Gree\Service\CartService;
 use Gree\Service\CartTokenService;
 use Gree\Service\CatalogService;
+use Gree\Service\ContactsService;
+use Gree\Service\HelpService;
 use Gree\Service\HomeService;
 use Gree\Service\LanguageService;
 use Gree\Service\MenuService;
@@ -121,6 +132,18 @@ $container
     ->setPublic(true);
 $container->setAlias(BlogRepositoryInterface::class, BlogRepository::class)->setPublic(true);
 
+$container
+    ->register(HelpRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(HelpRepositoryInterface::class, HelpRepository::class)->setPublic(true);
+
+$container
+    ->register(ContactsRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(ContactsRepositoryInterface::class, ContactsRepository::class)->setPublic(true);
+
 $container->register(SeoRepository::class)->setPublic(true);
 $container->setAlias(SeoRepositoryInterface::class, SeoRepository::class)->setPublic(true);
 
@@ -172,6 +195,18 @@ $container
     ->addArgument(new Reference(BlogRepositoryInterface::class))
     ->setPublic(true);
 $container->setAlias(BlogServiceInterface::class, BlogService::class)->setPublic(true);
+
+$container
+    ->register(HelpService::class)
+    ->addArgument(new Reference(HelpRepositoryInterface::class))
+    ->setPublic(true);
+$container->setAlias(HelpServiceInterface::class, HelpService::class)->setPublic(true);
+
+$container
+    ->register(ContactsService::class)
+    ->addArgument(new Reference(ContactsRepositoryInterface::class))
+    ->setPublic(true);
+$container->setAlias(ContactsServiceInterface::class, ContactsService::class)->setPublic(true);
 
 $container
     ->register(SeoService::class)
@@ -327,6 +362,22 @@ $container
     ->register(LanguageController::class)
     ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
+
+$container
+    ->register(HelpController::class)
+    ->addArgument(new Reference(HelpServiceInterface::class))
+    ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
+    ->setPublic(true);
+
+$container
+    ->register(ContactsController::class)
+    ->addArgument(new Reference(ContactsServiceInterface::class))
+    ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
+    ->setPublic(true);
+
+$container->register(ErrorController::class)->setPublic(true);
 
 $container
     ->register(CartController::class)

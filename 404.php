@@ -7,16 +7,8 @@ define('NOT_CHECK_PERMISSIONS', true);
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_before.php';
 
-/** @var \CMain $APPLICATION */
-$APPLICATION->SetTitle('Страница не найдена');
-
-header('HTTP/1.1 404 Not Found');
-
-require_once $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
-
-use Gree\Core\Blade;
-
-$html = Blade::factory()->make('errors.404')->render();
-echo $html;
+\Gree\Core\App::get(\Gree\Controller\ErrorController::class)
+    ->notFound()
+    ->send();
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/epilog_after.php';

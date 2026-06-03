@@ -14,9 +14,19 @@ final class MenuRepository extends BaseRepository implements MenuRepositoryInter
 {
     public function getTree(): MenuItemCollection
     {
+        return $this->buildTreeFor(IblockCode::Menu);
+    }
+
+    public function getFooterTree(): MenuItemCollection
+    {
+        return $this->buildTreeFor(IblockCode::FooterMenu);
+    }
+
+    private function buildTreeFor(IblockCode $code): MenuItemCollection
+    {
         \Bitrix\Main\Loader::includeModule('iblock');
 
-        $iblockId = $this->resolveIblockId(IblockCode::Menu);
+        $iblockId = $this->resolveIblockId($code);
         if (!$iblockId) {
             return new MenuItemCollection();
         }

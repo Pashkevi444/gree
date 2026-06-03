@@ -45,4 +45,14 @@ interface BreadcrumbsServiceInterface
      * Home → Cart → Checkout (current).
      */
     public function checkout(): BreadcrumbCollection;
+
+    /**
+     * Home → Help (current).
+     */
+    public function help(): BreadcrumbCollection;
+
+    /**
+     * Home → Contacts (current).
+     */
+    public function contacts(): BreadcrumbCollection;
 }

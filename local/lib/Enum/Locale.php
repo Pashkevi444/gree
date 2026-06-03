@@ -37,6 +37,15 @@ enum Locale: string
     }
 
     /**
+     * Regex-альтернатива из всех value (для роутера `where('locale', …)`).
+     * Автоматически расширяется при добавлении нового case'а.
+     */
+    public static function pattern(): string
+    {
+        return implode('|', array_column(self::cases(), 'value'));
+    }
+
+    /**
      * Detect locale from an Accept-Language header.
      *   uz tag wins (узбекистанский сайт — родной язык приоритетнее);
      *   CIS-language → Ru (русский — fallback для русскоязычных гостей);

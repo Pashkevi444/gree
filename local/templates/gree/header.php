@@ -32,7 +32,8 @@ foreach ($menu as $item) {
     <title><?php $APPLICATION->ShowTitle(); ?></title>
   </head>
   <body>
-<header class="header container">
+<header class="header">
+    <div class="container">
       <div class="header-top">
         <div class="header-social">
           <a class="header-social-item" href="tel:+998 00 000 00 00">
@@ -102,36 +103,43 @@ foreach ($menu as $item) {
         </div>
         <?php
         $isRu = $currentLocale === Locale::Ru;
-        $otherLocaleUrl = Route::to('lang.switch', ['locale' => $isRu ? 'uz' : 'ru']);
-        $currentLabel = $isRu ? Language::t('header.lang.ru') : Language::t('header.lang.uz');
+        $otherLocale = $isRu ? Locale::Uz : Locale::Ru;
+        $otherLocaleUrl = Route::to('lang.switch', ['locale' => $otherLocale->value]);
+        $currentLabel = Language::t('header.lang.' . $currentLocale->value);
         ?>
-        <a class="language-select" href="<?= $otherLocaleUrl ?>" title="<?= $isRu ? Language::t('header.lang.uz') : Language::t('header.lang.ru') ?>">
+        <?php
+        // ВНИМАНИЕ: тут <div>, не <a>. HTML-spec запрещает <select> внутри <a>,
+        // браузер выкидывает его наружу — main.js не находит .language-select__control,
+        // падает с TypeError на selectedIndex, и handler header-popup-menu не вешается.
+        ?>
+        <div class="language-select" title="<?= Language::t('header.lang.' . $otherLocale->value) ?>">
           <div class="language-select__country-icon">
-            <?php if ($isRu): ?>
-              <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="russian">
-                <g clip-path="url(#clip0_lang_ru)">
-                  <path d="M0 0H18V6.00117H0V0Z" fill="white" />
-                  <path d="M0 6.00119H18V11.9988H0V6.00119Z" fill="#729AE6" />
-                  <path d="M0 11.9988H18V18H0V11.9988Z" fill="#C64F45" />
-                </g>
-                <defs>
-                  <clipPath id="clip0_lang_ru"><rect width="18" height="18" fill="white" /></clipPath>
-                </defs>
-              </svg>
-            <?php else: ?>
-              <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="uzbek">
-                <g clip-path="url(#clip0_lang_uz)">
-                  <path d="M0 0H18V6H0V0Z" fill="#1EB53A" />
-                  <path d="M0 6H18V7H0V6Z" fill="#CE1126" />
-                  <path d="M0 7H18V11H0V7Z" fill="white" />
-                  <path d="M0 11H18V12H0V11Z" fill="#CE1126" />
-                  <path d="M0 12H18V18H0V12Z" fill="#0099B5" />
-                </g>
-                <defs>
-                  <clipPath id="clip0_lang_uz"><rect width="18" height="18" fill="white" /></clipPath>
-                </defs>
-              </svg>
-            <?php endif; ?>
+            <?php
+            // main.js скрывает все svg с data-id !== select.value — поэтому
+            // рендерим ОБА флага сразу, JS оставит видимым нужный.
+            ?>
+            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="ru">
+              <g clip-path="url(#clip0_lang_ru)">
+                <path d="M0 0H18V6.00117H0V0Z" fill="white" />
+                <path d="M0 6.00119H18V11.9988H0V6.00119Z" fill="#729AE6" />
+                <path d="M0 11.9988H18V18H0V11.9988Z" fill="#C64F45" />
+              </g>
+              <defs>
+                <clipPath id="clip0_lang_ru"><rect width="18" height="18" fill="white" /></clipPath>
+              </defs>
+            </svg>
+            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="uz">
+              <g clip-path="url(#clip0_lang_uz)">
+                <path d="M0 0H18V6H0V0Z" fill="#1EB53A" />
+                <path d="M0 6H18V7H0V6Z" fill="#CE1126" />
+                <path d="M0 7H18V11H0V7Z" fill="white" />
+                <path d="M0 11H18V12H0V11Z" fill="#CE1126" />
+                <path d="M0 12H18V18H0V12Z" fill="#0099B5" />
+              </g>
+              <defs>
+                <clipPath id="clip0_lang_uz"><rect width="18" height="18" fill="white" /></clipPath>
+              </defs>
+            </svg>
           </div>
           <div class="language-select__text"><?= $currentLabel ?></div>
           <div class="language-select__icon">
@@ -139,7 +147,12 @@ foreach ($menu as $item) {
               <path d="M0.75 0.75L4.75 4.75L8.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
-        </a>
+          <select class="language-select__control" autocomplete="off" onchange="window.location='/lang/'+this.value+'/'">
+            <?php foreach (Locale::cases() as $loc): ?>
+              <option value="<?= $loc->value ?>"<?= $loc === $currentLocale ? ' selected' : '' ?>><?= Language::t('header.lang.' . $loc->value) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
       </div>
       <div class="header-body">
         <a class="header__logotype" href="<?= Route::to('home') ?>">
@@ -199,13 +212,49 @@ foreach ($menu as $item) {
           </svg>
           <?= Language::t('header.cart') ?>
         </a>
-      </div>
-      <?php foreach ($menu as $item): ?>
-        <?php if (!$item->hasChildren()) continue; ?>
-        <div class="header-popup-menu" data-popup-menu="<?= htmlspecialchars($item->code, ENT_QUOTES) ?>">
-          <?php foreach ($item->children as $child): ?>
-            <a class="header-popup-menu__item" href="<?= htmlspecialchars($child->hasUrl() ? $child->url : '#', ENT_QUOTES) ?>"><?= htmlspecialchars($child->label) ?></a>
-          <?php endforeach; ?>
+        <?php
+        // Минимальная mobile-кнопка (гамбургер). main.js делает
+        // d.querySelector("[data-hamburger-menu-button]")?.addEventListener(...)
+        // — без этого ничего страшного, но кнопку всё равно положим для mobile.
+        ?>
+        <div class="header-mobile">
+          <a class="header-mobile__cart" href="<?= Route::to('cart.index') ?>" aria-label="<?= Language::t('header.cart') ?>">
+            <svg width="18" height="17" viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0.727051 0.727272H3.63614L5.58523 10.4655C5.65174 10.8003 5.83389 11.1011 6.09981 11.3151C6.36573 11.5292 6.69847 11.6429 7.03978 11.6364H14.1089C14.4502 11.6429 14.7829 11.5292 15.0488 11.3151C15.3148 11.1011 15.4969 10.8003 15.5634 10.4655L16.7271 4.36364H4.36341" stroke="currentColor" stroke-width="1.45455" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <button class="header-mobile__button" type="button" data-hamburger-menu-button aria-label="Menu">
+            <svg width="14" height="12" viewBox="0 0 14 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M0 1C0 0.45 0.45 0 1 0H13C13.55 0 14 0.45 14 1S13.55 2 13 2H1C0.45 2 0 1.55 0 1ZM0 6C0 5.45 0.45 5 1 5H13C13.55 5 14 5.45 14 6S13.55 7 13 7H1C0.45 7 0 6.55 0 6ZM0 11C0 10.45 0.45 10 1 10H13C13.55 10 14 10.45 14 11S13.55 12 13 12H1C0.45 12 0 11.55 0 11Z" fill="currentColor"/>
+            </svg>
+          </button>
         </div>
-      <?php endforeach; ?>
-    </header>
+      </div>
+    </div>
+    <?php foreach ($menu as $item): ?>
+      <?php if (!$item->hasChildren()) continue; ?>
+      <div class="header-popup-menu" data-popup-menu="<?= htmlspecialchars($item->code, ENT_QUOTES) ?>">
+        <?php foreach ($item->children as $child): ?>
+          <a class="header-popup-menu__item" href="<?= htmlspecialchars($child->hasUrl() ? $child->url : '#', ENT_QUOTES) ?>"><?= htmlspecialchars($child->label) ?></a>
+        <?php endforeach; ?>
+      </div>
+    <?php endforeach; ?>
+
+    <?php
+    // Минимальный hamburger-drawer. main.js делает:
+    //   c = document.querySelector(".header-hamburger-menu")
+    //   c.querySelector(".header-hamburger-menu-header__close-button")
+    // Без этих узлов JS падает с TypeError и handler header-popup-menu не вешается.
+    // Полную мобильную навигацию допилим отдельно — пока пустышка, чтобы main.js не ломался.
+    ?>
+    <div class="header-hamburger-menu">
+      <div class="header-hamburger-menu-header">
+        <a class="header-hamburger-menu-header__logotype" href="<?= Route::to('home') ?>" aria-label="Gree"></a>
+        <button class="header-hamburger-menu-header__close-button" type="button" aria-label="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>

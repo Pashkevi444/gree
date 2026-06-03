@@ -1,11 +1,22 @@
 .main {
   padding-block: 30px 150px;
 }
+@media (max-width: 1319px) {
+  .main {
+    padding-block: 15px 80px;
+  }
+}
 .hero__image {
   object-fit: cover;
   width: 535px;
   height: 235px;
   margin-inline: auto;
+}
+@media (max-width: 1319px) {
+  .hero__image {
+    width: 330px;
+    height: 235px;
+  }
 }
 .hero__title {
   text-align: center;
@@ -13,11 +24,22 @@
   font-size: 44px;
   font-weight: 500;
 }
+@media (max-width: 1319px) {
+  .hero__title {
+    font-size: 28px;
+  }
+}
 .hero__description {
   text-align: center;
   max-width: 720px;
   margin: 15px auto 0;
   font-size: 24px;
+}
+@media (max-width: 1319px) {
+  .hero__description {
+    max-width: none;
+    font-size: 18px;
+  }
 }
 .hero__button {
   color: #33348e;

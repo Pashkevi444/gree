@@ -60,4 +60,9 @@ final class LocaleTest extends TestCase
         $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage(''));
         $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage(null));
     }
+
+    public function testPatternListsAllCases(): void
+    {
+        $this->assertSame('ru|uz', Locale::pattern());
+    }
 }

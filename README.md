@@ -166,9 +166,11 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
 | GET | `/cart/` | `CartController::index` | `cart.index` |
 | GET | `/order/` | `OrderController::checkout` | `order.checkout` |
 | GET | `/order/success/{publicId}/` | `OrderController::success` | `order.success` |
+| GET | `/help/` | `HelpController::index` | `help.index` |
+| GET | `/contacts/` | `ContactsController::index` | `contacts.index` |
 | GET | `/lang/{locale}/` | `LanguageController::switch` | `lang.switch` |
 
-`{section}` ограничен `nastennie|kolonnye|promyshlennye`, `{locale}` — `ru|en`.
+`{section}` ограничен `nastennie|kolonnye|promyshlennye`, `{locale}` — `ru|uz`.
 
 ### API (`local/routes/api.php`)
 
@@ -578,6 +580,10 @@ composer test               # оба прогона
 | Поправить SEO товара/статьи | админка iblock-элемента, таб «SEO» (per-element override) |
 | Поправить шаблоны SEO для всех товаров/статей | iblock → таб «Шаблоны полей» (IPROPERTY_TEMPLATES) |
 | UI-строка перевода | HL «Translations» в админке (UF_CODE + UF_VALUE_RU/UZ) |
+| Пункт меню шапки | Iblock `menu` (секции, UF_LABEL_RU/UZ + UF_URL). Корни — пункты главного меню, дети — popup-подменю. |
+| Пункт меню футера | Iblock `footer_menu` (секции). Корневая секция = заголовок колонки, дети = ссылки внутри. |
+| Контакты / адреса | Тип iblock `contacts` → `contacts_channels` (telegram/офис/сервис/email) и `contacts_addresses` (фото, расписание, телефоны, lat/lon). Кнопка «Показать на карте» = `data-show-on-map="lat,lon"` → JS в footer меняет src iframe карты. |
+| Контент `/help/` | Тип iblock `help` → 7 iblock'ов (`help_payment_methods`, `help_delivery`, `help_exchange_steps`, `help_refund_steps`, `help_service_features`, `help_service_hero`, `help_service_cards`). |
 | Новая зависимость DI | `local/lib/config/services.php` |
 | Новый Bitrix-event handler | `local/lib/Core/Event/*.php` + регистрация в `local/php_interface/init.php` |
 | Новая миграция | `local/php_interface/migrations/VersionYYYYMMDDXXXXXX.php` |

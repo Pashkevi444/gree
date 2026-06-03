@@ -44,7 +44,29 @@ final class IblockCodeTest extends TestCase
 
     public function testCasesCount(): void
     {
-        $this->assertCount(18, IblockCode::cases());
+        $this->assertCount(28, IblockCode::cases());
+    }
+
+    public function testFooterMenuCasePresent(): void
+    {
+        $this->assertSame('FooterMenu', IblockCode::FooterMenu->value);
+    }
+
+    public function testContactsCasesPresent(): void
+    {
+        $this->assertSame('ContactsChannels',  IblockCode::ContactsChannels->value);
+        $this->assertSame('ContactsAddresses', IblockCode::ContactsAddresses->value);
+    }
+
+    public function testHelpCasesPresent(): void
+    {
+        $this->assertSame('HelpPaymentMethods',  IblockCode::HelpPaymentMethods->value);
+        $this->assertSame('HelpDelivery',        IblockCode::HelpDelivery->value);
+        $this->assertSame('HelpExchangeSteps',   IblockCode::HelpExchangeSteps->value);
+        $this->assertSame('HelpRefundSteps',     IblockCode::HelpRefundSteps->value);
+        $this->assertSame('HelpServiceFeatures', IblockCode::HelpServiceFeatures->value);
+        $this->assertSame('HelpServiceHero',     IblockCode::HelpServiceHero->value);
+        $this->assertSame('HelpServiceCards',    IblockCode::HelpServiceCards->value);
     }
 
     public function testTryFromReturnsNullOnInvalid(): void

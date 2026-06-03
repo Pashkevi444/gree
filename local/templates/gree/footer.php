@@ -1,8 +1,12 @@
 <?php
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
 
+use Gree\Contract\Service\MenuServiceInterface;
+use Gree\Core\App;
 use Gree\Helpers\Language;
 use Gree\Helpers\Route;
+
+$footerMenu = App::get(MenuServiceInterface::class)->getFooterMenu();
 ?>
 <footer class="footer container">
       <div class="footer-columns">
@@ -86,31 +90,52 @@ use Gree\Helpers\Route;
           </div>
         </div>
         <nav class="footer-column">
-          <div class="footer-navigation">
-            <div class="footer-navigation__title"><?= Language::t('footer.col.catalog') ?></div>
-            <div class="footer-navigation-items">
-              <a class="footer-navigation__item" href="<?= Route::to('catalog.section', ['section' => 'nastennie']) ?>"><?= Language::t('footer.nav.wall') ?></a>
-              <a class="footer-navigation__item" href="<?= Route::to('catalog.section', ['section' => 'kolonnye']) ?>"><?= Language::t('footer.nav.column') ?></a>
-              <a class="footer-navigation__item" href="<?= Route::to('catalog.section', ['section' => 'promyshlennye']) ?>"><?= Language::t('footer.nav.industrial') ?></a>
+          <?php foreach ($footerMenu as $column): ?>
+            <div class="footer-navigation">
+              <div class="footer-navigation__title"><?= htmlspecialchars($column->label) ?></div>
+              <?php if ($column->hasChildren()): ?>
+                <div class="footer-navigation-items">
+                  <?php foreach ($column->children as $item): ?>
+                    <?php if ($item->hasUrl()): ?>
+                      <a class="footer-navigation__item" href="<?= htmlspecialchars($item->url, ENT_QUOTES) ?>"><?= htmlspecialchars($item->label) ?></a>
+                    <?php else: ?>
+                      <span class="footer-navigation__item"><?= htmlspecialchars($item->label) ?></span>
+                    <?php endif; ?>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
             </div>
-          </div>
-          <div class="footer-navigation">
-            <div class="footer-navigation__title"><?= Language::t('footer.col.company') ?></div>
-            <div class="footer-navigation-items">
-              <a class="footer-navigation__item" href="<?= Route::to('brand.show', ['code' => 'gree']) ?>"><?= Language::t('footer.nav.about') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.payment') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.delivery') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.exchange') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.return') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.service') ?></a>
-            </div>
-          </div>
+          <?php endforeach; ?>
         </nav>
       </div>
       <iframe
+        id="footer-map"
         class="footer__map"
+        data-default-src="https://yandex.ru/map-widget/v1/org/magazin_konditsionerov_gree/162570630328/?ll=64.399900%2C39.784117&utm_source=share&z=17"
         src="https://yandex.ru/map-widget/v1/org/magazin_konditsionerov_gree/162570630328/?ll=64.399900%2C39.784117&utm_source=share&z=17"
       ></iframe>
     </footer>
+    <script>
+        // Глобальный обработчик «Показать на карте». Любая кнопка с
+        // data-show-on-map="lat,lon" скроллит к iframe карты в футере и
+        // меняет его src на yandex map-widget URL с pin'ом на этих координатах.
+        // Используется на странице /contacts/ для каналов и адресов.
+        (function () {
+            const iframe = document.getElementById('footer-map');
+            if (!iframe) return;
+            document.addEventListener('click', function (ev) {
+                const btn = ev.target.closest('[data-show-on-map]');
+                if (!btn) return;
+                const raw = (btn.dataset.showOnMap || '').trim();
+                const [lat, lon] = raw.split(',').map(s => s.trim());
+                if (!lat || !lon) return;
+                ev.preventDefault();
+                const ll = `${lon},${lat}`;
+                const pt = `${lon},${lat},pm2rdm`;
+                iframe.src = `https://yandex.ru/map-widget/v1/?ll=${ll}&z=17&pt=${pt}`;
+                iframe.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        })();
+    </script>
   </body>
 </html>

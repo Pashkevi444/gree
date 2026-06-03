@@ -134,6 +134,32 @@ final class BreadcrumbsService extends BaseService implements BreadcrumbsService
         }
     }
 
+    public function help(): BreadcrumbCollection
+    {
+        try {
+            return new BreadcrumbCollection(
+                $this->home(),
+                new BreadcrumbDto(label: $this->t('breadcrumbs.help')),
+            );
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
+    }
+
+    public function contacts(): BreadcrumbCollection
+    {
+        try {
+            return new BreadcrumbCollection(
+                $this->home(),
+                new BreadcrumbDto(label: $this->t('breadcrumbs.contacts')),
+            );
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
+    }
+
     private function home(): BreadcrumbDto
     {
         return new BreadcrumbDto(label: $this->t('breadcrumbs.home'), url: '/');

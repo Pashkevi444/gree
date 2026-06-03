@@ -7,6 +7,8 @@ use Gree\Controller\BlogController;
 use Gree\Controller\BrandController;
 use Gree\Controller\CartController;
 use Gree\Controller\CatalogController;
+use Gree\Controller\ContactsController;
+use Gree\Controller\HelpController;
 use Gree\Controller\OrderController;
 use Gree\Controller\HomeController;
 use Gree\Controller\LanguageController;
@@ -82,7 +84,21 @@ return static function (RoutingConfigurator $routes): void {
             ->name('success');
     });
 
+    // ─── Help / FAQ ─────────────────────────────────────────────────────────
+    $routes
+        ->get('/help/', static fn() => App::get(HelpController::class)->index())
+        ->name('help.index');
+
+    // ─── Contacts ───────────────────────────────────────────────────────────
+    $routes
+        ->get('/contacts/', static fn() => App::get(ContactsController::class)->index())
+        ->name('contacts.index');
+
     // ─── Language switch ─────────────────────────────────────────────────────
+    // ВАЖНО: pattern захардкожен. Использовать Gree\Enum\Locale::pattern() здесь
+    // нельзя — Bitrix Routing исполняет ->where(...) на стадии парсинга web.php
+    // в собственном routing-cache, где Composer-autoload ещё не прогрет, и
+    // получаем "Class Gree\Enum\Locale not found".
     $routes
         ->get('/lang/{locale}/', static fn(string $locale) => App::get(LanguageController::class)->switch($locale))
         ->where('locale', 'ru|uz')
