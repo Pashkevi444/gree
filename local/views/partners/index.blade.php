@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @php
+    use Gree\Contract\Service\ContactsServiceInterface;
+    use Gree\Core\App;
     use Gree\Helpers\Language;
 
     // Бенефиты «Почему легко продавать кондиционеры Gree?» — статика из
@@ -12,6 +14,11 @@
         ['code' => 'range',    'icon' => 'support'],
         ['code' => 'warranty', 'icon' => 'warranty'],
     ];
+
+    // CTA «Стать партнёром» → telegram-канал из contacts (orders-telegram).
+    // Модалки пока нет, кнопка просто открывает диалог в Telegram.
+    $partnerCtaUrl = App::get(ContactsServiceInterface::class)
+        ->findChannelByCode('orders-telegram')?->buttonUrl;
 @endphp
 
 @section('content')
@@ -20,14 +27,13 @@
     <main class="main">
 
         {{-- ── Hero ──────────────────────────────────────────────── --}}
-        {{-- Кнопка «Стать партнёром» убрана до готовности верстки модалки.
-             Когда модалка приедет — вернуть <button>, добавить отдельный
-             popup-partial и при необходимости отдельный HL/эндпоинт под
-             эти заявки (по образцу CatalogHelpFeedback на товаре). --}}
         <section class="hero container">
             <div class="hero-wrapper" style="--background-image: url('/dist/images/6311bac5bcac86eed9564a7ad5501eda4bbfd3a0.png')">
                 <h2 class="hero__title">{{ Language::t('partners.hero.title') }}</h2>
                 <p class="hero__description">{{ Language::t('partners.hero.description') }}</p>
+                @if ($partnerCtaUrl)
+                    <a class="hero__button" href="{{ $partnerCtaUrl }}" target="_blank" rel="noopener noreferrer">{{ Language::t('partners.hero.cta') }}</a>
+                @endif
             </div>
         </section>
 

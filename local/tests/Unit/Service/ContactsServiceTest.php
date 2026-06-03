@@ -7,6 +7,7 @@ namespace Gree\Tests\Unit\Service;
 use Gree\Collection\ContactAddressCollection;
 use Gree\Collection\ContactChannelCollection;
 use Gree\Contract\Repository\ContactsRepositoryInterface;
+use Gree\DTO\ContactChannelDto;
 use Gree\Service\ContactsService;
 use PHPUnit\Framework\TestCase;
 
@@ -40,5 +41,25 @@ final class ContactsServiceTest extends TestCase
         $this->repo->method('getChannels')->willThrowException(new \RuntimeException('boom'));
         $this->expectException(\RuntimeException::class);
         $this->service->getChannels();
+    }
+
+    public function testFindChannelByCodeDelegates(): void
+    {
+        $dto = new ContactChannelDto(id: 1, code: 'office', name: 'Офис', phone: '+998');
+        $this->repo->expects($this->once())->method('findChannelByCode')->with('office')->willReturn($dto);
+        $this->assertSame($dto, $this->service->findChannelByCode('office'));
+    }
+
+    public function testFindChannelByCodeReturnsNullWhenMissing(): void
+    {
+        $this->repo->method('findChannelByCode')->willReturn(null);
+        $this->assertNull($this->service->findChannelByCode('unknown'));
+    }
+
+    public function testFindChannelByCodeFailSoftSwallowsException(): void
+    {
+        // Fail-soft: вызов идёт из шапки/футера, не должен валить страницу.
+        $this->repo->method('findChannelByCode')->willThrowException(new \RuntimeException('boom'));
+        $this->assertNull($this->service->findChannelByCode('office'));
     }
 }

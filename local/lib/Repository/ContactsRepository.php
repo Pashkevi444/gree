@@ -24,36 +24,76 @@ final class ContactsRepository extends BaseRepository implements ContactsReposit
         $entity = \Bitrix\Iblock\Iblock::wakeUp($iblockId)->getEntityDataClass();
         $rows = $entity::query()
             ->where('ACTIVE', 'Y')
-            ->setSelect(array_merge(
-                ['ID'],
-                $this->localizedSelect('NAME'),
-                $this->localizedSelect('DESCRIPTION'),
-                $this->localizedSelect('BUTTON_LABEL'),
-                [
-                    'BUTTON_URL_VALUE' => 'BUTTON_URL.VALUE',
-                    'ICON_CODE_VALUE'  => 'ICON_CODE.VALUE',
-                    'LATITUDE_VALUE'   => 'LATITUDE.VALUE',
-                    'LONGITUDE_VALUE'  => 'LONGITUDE.VALUE',
-                ],
-            ))
+            ->setSelect($this->channelSelect())
             ->setOrder(self::SORT)
             ->setCacheTtl(self::TTL)->cacheJoins(true)
             ->exec();
 
         $items = [];
         while ($row = $rows->fetch()) {
-            $items[] = new ContactChannelDto(
-                id: (int) $row['ID'],
-                name: $this->localized($row, 'NAME'),
-                description: $this->localized($row, 'DESCRIPTION'),
-                buttonLabel: $this->localized($row, 'BUTTON_LABEL'),
-                buttonUrl: (string) ($row['BUTTON_URL_VALUE'] ?? ''),
-                iconCode: (string) ($row['ICON_CODE_VALUE'] ?? ''),
-                latitude: (string) ($row['LATITUDE_VALUE'] ?? ''),
-                longitude: (string) ($row['LONGITUDE_VALUE'] ?? ''),
-            );
+            $items[] = $this->hydrateChannel($row);
         }
         return new ContactChannelCollection(...$items);
+    }
+
+    public function findChannelByCode(string $code): ?ContactChannelDto
+    {
+        \Bitrix\Main\Loader::includeModule('iblock');
+
+        $iblockId = $this->resolveIblockId(IblockCode::ContactsChannels);
+        if (!$iblockId) {
+            return null;
+        }
+        $entity = \Bitrix\Iblock\Iblock::wakeUp($iblockId)->getEntityDataClass();
+        $row = $entity::query()
+            ->where('ACTIVE', 'Y')
+            ->where('CODE', $code)
+            ->setSelect($this->channelSelect())
+            ->setLimit(1)
+            ->setCacheTtl(self::TTL)->cacheJoins(true)
+            ->exec()
+            ->fetch();
+
+        return $row ? $this->hydrateChannel($row) : null;
+    }
+
+    /**
+     * @return array<int|string, string>
+     */
+    private function channelSelect(): array
+    {
+        return array_merge(
+            ['ID', 'CODE'],
+            $this->localizedSelect('NAME'),
+            $this->localizedSelect('DESCRIPTION'),
+            $this->localizedSelect('BUTTON_LABEL'),
+            [
+                'BUTTON_URL_VALUE' => 'BUTTON_URL.VALUE',
+                'ICON_CODE_VALUE'  => 'ICON_CODE.VALUE',
+                'PHONE_VALUE'      => 'PHONE.VALUE',
+                'LATITUDE_VALUE'   => 'LATITUDE.VALUE',
+                'LONGITUDE_VALUE'  => 'LONGITUDE.VALUE',
+            ],
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function hydrateChannel(array $row): ContactChannelDto
+    {
+        return new ContactChannelDto(
+            id:          (int) $row['ID'],
+            code:        (string) ($row['CODE'] ?? ''),
+            name:        $this->localized($row, 'NAME'),
+            description: $this->localized($row, 'DESCRIPTION'),
+            buttonLabel: $this->localized($row, 'BUTTON_LABEL'),
+            buttonUrl:   (string) ($row['BUTTON_URL_VALUE'] ?? ''),
+            iconCode:    (string) ($row['ICON_CODE_VALUE'] ?? ''),
+            phone:       (string) ($row['PHONE_VALUE'] ?? ''),
+            latitude:    (string) ($row['LATITUDE_VALUE'] ?? ''),
+            longitude:   (string) ($row['LONGITUDE_VALUE'] ?? ''),
+        );
     }
 
     public function getAddresses(): ContactAddressCollection
