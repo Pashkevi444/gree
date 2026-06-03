@@ -1679,35 +1679,35 @@ p {
 }
 @font-face {
   font-family: Helvetica Neue;
-  src: url(/fonts/HelveticaNeue/dehinted-HelveticaNeue-Roman.woff2) format('woff2');
+  src: url(/dist/fonts/HelveticaNeue/dehinted-HelveticaNeue-Roman.woff2) format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: Helvetica Neue;
-  src: url(/fonts/HelveticaNeue/dehinted-HelveticaNeue-Thin.woff2) format('woff2');
+  src: url(/dist/fonts/HelveticaNeue/dehinted-HelveticaNeue-Thin.woff2) format('woff2');
   font-weight: 100;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: Helvetica Neue;
-  src: url(/fonts/HelveticaNeue/dehinted-HelveticaNeue-Bold.woff2) format('woff2');
+  src: url(/dist/fonts/HelveticaNeue/dehinted-HelveticaNeue-Bold.woff2) format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: Helvetica Neue;
-  src: url(/fonts/HelveticaNeue/dehinted-HelveticaNeue-Light.woff2) format('woff2');
+  src: url(/dist/fonts/HelveticaNeue/dehinted-HelveticaNeue-Light.woff2) format('woff2');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: Helvetica Neue;
-  src: url(/fonts/HelveticaNeue/dehinted-HelveticaNeue-Medium.woff2) format('woff2');
+  src: url(/dist/fonts/HelveticaNeue/dehinted-HelveticaNeue-Medium.woff2) format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
