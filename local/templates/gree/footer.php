@@ -119,7 +119,6 @@ $footerMenu = App::get(MenuServiceInterface::class)->getFooterMenu();
         // Глобальный обработчик «Показать на карте». Любая кнопка с
         // data-show-on-map="lat,lon" скроллит к iframe карты в футере и
         // меняет его src на yandex map-widget URL с pin'ом на этих координатах.
-        // Используется на странице /contacts/ для каналов и адресов.
         (function () {
             const iframe = document.getElementById('footer-map');
             if (!iframe) return;
@@ -134,6 +133,39 @@ $footerMenu = App::get(MenuServiceInterface::class)->getFooterMenu();
                 const pt = `${lon},${lat},pm2rdm`;
                 iframe.src = `https://yandex.ru/map-widget/v1/?ll=${ll}&z=17&pt=${pt}`;
                 iframe.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        })();
+
+        // Универсальный submit для всех feedback-форм (product/partner).
+        // На success-ответе скрывает форму и показывает alert внутри попапа.
+        (function () {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            // Любая форма с data-feedback-form="..." отправляется в свой action
+            // (на сейчас: feedback-form="catalog-help" → /api/v1/catalog-help-feedback;
+            // partner-форма заводится так же отдельным эндпоинтом).
+            document.querySelectorAll('form[data-feedback-form]').forEach(function (form) {
+                form.addEventListener('submit', async function (ev) {
+                    ev.preventDefault();
+                    const data = Object.fromEntries(new FormData(form).entries());
+                    try {
+                        const res = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrf,
+                            },
+                            credentials: 'same-origin',
+                            body: JSON.stringify(data),
+                        });
+                        if (!res.ok) throw new Error('feedback ' + res.status);
+                        form.style.display = 'none';
+                        const alert = form.parentNode.querySelector('.feedback-alert');
+                        if (alert) alert.style.display = '';
+                    } catch (e) {
+                        console.error('feedback submit failed', e);
+                    }
+                });
             });
         })();
     </script>

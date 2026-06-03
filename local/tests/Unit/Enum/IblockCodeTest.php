@@ -44,7 +44,21 @@ final class IblockCodeTest extends TestCase
 
     public function testCasesCount(): void
     {
-        $this->assertCount(28, IblockCode::cases());
+        $this->assertCount(34, IblockCode::cases());
+    }
+
+    public function testWhereToBuyCasesPresent(): void
+    {
+        $this->assertSame('WhereToBuyLocations', IblockCode::WhereToBuyLocations->value);
+        $this->assertSame('WhereToBuyPartners',  IblockCode::WhereToBuyPartners->value);
+        $this->assertSame('WhereToBuyChains',    IblockCode::WhereToBuyChains->value);
+    }
+
+    public function testPartnersCasesPresent(): void
+    {
+        $this->assertSame('PartnersB2b',            IblockCode::PartnersB2b->value);
+        $this->assertSame('PartnersHowItWorks',     IblockCode::PartnersHowItWorks->value);
+        $this->assertSame('PartnersCompaniesTrust', IblockCode::PartnersCompaniesTrust->value);
     }
 
     public function testFooterMenuCasePresent(): void

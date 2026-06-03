@@ -45,4 +45,14 @@ enum IblockCode: string
     // Страница контактов /contacts/
     case ContactsChannels = 'ContactsChannels';
     case ContactsAddresses = 'ContactsAddresses';
+
+    // Страница «Где купить» /where-to-buy/
+    case WhereToBuyLocations = 'WhereToBuyLocations';
+    case WhereToBuyPartners = 'WhereToBuyPartners';
+    case WhereToBuyChains = 'WhereToBuyChains';
+
+    // Страница «Партнёрам» /partners/
+    case PartnersB2b = 'PartnersB2b';
+    case PartnersHowItWorks = 'PartnersHowItWorks';
+    case PartnersCompaniesTrust = 'PartnersCompaniesTrust';
 }

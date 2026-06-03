@@ -7,7 +7,7 @@
     <div class="popup-wrapper">
         <div class="popup-content">
             <div class="feedback">
-                <form class="feedback-form" action="/api/v1/feedback" method="post" autocomplete="off">
+                <form class="feedback-form" action="/api/v1/feedback/catalog-help" method="post" autocomplete="off" data-feedback-form="catalog-help">
                     <div class="feedback-form-header">
                         <div class="feedback-form-header-wrapper">
                             <div class="feedback-form-header__title">{{ Language::t('feedback.title') }}</div>

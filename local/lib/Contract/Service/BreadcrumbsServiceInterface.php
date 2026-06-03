@@ -32,6 +32,11 @@ interface BreadcrumbsServiceInterface
     public function blog(): BreadcrumbCollection;
 
     /**
+     * Home → Blog → <category> (current).
+     */
+    public function blogCategory(\Gree\Enum\BlogCategory $category): BreadcrumbCollection;
+
+    /**
      * Home → Blog → <category> → <article title> (current).
      */
     public function blogArticle(BlogArticleDto $article): BreadcrumbCollection;
@@ -55,4 +60,14 @@ interface BreadcrumbsServiceInterface
      * Home → Contacts (current).
      */
     public function contacts(): BreadcrumbCollection;
+
+    /**
+     * Home → Where to buy (current).
+     */
+    public function whereToBuy(): BreadcrumbCollection;
+
+    /**
+     * Home → Partners (current).
+     */
+    public function partners(): BreadcrumbCollection;
 }

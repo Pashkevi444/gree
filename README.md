@@ -162,27 +162,32 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
 | GET | `/catalog/{section}/{code}/` | `ProductController::show` | `catalog.product` |
 | GET | `/brand/{code}/` | `BrandController::show` | `brand.show` |
 | GET | `/blog/` | `BlogController::index` | `blog.index` |
+| GET | `/blog/{category}/` | `BlogController::category` | `blog.category` |
 | GET | `/blog/{code}/` | `BlogController::show` | `blog.show` |
 | GET | `/cart/` | `CartController::index` | `cart.index` |
 | GET | `/order/` | `OrderController::checkout` | `order.checkout` |
 | GET | `/order/success/{publicId}/` | `OrderController::success` | `order.success` |
 | GET | `/help/` | `HelpController::index` | `help.index` |
 | GET | `/contacts/` | `ContactsController::index` | `contacts.index` |
+| GET | `/where-to-buy/` | `WhereToBuyController::index` | `where_to_buy.index` |
+| GET | `/partners/` | `PartnersController::index` | `partners.index` |
 | GET | `/lang/{locale}/` | `LanguageController::switch` | `lang.switch` |
 
-`{section}` ограничен `nastennie|kolonnye|promyshlennye`, `{locale}` — `ru|uz`.
+`{section}` ограничен `nastennie|kolonnye|promyshlennye`, `{locale}` — `ru|uz`,
+`{category}` (blog) — `advice|news`. Категорийный роут стоит ПЕРЕД show — оба
+шаблона совпадают на `/blog/{x}/`, конфликт разруливается regex'ом.
 
 ### API (`local/routes/api.php`)
 
 | Метод | URL | Контроллер | Имя |
 |-------|-----|-----------|-----|
 | GET | `/api/catalog` | `CatalogController::filter` | `api.catalog.filter` |
-| GET | `/api/v1/blog` | `BlogController::paginate` | `api.v1.blog.paginate` |
 | GET | `/api/v1/cart/` | `CartController::get` | `api.v1.cart.get` |
 | POST | `/api/v1/cart/items` | `CartController::add` | `api.v1.cart.items.add` |
 | PATCH | `/api/v1/cart/items/{id}` | `CartController::update` | `api.v1.cart.items.update` |
 | DELETE | `/api/v1/cart/items/{id}` | `CartController::remove` | `api.v1.cart.items.remove` |
 | POST | `/api/v1/order` | `OrderController::place` | `api.v1.order.place` |
+| POST | `/api/v1/feedback/{channel}` | `FeedbackController::create` | `api.v1.feedback.create` |
 
 State-changing методы (POST/PATCH/DELETE) защищены `ApiGuard` (см. ниже).
 
@@ -584,6 +589,9 @@ composer test               # оба прогона
 | Пункт меню футера | Iblock `footer_menu` (секции). Корневая секция = заголовок колонки, дети = ссылки внутри. |
 | Контакты / адреса | Тип iblock `contacts` → `contacts_channels` (telegram/офис/сервис/email) и `contacts_addresses` (фото, расписание, телефоны, lat/lon). Кнопка «Показать на карте» = `data-show-on-map="lat,lon"` → JS в footer меняет src iframe карты. |
 | Контент `/help/` | Тип iblock `help` → 7 iblock'ов (`help_payment_methods`, `help_delivery`, `help_exchange_steps`, `help_refund_steps`, `help_service_features`, `help_service_hero`, `help_service_cards`). |
+| Где купить | Тип iblock `where_to_buy` → 3 iblock'а: `where_to_buy_locations` (lat/lon + кнопка `data-show-on-map`), `where_to_buy_partners` (Swiper-карусель), `where_to_buy_chains` (статичная сетка). |
+| Партнёрам | Тип iblock `partners` → `partners_b2b` (карточки моделей сотрудничества, STEP_NUMBER), `partners_how_it_works` (карточки этапов + опциональный link), `partners_companies_trust` (Swiper-карусель логотипов). Hero/benefits — в HL Translations. Кнопка «Стать партнёром» = `<button data-popup="partner-feedback">`. |
+| Заявки с форм (модалок) | Strategy + Registry. Один `FeedbackController` → POST `/api/v1/feedback/{channel}`. Канал = реализация `Gree\Contract\Feedback\FeedbackChannelInterface` (id, allowedFields, requiredFields, hlblock, mapToRow), регистрируется в `FeedbackChannelRegistry` через DI. `FeedbackService` валидирует обязательные поля и пишет через универсальный `FeedbackRepository::insert(HlblockCode, $row)`. Сейчас зарегистрирован один канал — `catalog-help` (`Service/Feedback/Channel/CatalogHelpFeedbackChannel`, пишет в HL `CatalogHelpFeedback`). Новая модалка = `class Xxx implements FeedbackChannelInterface` + регистрация в `services.php`. |
 | Новая зависимость DI | `local/lib/config/services.php` |
 | Новый Bitrix-event handler | `local/lib/Core/Event/*.php` + регистрация в `local/php_interface/init.php` |
 | Новая миграция | `local/php_interface/migrations/VersionYYYYMMDDXXXXXX.php` |

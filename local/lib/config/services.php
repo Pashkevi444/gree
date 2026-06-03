@@ -12,8 +12,11 @@ use Gree\Contract\Repository\CartItemRepositoryInterface;
 use Gree\Contract\Repository\CartRepositoryInterface;
 use Gree\Contract\Repository\CatalogRepositoryInterface;
 use Gree\Contract\Repository\ContactsRepositoryInterface;
+use Gree\Contract\Repository\FeedbackRepositoryInterface;
 use Gree\Contract\Repository\HelpRepositoryInterface;
 use Gree\Contract\Repository\HomeRepositoryInterface;
+use Gree\Contract\Repository\PartnersRepositoryInterface;
+use Gree\Contract\Repository\WhereToBuyRepositoryInterface;
 use Gree\Contract\Repository\MenuRepositoryInterface;
 use Gree\Contract\Repository\OfferRepositoryInterface;
 use Gree\Contract\Repository\OrderItemRepositoryInterface;
@@ -26,9 +29,12 @@ use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CartServiceInterface;
 use Gree\Contract\Service\CartTokenServiceInterface;
 use Gree\Contract\Service\CatalogServiceInterface;
+use Gree\Contract\Service\FeedbackServiceInterface;
 use Gree\Contract\Service\ContactsServiceInterface;
 use Gree\Contract\Service\HelpServiceInterface;
 use Gree\Contract\Service\HomeServiceInterface;
+use Gree\Contract\Service\PartnersServiceInterface;
+use Gree\Contract\Service\WhereToBuyServiceInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
 use Gree\Contract\Service\MenuServiceInterface;
 use Gree\Contract\Service\OrderServiceInterface;
@@ -41,11 +47,14 @@ use Gree\Controller\CartController;
 use Gree\Controller\CatalogController;
 use Gree\Controller\ContactsController;
 use Gree\Controller\ErrorController;
+use Gree\Controller\FeedbackController;
 use Gree\Controller\HelpController;
 use Gree\Controller\HomeController;
 use Gree\Controller\OrderController;
 use Gree\Controller\LanguageController;
+use Gree\Controller\PartnersController;
 use Gree\Controller\ProductController;
+use Gree\Controller\WhereToBuyController;
 use Gree\DB\TransactionService;
 use Gree\Http\BitrixHttpContext;
 use Gree\Repository\BlogRepository;
@@ -56,8 +65,11 @@ use Gree\Repository\CartItemRepository;
 use Gree\Repository\CartRepository;
 use Gree\Repository\CatalogRepository;
 use Gree\Repository\ContactsRepository;
+use Gree\Repository\FeedbackRepository;
 use Gree\Repository\HelpRepository;
 use Gree\Repository\HomeRepository;
+use Gree\Repository\PartnersRepository;
+use Gree\Repository\WhereToBuyRepository;
 use Gree\Repository\MenuRepository;
 use Gree\Repository\OfferRepository;
 use Gree\Repository\OrderItemRepository;
@@ -72,8 +84,11 @@ use Gree\Service\CartService;
 use Gree\Service\CartTokenService;
 use Gree\Service\CatalogService;
 use Gree\Service\ContactsService;
+use Gree\Service\FeedbackService;
 use Gree\Service\HelpService;
 use Gree\Service\HomeService;
+use Gree\Service\PartnersService;
+use Gree\Service\WhereToBuyService;
 use Gree\Service\LanguageService;
 use Gree\Service\MenuService;
 use Gree\Service\OrderService;
@@ -144,6 +159,21 @@ $container
     ->setPublic(true);
 $container->setAlias(ContactsRepositoryInterface::class, ContactsRepository::class)->setPublic(true);
 
+$container
+    ->register(WhereToBuyRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(WhereToBuyRepositoryInterface::class, WhereToBuyRepository::class)->setPublic(true);
+
+$container->register(FeedbackRepository::class)->setPublic(true);
+$container->setAlias(FeedbackRepositoryInterface::class, FeedbackRepository::class)->setPublic(true);
+
+$container
+    ->register(PartnersRepository::class)
+    ->addArgument(new Reference(LanguageServiceInterface::class))
+    ->setPublic(true);
+$container->setAlias(PartnersRepositoryInterface::class, PartnersRepository::class)->setPublic(true);
+
 $container->register(SeoRepository::class)->setPublic(true);
 $container->setAlias(SeoRepositoryInterface::class, SeoRepository::class)->setPublic(true);
 
@@ -207,6 +237,38 @@ $container
     ->addArgument(new Reference(ContactsRepositoryInterface::class))
     ->setPublic(true);
 $container->setAlias(ContactsServiceInterface::class, ContactsService::class)->setPublic(true);
+
+$container
+    ->register(WhereToBuyService::class)
+    ->addArgument(new Reference(WhereToBuyRepositoryInterface::class))
+    ->setPublic(true);
+$container->setAlias(WhereToBuyServiceInterface::class, WhereToBuyService::class)->setPublic(true);
+
+// ─── Feedback (Strategy + Registry) ───────────────────────────────────────
+// Регистрируем каждый канал отдельно + собираем их в реестр. Чтобы поднять
+// новую модалку — добавить class Xxx implements FeedbackChannelInterface
+// и зарегистрировать здесь же (+ ссылка в массив каналов registry).
+$container->register(\Gree\Service\Feedback\Channel\CatalogHelpFeedbackChannel::class)->setPublic(true);
+
+$container
+    ->register(\Gree\Service\Feedback\FeedbackChannelRegistry::class)
+    ->addArgument([
+        new Reference(\Gree\Service\Feedback\Channel\CatalogHelpFeedbackChannel::class),
+    ])
+    ->setPublic(true);
+
+$container
+    ->register(FeedbackService::class)
+    ->addArgument(new Reference(\Gree\Service\Feedback\FeedbackChannelRegistry::class))
+    ->addArgument(new Reference(FeedbackRepositoryInterface::class))
+    ->setPublic(true);
+$container->setAlias(FeedbackServiceInterface::class, FeedbackService::class)->setPublic(true);
+
+$container
+    ->register(PartnersService::class)
+    ->addArgument(new Reference(PartnersRepositoryInterface::class))
+    ->setPublic(true);
+$container->setAlias(PartnersServiceInterface::class, PartnersService::class)->setPublic(true);
 
 $container
     ->register(SeoService::class)
@@ -373,6 +435,26 @@ $container
 $container
     ->register(ContactsController::class)
     ->addArgument(new Reference(ContactsServiceInterface::class))
+    ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
+    ->setPublic(true);
+
+$container
+    ->register(WhereToBuyController::class)
+    ->addArgument(new Reference(WhereToBuyServiceInterface::class))
+    ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
+    ->addArgument(new Reference(SeoServiceInterface::class))
+    ->setPublic(true);
+
+$container
+    ->register(FeedbackController::class)
+    ->addArgument(new Reference(FeedbackServiceInterface::class))
+    ->addArgument(new Reference(ApiGuardInterface::class))
+    ->setPublic(true);
+
+$container
+    ->register(PartnersController::class)
+    ->addArgument(new Reference(PartnersServiceInterface::class))
     ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
     ->addArgument(new Reference(SeoServiceInterface::class))
     ->setPublic(true);

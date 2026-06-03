@@ -1,9 +1,13 @@
 @php
     use Gree\Helpers\Language;
+    /** @var string $title          — заголовок секции */
+    /** @var \Gree\Collection\BlogArticleCollection $items */
+    /** @var string $anchorId       — id для якорной ссылки из меню */
+    /** @var string|null $moreUrl   — URL «Показать ещё» (null = не показывать кнопку) */
 @endphp
-<section class="blog-section container">
+<section class="blog-section container" id="{{ $anchorId }}">
     <h2 class="blog-section__title">{{ $title }}</h2>
-    <div class="blog-section-items" data-blog-items="{{ $category }}">
+    <div class="blog-section-items">
         @foreach ($items as $article)
             <a class="blog-card" href="{{ $article->url }}">
                 @if ($article->image)
@@ -21,9 +25,12 @@
             </a>
         @endforeach
     </div>
-    @if ($hasMore)
-        <button class="blog-section__button" type="button" data-load-more="{{ $category }}" data-page-size="{{ $pageSize }}">
-            {{ Language::t('blog.show_more') }}
-        </button>
+    @if (!empty($moreUrl))
+        {{-- В dist кнопка — это <div class="blog-section__button"> без ссылки.
+             Сохраняем 1:1 разметку (CSS на div), а кликабельность даём через
+             оборачивающий <a>, который наследует цвет и убирает подчёркивание. --}}
+        <a class="blog-section__more" href="{{ $moreUrl }}" style="display:block;text-decoration:none;color:inherit">
+            <div class="blog-section__button">{{ Language::t('blog.show_more') }}</div>
+        </a>
     @endif
 </section>

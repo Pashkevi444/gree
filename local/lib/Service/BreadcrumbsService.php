@@ -87,6 +87,24 @@ final class BreadcrumbsService extends BaseService implements BreadcrumbsService
         }
     }
 
+    public function blogCategory(BlogCategory $category): BreadcrumbCollection
+    {
+        try {
+            $key = $category === BlogCategory::News ? 'blog.news' : 'blog.title';
+            return new BreadcrumbCollection(
+                $this->home(),
+                new BreadcrumbDto(label: $this->t('blog.section'), url: Route::to('blog.index')),
+                new BreadcrumbDto(label: $this->t($key)),
+            );
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', [
+                'category' => $category->value,
+                'exception' => $e,
+            ]);
+            throw $e;
+        }
+    }
+
     public function blogArticle(BlogArticleDto $article): BreadcrumbCollection
     {
         try {
@@ -153,6 +171,32 @@ final class BreadcrumbsService extends BaseService implements BreadcrumbsService
             return new BreadcrumbCollection(
                 $this->home(),
                 new BreadcrumbDto(label: $this->t('breadcrumbs.contacts')),
+            );
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
+    }
+
+    public function whereToBuy(): BreadcrumbCollection
+    {
+        try {
+            return new BreadcrumbCollection(
+                $this->home(),
+                new BreadcrumbDto(label: $this->t('breadcrumbs.where_to_buy')),
+            );
+        } catch (\Throwable $e) {
+            FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
+            throw $e;
+        }
+    }
+
+    public function partners(): BreadcrumbCollection
+    {
+        try {
+            return new BreadcrumbCollection(
+                $this->home(),
+                new BreadcrumbDto(label: $this->t('breadcrumbs.partners')),
             );
         } catch (\Throwable $e) {
             FileLogger::getInstance()->critical(__METHOD__ . ' failed', ['exception' => $e]);
