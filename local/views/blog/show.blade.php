@@ -13,7 +13,7 @@
             <h1 class="article__title">{{ $article->title }}</h1>
             <div class="article-meta">
                 @if ($article->date)
-                    <div class="article-meta__item">{{ $article->date }}</div>
+                    <div class="article-meta__item">{{ Language::date($article->date) }}</div>
                 @endif
                 <div class="article-meta__item">{{ $categoryLabel }}</div>
                 @if ($article->readingTime > 0)
@@ -39,7 +39,7 @@
                         <div class="blog-card__title">{{ $card->title }}</div>
                         <div class="blog-card__description">{{ $card->description }}</div>
                         <div class="blog-card-footer">
-                            <div class="blog-card__date">{{ $card->date }}</div>
+                            <div class="blog-card__date">{{ Language::date($card->date) }}</div>
                             <svg class="blog-card__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M4.16406 10H15.8307" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
                                 <path d="M10 4.16687L15.8333 10.0002L10 15.8335" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>

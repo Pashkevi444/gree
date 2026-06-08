@@ -47,6 +47,12 @@
   color: #282828;
   font-weight: 500;
 }
+.order-card__description {
+  color: #282828;
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1;
+}
 .order-card-content {
   margin-top: 25px;
 }

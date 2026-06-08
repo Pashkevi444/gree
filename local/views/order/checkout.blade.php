@@ -51,6 +51,7 @@
                 {{-- ── Доставка ─────────────────────────────────────────────── --}}
                 <div class="order-card">
                     <div class="order-card__title">{{ Language::t('order.delivery.title') }}</div>
+                    <div class="order-card__description">{{ Language::t('order.delivery.description') }}</div>
                     <div class="order-card-content">
                         <p class="order-card__note">{{ Language::t('order.delivery.note') }}</p>
                         <div class="form-layout form-layout--delivery">
@@ -104,6 +105,7 @@
                             @foreach ($paymentMethods as $i => $method)
                                 <label class="payment">
                                     <input type="radio" name="payment" value="{{ $method->value }}" @if ($i === 0) checked @endif />
+                                    @include('partials.payment-icon', ['method' => $method])
                                     {{ Language::t($method->translationKey()) }}
                                 </label>
                             @endforeach

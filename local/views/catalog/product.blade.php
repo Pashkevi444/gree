@@ -29,15 +29,7 @@
                   class="catalog__item @if ($product->type === $type)catalog__item--active @endif"
                   href="{{ Route::to('catalog.section', ['section' => $type->slug()]) }}"
                 >
-                  <svg viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M0.727539 0.72728H3.63663L5.58572 10.4655C5.65223 10.8003 5.83438 11.1011 6.1003 11.3151C6.36622 11.5292 6.69896 11.6429 7.04027 11.6364H14.1094C14.4507 11.6429 14.7834 11.5292 15.0493 11.3151C15.3152 11.1011 15.4974 10.8003 15.5639 10.4655L16.7275 4.36364H4.3639M7.27299 15.2727C7.27299 15.6744 6.94738 16 6.54572 16C6.14406 16 5.81845 15.6744 5.81845 15.2727C5.81845 14.8711 6.14406 14.5455 6.54572 14.5455C6.94738 14.5455 7.27299 14.8711 7.27299 15.2727ZM15.273 15.2727C15.273 15.6744 14.9474 16 14.5457 16C14.1441 16 13.8184 15.6744 13.8184 15.2727C13.8184 14.8711 14.1441 14.5455 14.5457 14.5455C14.9474 14.5455 15.273 14.8711 15.273 15.2727Z"
-                      stroke="currentColor"
-                      stroke-width="1.45455"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+                  @include('partials.product-type-icon', ['type' => $type])
                   {{ Language::t('product.types.' . $type->value) }}
                 </a>
               @endforeach
@@ -127,25 +119,30 @@
 
                 <div class="product-price">
                   <div class="product-price__title">{{ Language::t('product.price') }}</div>
-                  <div class="product-price__text" data-price-suffix=" UZS">{{ number_format($product->price, 0, '.', ' ') }} UZS</div>
+                  {{-- data-price-template — i18n-шаблон цены с плейсхолдером __PRICE__.
+                       JS при смене offer делает: el.textContent = template.replace('__PRICE__', fmt(price)).
+                       Работает и для RU («от 123 UZS»), и для UZ («123 UZS dan»). --}}
+                  <div class="product-price__text" data-price-template="{{ Language::t('product.price_from', ['price' => '__PRICE__']) }}">{{ Language::t('product.price_from', ['price' => number_format($product->price, 0, '.', ' ')]) }}</div>
                 </div>
 
                 <div class="product-stock product-stock--in-stock" @unless ($product->inStock) style="display:none" @endunless>{{ Language::t('product.in_stock') }}</div>
 
                 <div class="product-buttons">
-                  <button class="product-buttons__item product-buttons__item--add-to-cart" type="submit">
+                  <button class="product-buttons__item product-buttons__item--add-to-cart" type="submit" data-add-to-cart>
                     {{ Language::t('product.add_to_cart') }}
                   </button>
-                  {{-- product.js делает: input[name="amount"].addEventListener('change', ...).
-                       Без этого блока (number-input + amount) JS падает на null.addEventListener. --}}
-                  <div class="product__number-input number-input" style="display:none">
+                  {{-- Counter заменяет кнопку «Купить» после добавления в корзину.
+                       Инлайн style:display:none нужен потому что CSS .number-input
+                       объявлен с display:flex и перекрывает атрибут hidden. JS
+                       тоже управляет видимостью через style.display, не hidden. --}}
+                  <div class="product__number-input number-input" data-cart-counter style="display:none">
                     <button class="number-input__button number-input__button--minus" type="button">
                       <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M3.33398 8H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                     </button>
                     <input class="number-input__control" type="number" name="amount" value="0" min="0" readonly />
-                    <button class="number-input__button number-input__button--plus" type="button">
+                    <button class="number-input__button number-input__button--plus" type="button" data-counter-increase>
                       <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M8 3.33334V12.6667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M3.33398 8H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
@@ -243,7 +240,12 @@
                           </div>
                         @endforeach
                       </div>
-                      <button class="product-functions__button" type="button"></button>
+                      <button
+                        class="product-functions__button"
+                        type="button"
+                        data-show-text="{{ Language::t('product.functions.show_more') }}"
+                        data-hide-text="{{ Language::t('product.functions.hide') }}"
+                      ></button>
                     </div>
                   </div>
                 @endif
@@ -335,9 +337,15 @@
 
           const priceEl = form.querySelector('.product-price__text');
           const stockEl = form.querySelector('.product-stock');
-          const submitBtn = form.querySelector('button[type="submit"]');
+          const submitBtn = form.querySelector('[data-add-to-cart]');
+          const counterEl = form.querySelector('[data-cart-counter]');
+          const counterValue = counterEl?.querySelector('input[name="amount"]');
           const specCells = document.querySelectorAll('[data-spec]');
           const fmt = new Intl.NumberFormat('ru-RU');
+          const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+          const addUrl = '{{ Route::to('api.v1.cart.items.add') }}';
+          const cartGetUrl = '{{ Route::to('api.v1.cart.get') }}';
+          const itemUrlTemplate = '{{ Route::to('api.v1.cart.items.update', ['id' => 0]) }}'.replace(/0$/, '');
 
           function findOffer(color, area) {
             // 1) exact match
@@ -362,8 +370,8 @@
             if (offerIdInput) offerIdInput.value = offer.id;
 
             if (priceEl) {
-              const suffix = priceEl.dataset.priceSuffix || '';
-              priceEl.textContent = fmt.format(offer.price) + suffix;
+              const tpl = priceEl.dataset.priceTemplate || '__PRICE__ UZS';
+              priceEl.textContent = tpl.replace('__PRICE__', fmt.format(offer.price));
             }
             if (stockEl) {
               stockEl.style.display = offer.in_stock ? '' : 'none';
@@ -381,36 +389,124 @@
           }
 
           form.addEventListener('change', e => {
-            if (e.target.name === 'color' || e.target.name === 'area') update();
+            if (e.target.name === 'color' || e.target.name === 'area') {
+              update();
+              syncCart();
+            }
           });
           update();
 
+          // Текущая «строка корзины» для выбранного offer — { id, quantity } или null.
+          let currentLine = null;
+
+          function renderCounter() {
+            // CSS .number-input { display:flex } перекрывает [hidden] — управляем
+            // через style.display напрямую, чтобы работать поверх любых CSS-правил.
+            if (currentLine && currentLine.quantity > 0) {
+              if (submitBtn)  submitBtn.style.display = 'none';
+              if (counterEl)  counterEl.style.display = '';
+              if (counterValue) counterValue.value = String(currentLine.quantity);
+            } else {
+              if (submitBtn)  submitBtn.style.display = '';
+              if (counterEl)  counterEl.style.display = 'none';
+              if (counterValue) counterValue.value = '0';
+            }
+          }
+
+          function applyLines(lines, offerId) {
+            const match = (lines || []).find(l => Number(l.offer_id) === Number(offerId));
+            currentLine = match ? { id: Number(match.id), quantity: Number(match.quantity) } : null;
+            renderCounter();
+          }
+
+          async function fetchJson(url, options = {}) {
+            const r = await fetch(url, {
+              credentials: 'same-origin',
+              headers: {
+                'Accept': 'application/json',
+                ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                ...(options.method && options.method !== 'GET' ? { 'X-CSRF-Token': csrf } : {}),
+                ...(options.headers || {}),
+              },
+              ...options,
+            });
+            if (!r.ok) throw new Error(`${options.method || 'GET'} ${url} ${r.status}`);
+            return r.json();
+          }
+
+          async function syncCart() {
+            const offerId = parseInt(offerIdInput?.value || '0', 10);
+            if (!offerId) return;
+            try {
+              const data = await fetchJson(cartGetUrl);
+              applyLines(data.lines, offerId);
+            } catch (err) {
+              console.error(err);
+            }
+          }
+
+          // 1) Subscribe: «Купить» — POST на наш API, без редиректа.
+          //
+          // Capture-фаза + stopImmediatePropagation — обязательно. Фронтовый
+          // product.js навешивает свой submit-handler (bubble), который делает
+          // `fetch(form.action, {method:'POST', body: FormData(form)})` — а
+          // action у формы пустой, поэтому POST уходит на текущий URL страницы
+          // и возвращает 404. Capture-handler перехватывает событие первым и
+          // глушит все остальные listeners на форме.
+          //
+          // На initial load (r() из main.js) и на change по ±-кнопкам фронт
+          // вызывает form.requestSubmit() — submitter будет null. Игнорируем
+          // такие programmatic-submits: за ±-изменения отвечает change-handler
+          // ниже, который шлёт PATCH/DELETE.
           form.addEventListener('submit', async e => {
             e.preventDefault();
+            e.stopImmediatePropagation();
+            if (!e.submitter || !('addToCart' in e.submitter.dataset)) return;
+
             const offerId = parseInt(offerIdInput?.value || '0', 10);
             if (!offerId) return;
             if (submitBtn) submitBtn.disabled = true;
             try {
-              const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-              const addUrl = '{{ Route::to('api.v1.cart.items.add') }}';
-              const cartUrl = '{{ Route::to('cart.index') }}';
-              const r = await fetch(addUrl, {
+              const data = await fetchJson(addUrl, {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                  'X-CSRF-Token': csrf,
-                },
-                credentials: 'same-origin',
                 body: JSON.stringify({ offer_id: offerId, quantity: 1 }),
               });
-              if (!r.ok) throw new Error('add-to-cart ' + r.status);
-              location.href = cartUrl;
+              applyLines(data.lines, offerId);
             } catch (err) {
               console.error(err);
+            } finally {
               if (submitBtn) submitBtn.disabled = false;
             }
+          }, true);
+
+          // 2) «+»/«−» — обработку DOM-инкремента вешает фронтовый main.js
+          //    (querySelectorAll('.number-input').forEach → click → valueAsNumber±1 →
+          //    dispatchEvent('change')). Мы только слушаем итоговый change-event и
+          //    дёргаем API. Самостоятельно вешать click — НЕЛЬЗЯ: получится двойной
+          //    inc/dec за один клик.
+          counterValue?.addEventListener('change', async () => {
+            const offerId = parseInt(offerIdInput?.value || '0', 10);
+            if (!offerId || !currentLine) return;
+            const next = Math.max(0, parseInt(counterValue.value, 10) || 0);
+            if (next === currentLine.quantity) return;
+            try {
+              const data = next <= 0
+                ? await fetchJson(itemUrlTemplate + currentLine.id, { method: 'DELETE' })
+                : await fetchJson(itemUrlTemplate + currentLine.id, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ quantity: next }),
+                  });
+              applyLines(data.lines, offerId);
+            } catch (err) {
+              console.error(err);
+              // если сервер отказал — откатим UI к прежнему quantity
+              renderCounter();
+            }
           });
+
+          // 3) Initial sync — если этот offer уже в корзине (например после refresh),
+          //    сразу показать counter вместо кнопки «Купить».
+          syncCart();
         })();
       </script>
     @endif

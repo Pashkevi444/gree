@@ -35,6 +35,7 @@ foreach ($menu as $item) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES) ?>" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <?php $APPLICATION->ShowHead(); ?>
     <title><?php $APPLICATION->ShowTitle(); ?></title>
   </head>
@@ -229,10 +230,17 @@ foreach ($menu as $item) {
     <?php endforeach; ?>
 
     <?php
-    // Mobile hamburger drawer. main.js querySelector(".header-hamburger-menu")
-    // и querySelector(".header-hamburger-menu-header__close-button") — обязательны,
-    // иначе JS падает с TypeError. Сабменю-drawer-ы (data-drawer) пока не делаем —
-    // ссылки бренд/помощь/каталог ведут напрямую на соответствующие страницы.
+    // Mobile hamburger drawer.
+    //
+    // Меню items с children → <button data-drawer="<code>"> открывает sub-drawer
+    // (catalog/brand/help). Items без children → <a href> на свою страницу
+    // (где купить / партнёрам / контакты).
+    //
+    // main.js навешивает обработчики на:
+    //   - .header-hamburger-menu-header__close-button (закрыть основной drawer)
+    //   - [data-drawer="<X>"] (открыть .drawer[data-drawer="<X>"])
+    // Без узлов JS падает TypeError — сами drawer-ы лежат после хедера.
+    $hamburgerCatalogTag = ($catalogItem !== null && $catalogItem->hasChildren()) ? 'button' : 'a';
     ?>
     <div class="header-hamburger-menu">
       <div class="header-hamburger-menu-header">
@@ -243,18 +251,50 @@ foreach ($menu as $item) {
           </svg>
         </button>
       </div>
-      <?php if ($catalogItem !== null && $catalogItem->hasUrl()): ?>
-        <a class="header-hamburger-menu__catalog-button" href="<?= htmlspecialchars($catalogItem->url, ENT_QUOTES) ?>">
+      <?php if ($catalogItem !== null): ?>
+        <?php if ($catalogItem->hasChildren()): ?>
+          <button class="header-hamburger-menu__catalog-button" type="button" data-drawer="catalog">
+        <?php else: ?>
+          <a class="header-hamburger-menu__catalog-button" href="<?= htmlspecialchars($catalogItem->url, ENT_QUOTES) ?>">
+        <?php endif; ?>
           <svg width="14" height="12" viewBox="0 0 14 12" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M0 1C0 0.45 0.45 0 1 0H13C13.55 0 14 0.45 14 1S13.55 2 13 2H1C0.45 2 0 1.55 0 1ZM0 6C0 5.45 0.45 5 1 5H13C13.55 5 14 5.45 14 6S13.55 7 13 7H1C0.45 7 0 6.55 0 6ZM0 11C0 10.45 0.45 10 1 10H13C13.55 10 14 10.45 14 11S13.55 12 13 12H1C0.45 12 0 11.55 0 11Z" fill="currentColor"/>
           </svg>
           <?= htmlspecialchars($catalogItem->label) ?>
-        </a>
+        <?= $catalogItem->hasChildren() ? '</button>' : '</a>' ?>
       <?php endif; ?>
       <div class="header-hamburger-menu-navigation">
         <?php foreach ($navItems as $item): ?>
-          <a class="header-hamburger-menu-navigation__button" href="<?= htmlspecialchars($item->hasUrl() ? $item->url : '#', ENT_QUOTES) ?>"><?= htmlspecialchars($item->label) ?></a>
+          <?php if ($item->hasChildren()): ?>
+            <button class="header-hamburger-menu-navigation__button" type="button" data-drawer="<?= htmlspecialchars($item->code, ENT_QUOTES) ?>"><?= htmlspecialchars($item->label) ?></button>
+          <?php else: ?>
+            <a class="header-hamburger-menu-navigation__button" href="<?= htmlspecialchars($item->hasUrl() ? $item->url : '#', ENT_QUOTES) ?>"><?= htmlspecialchars($item->label) ?></a>
+          <?php endif; ?>
         <?php endforeach; ?>
+        <?php
+        // Кнопка «Язык сайта» — открывает language-drawer (см. ниже). Внутри
+        // показываем флаг текущей локали + полное название. Скрипт ниже скрывает
+        // svg других локалей через data-id (тот же приём что и top-bar select).
+        ?>
+        <button class="header-hamburger-menu-navigation__button header-hamburger-menu-navigation__button--language" type="button" data-drawer="language">
+          <?= Language::t('language.drawer.title') ?>
+          <span class="header-hamburger-menu-navigation-language">
+            <span class="header-hamburger-menu-navigation-language__icon">
+              <?php foreach (Locale::cases() as $loc): ?>
+                <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="<?= $loc->value ?>"<?= $loc === $currentLocale ? '' : ' style="display:none"' ?>>
+                  <?php if ($loc === Locale::Ru): ?>
+                    <g clip-path="url(#clip_lang_ru_h)"><path d="M0 0H18V6.00117H0V0Z" fill="white"/><path d="M0 6.00098H18V11.9986H0V6.00098Z" fill="#729AE6"/><path d="M0 11.999H18V18.0002H0V11.999Z" fill="#C64F45"/></g>
+                    <defs><clipPath id="clip_lang_ru_h"><rect width="18" height="18" fill="white"/></clipPath></defs>
+                  <?php else: ?>
+                    <g clip-path="url(#clip_lang_uz_h)"><path d="M0 0H18V6H0V0Z" fill="#1EB53A"/><path d="M0 6H18V7H0V6Z" fill="#CE1126"/><path d="M0 7H18V11H0V7Z" fill="white"/><path d="M0 11H18V12H0V11Z" fill="#CE1126"/><path d="M0 12H18V18H0V12Z" fill="#0099B5"/></g>
+                    <defs><clipPath id="clip_lang_uz_h"><rect width="18" height="18" fill="white"/></clipPath></defs>
+                  <?php endif; ?>
+                </svg>
+              <?php endforeach; ?>
+            </span>
+            <span class="header-hamburger-menu-navigation-language__text"><?= Language::t('language.full.' . $currentLocale->value) ?></span>
+          </span>
+        </button>
       </div>
       <div class="header-hamburger-menu-contacts">
         <?php if ($phoneChannel?->phone): ?>
@@ -272,6 +312,75 @@ foreach ($menu as $item) {
             <?= htmlspecialchars($emailChannel->emailAddress()) ?>
           </a>
         <?php endif; ?>
+      </div>
+    </div>
+
+    <?php
+    // Sub-drawer-ы. Открываются нажатием на [data-drawer="<X>"] в основном
+    // hamburger-меню. Структура drawer-а — стандартная (drawer/wrapper/header/content).
+    // Контент — список ссылок на разделы (header-drawer-links__item).
+    ?>
+    <?php if ($catalogItem !== null && $catalogItem->hasChildren()): ?>
+      <div class="drawer" data-drawer="catalog">
+        <div class="drawer__backdrop"></div>
+        <div class="drawer-wrapper">
+          <div class="drawer-header">
+            <div class="drawer-header__title"><?= htmlspecialchars($catalogItem->label) ?></div>
+          </div>
+          <div class="drawer-content">
+            <div class="header-drawer-links">
+              <?php foreach ($catalogItem->children as $child): ?>
+                <a class="header-drawer-links__item" href="<?= htmlspecialchars($child->hasUrl() ? $child->url : '#', ENT_QUOTES) ?>"><?= htmlspecialchars($child->label) ?></a>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+      </div>
+    <?php endif; ?>
+    <?php foreach ($navItems as $item): ?>
+      <?php if (!$item->hasChildren()) continue; ?>
+      <div class="drawer" data-drawer="<?= htmlspecialchars($item->code, ENT_QUOTES) ?>">
+        <div class="drawer__backdrop"></div>
+        <div class="drawer-wrapper">
+          <div class="drawer-header">
+            <div class="drawer-header__title"><?= htmlspecialchars($item->label) ?></div>
+          </div>
+          <div class="drawer-content">
+            <div class="header-drawer-links">
+              <?php foreach ($item->children as $child): ?>
+                <a class="header-drawer-links__item" href="<?= htmlspecialchars($child->hasUrl() ? $child->url : '#', ENT_QUOTES) ?>"><?= htmlspecialchars($child->label) ?></a>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+      </div>
+    <?php endforeach; ?>
+    <div class="drawer" data-drawer="language">
+      <div class="drawer__backdrop"></div>
+      <div class="drawer-wrapper">
+        <div class="drawer-header">
+          <div class="drawer-header__title"><?= Language::t('language.drawer.title') ?></div>
+        </div>
+        <div class="drawer-content">
+          <div class="header-drawer-language">
+            <?php foreach (Locale::cases() as $loc): ?>
+              <a class="header-drawer-language-button<?= $loc === $currentLocale ? ' header-drawer-language-button--active' : '' ?>" href="<?= Route::to('lang.switch', ['locale' => $loc->value]) ?>" data-id="<?= $loc->value ?>">
+                <span class="header-drawer-language-button__icon">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <?php if ($loc === Locale::Ru): ?>
+                      <g clip-path="url(#clip_drw_ru)"><path d="M0 0H18V6.00117H0V0Z" fill="white"/><path d="M0 6.00098H18V11.9986H0V6.00098Z" fill="#729AE6"/><path d="M0 11.999H18V18.0002H0V11.999Z" fill="#C64F45"/></g>
+                      <defs><clipPath id="clip_drw_ru"><rect width="18" height="18" fill="white"/></clipPath></defs>
+                    <?php else: ?>
+                      <g clip-path="url(#clip_drw_uz)"><path d="M0 0H18V6H0V0Z" fill="#1EB53A"/><path d="M0 6H18V7H0V6Z" fill="#CE1126"/><path d="M0 7H18V11H0V7Z" fill="white"/><path d="M0 11H18V12H0V11Z" fill="#CE1126"/><path d="M0 12H18V18H0V12Z" fill="#0099B5"/></g>
+                      <defs><clipPath id="clip_drw_uz"><rect width="18" height="18" fill="white"/></clipPath></defs>
+                    <?php endif; ?>
+                  </svg>
+                </span>
+                <span class="header-drawer-language-button__text"><?= Language::t('language.full.' . $loc->value) ?></span>
+              </a>
+            <?php endforeach; ?>
+          </div>
+        </div>
       </div>
     </div>
   </header>

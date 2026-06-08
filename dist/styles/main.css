@@ -1854,6 +1854,9 @@ body {
 .header-hamburger-menu {
   visibility: hidden;
   background-color: #131313;
+  background-image: url(/dist/images/header-hamburger-menu.webp);
+  background-position: bottom;
+  background-size: cover;
   flex-direction: column;
   width: 100%;
   height: 100dvh;
@@ -2090,7 +2093,9 @@ body {
   background-color: #fff;
   border: 1px solid #f5f5f5;
   border-radius: 24px;
+  flex-direction: column;
   padding: 8px;
+  display: flex;
   position: relative;
 }
 .product-card__badge {
@@ -2116,11 +2121,11 @@ body {
 }
 .product-card__name {
   color: #282828;
-  margin-top: 20px;
+  margin-block: 20px 10px;
 }
 .product-card-meta {
   justify-content: space-between;
-  margin-top: 10px;
+  margin-top: auto;
   display: flex;
 }
 .product-card-meta__text {
@@ -2443,9 +2448,21 @@ select.form-control:is(select) {
   width: fit-content;
   font-size: 12px;
   font-weight: 500;
+  position: relative;
 }
 .label-content {
   margin-top: 10px;
+}
+.label:has(input[required]) .label__title:after {
+  content: '';
+  background-image: url('data:image/svg+xml,%3Csvg width=%276%27 height=%277%27 viewBox=%270 0 6 7%27 fill=%27none%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cpath d=%27M6 2.11927C5.22936 2.57798 4.54128 2.89908 3.93578 3.08257C4.54128 3.26606 5.22936 3.58716 6 4.04587L5.33945 5.20184C4.49541 4.68807 3.87156 4.25688 3.46789 3.90826C3.59633 4.47706 3.66055 5.22936 3.66055 6.16514H2.33945C2.33945 5.22936 2.40367 4.47706 2.53211 3.90826C2.12844 4.25688 1.50459 4.68807 0.66055 5.20184L0 4.04587C0.770642 3.58716 1.45872 3.26606 2.06422 3.08257C1.45872 2.89908 0.770642 2.57798 0 2.11927L0.66055 0.963303C1.50459 1.47706 2.12844 1.90826 2.53211 2.25688C2.40367 1.68807 2.33945 0.93578 2.33945 0H3.66055C3.66055 0.93578 3.59633 1.68807 3.46789 2.25688C3.87156 1.90826 4.49541 1.47706 5.33945 0.963303L6 2.11927Z%27 fill=%27%23FF0000%27 fill-opacity=%270.84%27/%3E%3C/svg%3E%0A');
+  width: 6px;
+  height: 7px;
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  translate: calc(100% + 2px);
 }
 .tooltip {
   cursor: help;
@@ -2911,4 +2928,17 @@ html {
 body {
   color: #fff;
   background-color: #131313;
+  background-image: url(/dist/images/header.webp), url(/dist/images/footer.webp);
+  background-position: top, bottom;
+  background-repeat: no-repeat;
+  background-size: 100%;
+}
+@media (max-width: 1319px) {
+  body {
+    background-image: url(/dist/images/header.webp), url(/dist/images/footer-mobile.webp);
+    background-position:
+      0 0,
+      bottom;
+    background-size: auto, 100%;
+  }
 }

@@ -27,7 +27,7 @@ final readonly class FilterDto extends BaseDto
         public array $colors = [],
         public SortField $sortField = SortField::Popular,
         public int $page = 1,
-        public int $perPage = 3,
+        public int $perPage = 9,
     ) {}
 
     public static function fromRequest(\Bitrix\Main\HttpRequest $request): static
@@ -74,7 +74,7 @@ final readonly class FilterDto extends BaseDto
         $inverterMotorRaw = ($params['inverter_motor'][0] ?? null);
 
         $page = max(1, (int) ($params['page'] ?? 1));
-        $perPage = max(1, (int) ($params['per_page'] ?? 3));
+        $perPage = max(1, (int) ($params['per_page'] ?? 9));
 
         return new self(
             types: $types,

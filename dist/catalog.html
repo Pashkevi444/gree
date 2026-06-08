@@ -1021,7 +1021,7 @@
             <div class="catalog-sidebar-filters__title">Площадь</div>
             <div class="catalog-sidebar-filters__items">
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="area[]" value="30" />
+                <input class="checkbox__control" type="checkbox" name="area[]" value="20" />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -1032,7 +1032,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">до 30 м²</div>
+                <div class="checkbox__text">до 20 м²</div>
               </label>
               <label class="checkbox">
                 <input class="checkbox__control" type="checkbox" name="area[]" value="30" />
@@ -1049,7 +1049,7 @@
                 <div class="checkbox__text">до 30 м²</div>
               </label>
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="area[]" value="30" />
+                <input class="checkbox__control" type="checkbox" name="area[]" value="50" />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -1060,10 +1060,10 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">до 30 м²</div>
+                <div class="checkbox__text">до 50 м²</div>
               </label>
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="area[]" value="30" />
+                <input class="checkbox__control" type="checkbox" name="area[]" value="100" />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -1074,7 +1074,7 @@
                     />
                   </svg>
                 </div>
-                <div class="checkbox__text">до 30 м²</div>
+                <div class="checkbox__text">до 100 м²</div>
               </label>
             </div>
           </div>
@@ -1148,7 +1148,7 @@
             <div class="catalog-sidebar-filters__title">Цвет</div>
             <div class="catalog-sidebar-filters__items">
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="color[]" value="black" />
+                <input class="checkbox__control" type="checkbox" name="color[]" value="#000" />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -1162,7 +1162,7 @@
                 <div class="checkbox__text">Чёрный</div>
               </label>
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="color[]" value="white" />
+                <input class="checkbox__control" type="checkbox" name="color[]" value="#fff" />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -1176,7 +1176,7 @@
                 <div class="checkbox__text">Белый</div>
               </label>
               <label class="checkbox">
-                <input class="checkbox__control" type="checkbox" name="color[]" value="gray" />
+                <input class="checkbox__control" type="checkbox" name="color[]" value="#8c8c8c" />
                 <div class="checkbox__icon">
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -1386,8 +1386,10 @@
                   stroke-linejoin="round"
                 />
               </svg>
-              <select class="catalog-sort-button__control" name="sort" form="filters-form">
+              <select class="catalog-sort-button__control" name="sort">
                 <option value="popular">По популярности</option>
+                <option value="price_asc">По цене (по возрастанию)</option>
+                <option value="price_desc">По цене (по убыванию)</option>
               </select>
             </div>
           </div>

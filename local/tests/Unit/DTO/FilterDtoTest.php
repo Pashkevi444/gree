@@ -175,7 +175,7 @@ final class FilterDtoTest extends TestCase
         $filter = new FilterDto();
 
         $this->assertSame(1, $filter->page);
-        $this->assertSame(3, $filter->perPage);
+        $this->assertSame(9, $filter->perPage);
     }
 
     public function testFromArrayWithPage(): void

@@ -113,11 +113,21 @@
       {{-- Приложение + фичи --}}
       <section class="gree-app container">
         <h2 class="gree-app__title">{{ Language::t('home.app.title') }}</h2>
-        <p class="gree-app__description">{{ Language::t('home.app.description') }}</p>
+        {{-- raw-вывод: значение перевода может содержать <br> и др. безопасные
+             inline-теги — UF_VALUE_RU/UZ теперь типа TEXT (см. Version20260608000002). --}}
+        <p class="gree-app__description">{!! Language::t('home.app.description') !!}</p>
         <div
           class="gree-app-wrapper"
           style="--background-image: url('/dist/images/e601a45048fdf16bef9fc2cb2f7e10115b005a31.png')"
         >
+          {{-- На mobile фон через --background-image не показывается (CSS делает
+               display:none у .gree-app-wrapper background-area). Отдельный <img>
+               .gree-app-wrapper__mobile-image скрыт на desktop и виден на mobile. --}}
+          <img
+            class="gree-app-wrapper__mobile-image"
+            src="/dist/images/e601a45048fdf16bef9fc2cb2f7e10115b005a31.png"
+            alt=""
+          />
           @foreach ($appFeatures as $feature)
             <div class="gree-app-card">
               <div class="gree-app-card__icon">

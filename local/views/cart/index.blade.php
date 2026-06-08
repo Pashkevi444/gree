@@ -8,9 +8,28 @@
     // The PATCH/DELETE routes carry the line ID in the path. Build the URL once
     // with a placeholder so JS can swap it without parsing routing rules.
     $patchTpl = Route::to('api.v1.cart.items.update', ['id' => '__ID__']);
+
+    // Префикс/постфикс цены — выдираем из i18n-шаблона product.price_from:
+    //   RU: «от :price UZS»  → пре «от », пост «UZS»     (формантема впереди)
+    //   UZ: «:price UZS dan» → пре «»,    пост «UZS dan» (формантема сзади)
+    // Один источник для двух локалей, без отдельного ключа/миграции.
+    $pricePartsRaw = explode('__PRICE__', Language::t('product.price_from', ['price' => '__PRICE__']), 2);
+    $pricePrefix   = $pricePartsRaw[0] ?? '';
+    $priceSuffix   = trim($pricePartsRaw[1] ?? 'UZS'); // без leading space — фронт сам добавит
 @endphp
 
 @section('content')
+    {{-- Префикс цены — через CSS::before + attr(data-price-prefix). Перевод
+         берётся из shared-ключа product.price_from (на UZ префикс пустой —
+         «от» там не пишется грамматически, оно стоит после числа как «dan»).
+         ::before переживает любой JS-перерендер textContent. --}}
+    <style>
+        .cart-item__price::before,
+        .cart-summary-price::before,
+        .cart-sidebar-total__price::before {
+            content: attr(data-price-prefix);
+        }
+    </style>
     @include('partials.breadcrumbs', ['breadcrumbs' => $breadcrumbs])
     <main class="main">
         <h1 class="title container">{{ Language::t('cart.title') }}</h1>
@@ -53,8 +72,12 @@
                                 </div>
                             </div>
                             <div class="cart-item-end">
-                                <div class="cart-item__price" data-line-total data-postfix="UZS">
-                                    {{ number_format($line->totalPrice, 0, '.', ' ') }} UZS
+                                {{-- ВНИМАНИЕ: data-postfix обязателен — фронтовый cart.js на load
+                                     перерендерит textContent как `${fmt(value)} ${dataset.postfix}`.
+                                     Префикс «от» добавляется CSS-правилом ::before (см. <style> в /cart/ ниже),
+                                     поэтому он переживает перерендер. --}}
+                                <div class="cart-item__price" data-line-total data-postfix="{{ $priceSuffix }}" data-price-prefix="{{ $pricePrefix }}">
+                                    {{ number_format($line->totalPrice, 0, '.', ' ') }} {{ $priceSuffix }}
                                 </div>
                                 <div class="cart-item-amount">
                                     <div class="cart-item-amount__title">{{ Language::t('cart.item.qty') }}</div>
@@ -85,7 +108,7 @@
                         <div class="cart-sidebar__item">
                             <div data-cart-count
                                  data-count-template="{{ Language::t('cart.summary.items', ['count' => '__COUNT__']) }}">{{ Language::t('cart.summary.items', ['count' => $itemsCount]) }}</div>
-                            <div data-cart-total>{{ number_format($total, 0, '.', ' ') }} UZS</div>
+                            <div class="cart-summary-price" data-cart-total data-postfix="{{ $priceSuffix }}" data-price-prefix="{{ $pricePrefix }}">{{ number_format($total, 0, '.', ' ') }} {{ $priceSuffix }}</div>
                         </div>
                         <div class="cart-sidebar__item">
                             <div>{{ Language::t('cart.summary.delivery') }}</div>
@@ -95,7 +118,7 @@
                     <div class="cart-sidebar__divider"></div>
                     <div class="cart-sidebar-total">
                         <div class="cart-sidebar-total__title">{{ Language::t('cart.summary.total') }}</div>
-                        <div class="cart-sidebar-total__price" data-cart-grand-total>{{ number_format($total, 0, '.', ' ') }} UZS</div>
+                        <div class="cart-sidebar-total__price" data-cart-grand-total data-postfix="{{ $priceSuffix }}" data-price-prefix="{{ $pricePrefix }}">{{ number_format($total, 0, '.', ' ') }} {{ $priceSuffix }}</div>
                     </div>
                     <a class="cart-sidebar__button" href="{{ Route::to('order.checkout') }}">{{ Language::t('cart.checkout') }}</a>
                 </div>
@@ -123,9 +146,14 @@
                 return r.json();
             }
 
+            // Локализованный постфикс читается из data-postfix: «UZS» (RU) или
+            // «UZS dan» (UZ). Префикс — отдельным CSS::before правилом, его
+            // textContent трогать не нужно.
+            const priceText = (el, value) => fmt.format(value) + ' ' + (el.dataset.postfix || 'UZS');
+
             function repaintSummary(data) {
-                document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = fmt.format(data.total) + ' UZS');
-                document.querySelectorAll('[data-cart-grand-total]').forEach(el => el.textContent = fmt.format(data.total) + ' UZS');
+                document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = priceText(el, data.total));
+                document.querySelectorAll('[data-cart-grand-total]').forEach(el => el.textContent = priceText(el, data.total));
                 document.querySelectorAll('[data-cart-count]').forEach(el => {
                     const tpl = el.dataset.countTemplate || '__COUNT__';
                     el.textContent = tpl.replace('__COUNT__', String(data.count));
@@ -134,7 +162,7 @@
 
             function repaintLineTotal(form, line) {
                 const el = form.querySelector('[data-line-total]');
-                if (el) el.textContent = fmt.format(line.total_price) + ' UZS';
+                if (el) el.textContent = priceText(el, line.total_price);
                 const qty = form.querySelector('[data-cart-qty]');
                 if (qty) qty.value = line.quantity;
             }

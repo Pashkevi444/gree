@@ -139,7 +139,27 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
         └── Integration/    # HTTP-тесты против live-сервера
 ```
 
-`/dist/` (на корне) — фронтенд-билд: `styles/*.css`, `scripts/*.js`, `images/*`. Контроллер регистрирует через `addPageAssets('page')`, которое отдаёт `/dist/styles/page.css` + `/dist/scripts/page.js`.
+`/dist/` (на корне) — фронтенд-билд: `styles/*.css`, `scripts/*.js`, `images/*`, `fonts/*`. Контроллер регистрирует через `addPageAssets('page')`, которое отдаёт `/dist/styles/page.css` + `/dist/scripts/page.js`.
+
+### Обновление dist — обязательная правка путей
+
+Верстальщик собирает бандл без `publicPath: '/dist/'`, поэтому `dist/styles/main.css` содержит абсолютные ссылки на корень: `@font-face url(/fonts/...)`, `background: url(/images/...)`. На локалке Apache + симлинк «прощает», на проде nginx отдаёт 404 (а `.htaccess` он не читает в принципе — и сам файл в `.gitignore`).
+
+**После каждого обновления `/dist/`** прогнать из корня репо:
+
+```bash
+# Превращает url(/X/...) → url(/dist/X/...) для любого X кроме "dist"
+perl -pi -e 's#url\(/(?!dist/)([^)]+)\)#url(/dist/$1)#g' dist/styles/main.css
+```
+
+Проверить, что не осталось корневых путей кроме `/dist/`:
+
+```bash
+grep -oE 'url\(/[a-z]+/' dist/styles/main.css | sort -u
+# ожидаем единственная строка: url(/dist/
+```
+
+Корневые симлинки `/styles`, `/scripts`, `/images`, `/fonts` в репозитории **не** хранятся (см. `.gitignore`) — у проекта единственный публичный корень статики `/dist/`.
 
 ---
 
@@ -343,6 +363,8 @@ use Gree\Helpers\Language;
 Language::t('header.catalog');                       // строка по текущей локали
 Language::t('blog.reading_minutes', ['minutes' => 5]);   // :minutes плейсхолдер
 ```
+
+`UF_VALUE_RU` / `UF_VALUE_UZ` — тип TEXT (`Version20260608000002`), редактор может писать многострочный контент с inline-HTML (`<br>`, `<strong>` и т.д.). В Blade-шаблонах для таких ключей выводить через `{!! Language::t(...) !!}` (raw), а не `{{ ... }}` — иначе теги экранируются. В шаблонах хедера/футера, где `<?= Language::t(...) ?>`, HTML и так не экранируется. Контент пишут админы — внешний XSS-вектор отсутствует, но не складывать сюда `<script>`.
 
 Текстовые поля iblock-элементов — пара `_RU` / `_UZ`, читаются через `BaseRepository::localizedSelect('NAME')` + `localized($row, 'NAME')`. Fallback на противоположный язык, если пусто.
 
