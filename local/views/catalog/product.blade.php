@@ -44,7 +44,13 @@
                 @endif
 
                 @php
-                    $slides = $product->gallery ?: ($product->image !== '' ? [$product->image] : []);
+                    // Initial slides — из галереи ПЕРВОГО ТП (выбран по умолчанию).
+                    // У iblock products галереи нет сознательно (см. ProductDto-доку):
+                    // фото живут на торговом предложении и должны меняться при
+                    // выборе цвета/мощности. Fallback: одиночный PREVIEW_PICTURE.
+                    $firstOffer = $product->offers->first() ?? null;
+                    $slides = ($firstOffer?->gallery ?? [])
+                        ?: ($product->image !== '' ? [$product->image] : []);
                 @endphp
                 @if ($slides)
                   <div class="product-carousel-main">
@@ -366,7 +372,48 @@
 
           const offerIdInput = form.querySelector('[data-offer-id]');
 
-          function update() {
+          // Перерисовка слайдеров галереи при смене offer. Фронтовый product.js
+          // инициализирует Swiper на DOMContentLoaded (mainCarouselEl.swiper и
+          // thumbsCarouselEl.swiper). Стратегия:
+          //   - если кол-во слайдов совпадает с текущим Swiper-instance —
+          //     просто меняем .src у существующих <img> (Swiper не страдает,
+          //     dimensions те же, навигация работает);
+          //   - если кол-во изменилось — fallback: подменяем innerHTML wrapper-а
+          //     и зовём swiper.update() (могут потеряться расчёты bullet-пагинации,
+          //     но это редкий случай — все ТП имеют одинаковое число фото).
+          // lastGallerySig инициализирован server-rendered набором (firstOffer.gallery),
+          // чтобы первый update() на load не пытался перерисовать только что
+          // отрисованный Swiper.
+          const mainCarouselEl = document.querySelector('.product-carousel--main');
+          const thumbsCarouselEl = document.querySelector('.product-carousel--thumbs');
+          const initialGallery = @json($slides ?? []);
+          let lastGallerySig = initialGallery.join('|');
+
+          function renderGallery(gallery) {
+            const list = (gallery && gallery.length) ? gallery : [];
+            if (list.length === 0) return;
+
+            const sig = list.join('|');
+            if (sig === lastGallerySig) return;
+            lastGallerySig = sig;
+
+            for (const el of [mainCarouselEl, thumbsCarouselEl]) {
+              if (!el) continue;
+              const wrapper = el.querySelector('.product-carousel-wrapper');
+              if (!wrapper) continue;
+
+              const imgs = wrapper.querySelectorAll('.product-carousel__slide');
+              if (imgs.length === list.length) {
+                imgs.forEach((img, i) => { img.src = list[i]; });
+              } else {
+                wrapper.innerHTML = list.map(src => `<img class="product-carousel__slide" src="${src}" alt="" />`).join('');
+                const sw = el.swiper;
+                if (sw) { sw.update(); sw.slideTo(0, 0); }
+              }
+            }
+          }
+
+          function update({ touchGallery = false } = {}) {
             const color = form.querySelector('input[name="color"]:checked')?.value;
             const area  = form.querySelector('input[name="area"]:checked')?.value;
             const offer = findOffer(color, area);
@@ -391,11 +438,19 @@
                 td.textContent = tpl ? tpl.replace('__VAL__', String(offer[key])) : String(offer[key]);
               }
             });
+
+            // Слайдер трогаем ТОЛЬКО на пользовательском change. На initial load
+            // server-rendered DOM уже совпадает с firstOffer.gallery, фронтовый
+            // Swiper уже инициализировался — повторный innerHTML/swap.src ему
+            // только мешает.
+            if (touchGallery) {
+              renderGallery(offer.gallery);
+            }
           }
 
           form.addEventListener('change', e => {
             if (e.target.name === 'color' || e.target.name === 'area') {
-              update();
+              update({ touchGallery: true });
               syncCart();
             }
           });

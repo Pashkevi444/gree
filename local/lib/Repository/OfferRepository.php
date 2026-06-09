@@ -53,15 +53,24 @@ final class OfferRepository extends BaseRepository implements OfferRepositoryInt
             ->cacheJoins(true)
             ->exec();
 
+        $rows = [];
+        $offerIds = [];
+        while ($row = $result->fetch()) {
+            $rows[] = $row;
+            $offerIds[] = (int) $row['ID'];
+        }
+        $galleryByOffer = $this->fetchGalleryByOfferIds($entity, $offerIds);
+
         /** @var array<int, OfferDto[]> $offersByProduct */
         $offersByProduct = [];
-        while ($row = $result->fetch()) {
+        foreach ($rows as $row) {
             $productId = (int) ($row['CML2_LINK_VALUE'] ?? 0);
             if ($productId <= 0) {
                 continue;
             }
+            $offerId = (int) $row['ID'];
             $offersByProduct[$productId] ??= [];
-            $offersByProduct[$productId][] = $this->hydrate($row, $productId);
+            $offersByProduct[$productId][] = $this->hydrate($row, $productId, $galleryByOffer[$offerId] ?? []);
         }
 
         $out = [];
@@ -178,16 +187,59 @@ final class OfferRepository extends BaseRepository implements OfferRepositoryInt
             ->cacheJoins(true)
             ->exec();
 
-        $offers = [];
+        $rows = [];
+        $offerIds = [];
         while ($row = $result->fetch()) {
+            $rows[] = $row;
+            $offerIds[] = (int) $row['ID'];
+        }
+        $galleryByOffer = $this->fetchGalleryByOfferIds($entity, $offerIds);
+
+        $offers = [];
+        foreach ($rows as $row) {
             $productId = (int) ($row['CML2_LINK_VALUE'] ?? 0);
-            $offers[] = $this->hydrate($row, $productId);
+            $offers[] = $this->hydrate($row, $productId, $galleryByOffer[(int) $row['ID']] ?? []);
         }
 
         return new OfferCollection(...$offers);
     }
 
-    private function hydrate(array $row, int $productId): OfferDto
+    /**
+     * @param int[] $offerIds
+     * @return array<int, string[]>  offer ID → image URLs
+     */
+    private function fetchGalleryByOfferIds(string $entity, array $offerIds): array
+    {
+        if (!$offerIds) {
+            return [];
+        }
+
+        $result = $entity::query()
+            ->whereIn('ID', $offerIds)
+            ->setSelect(['ID', 'GALLERY_VALUE' => 'GALLERY.VALUE'])
+            ->exec();
+
+        $byId = [];
+        foreach ($result as $row) {
+            $fileId = (int) ($row['GALLERY_VALUE'] ?? 0);
+            if ($fileId <= 0) {
+                continue;
+            }
+            $path = \CFile::GetPath($fileId);
+            if (!$path) {
+                continue;
+            }
+            $id = (int) $row['ID'];
+            $byId[$id] ??= [];
+            $byId[$id][] = $path;
+        }
+        return $byId;
+    }
+
+    /**
+     * @param string[] $gallery
+     */
+    private function hydrate(array $row, int $productId, array $gallery = []): OfferDto
     {
         $colorXml = (string) ($row['COLOR_XML_ID'] ?? '');
 
@@ -205,6 +257,7 @@ final class OfferRepository extends BaseRepository implements OfferRepositoryInt
             outdoorDimensions: $this->localized($row, 'OUTDOOR_DIMENSIONS'),
             indoorWeight: $this->localized($row, 'INDOOR_WEIGHT'),
             outdoorWeight: $this->localized($row, 'OUTDOOR_WEIGHT'),
+            gallery: $gallery,
         );
     }
 }

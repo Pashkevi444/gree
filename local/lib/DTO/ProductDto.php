@@ -9,16 +9,20 @@ use Gree\Enum\Color;
 use Gree\Enum\ProductType;
 
 /**
- * Detail-only fields (sku/model/specs/text-tabs/functions/gallery) default to
- * empty/zero so the same DTO can be returned from the catalog listing without
- * paying for the extra joins. Only fetchByCode() fills them.
+ * Detail-only fields (sku/model/specs/text-tabs/functions) default to empty/zero
+ * so the same DTO можно возвращать из каталога без extra-join-ов. Только
+ * fetchByCode() заполняет их.
+ *
+ * Галерея на этом DTO **отсутствует сознательно**: фотки на iblock products —
+ * только PREVIEW_PICTURE (поле `image`) для карточки каталога и корзины. Полная
+ * галерея фото живёт на торговом предложении (OfferDto::gallery), потому что
+ * она зависит от цвета/мощности и должна меняться на детальной при выборе ТП.
  */
 final readonly class ProductDto extends BaseDto
 {
     /**
      * @param Color[]  $colors    typed color options (admin-selectable variants)
      * @param string[] $functions feature codes (wifi/130v/turbo/...), labels via HL
-     * @param string[] $gallery   image URLs for the detail carousel
      */
     public function __construct(
         public int $id,
@@ -49,7 +53,6 @@ final readonly class ProductDto extends BaseDto
         public string $kitText = '',
         public string $installationText = '',
         public array $functions = [],
-        public array $gallery = [],
         public ?OfferCollection $offers = null,
     ) {}
 

@@ -201,10 +201,9 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
 
         $id = (int) $row['ID'];
         $offers = $this->offerRepository->getByProductIds([$id])[$id] ?? new OfferCollection();
-        $gallery = $this->fetchGalleryByElementIds($entity, [$id])[$id] ?? [];
         $functions = $this->fetchFunctionsByElementIds($entity, [$id])[$id] ?? [];
 
-        return $this->hydrate($row, $offers, $functions, $gallery);
+        return $this->hydrate($row, $offers, $functions);
     }
 
     // ---- SELECT lists -------------------------------------------------------
@@ -314,47 +313,13 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
         return $byId;
     }
 
-    /**
-     * @param int[] $ids
-     * @return array<int, string[]>  element ID → image URLs
-     */
-    private function fetchGalleryByElementIds(string $entity, array $ids): array
-    {
-        if (!$ids) {
-            return [];
-        }
-
-        $result = $entity::query()
-            ->whereIn('ID', $ids)
-            ->setSelect(['ID', 'GALLERY_VALUE' => 'GALLERY.VALUE'])
-            ->exec();
-
-        $byId = [];
-        foreach ($result as $row) {
-            $fileId = (int) ($row['GALLERY_VALUE'] ?? 0);
-            if ($fileId <= 0) {
-                continue;
-            }
-            $path = \CFile::GetPath($fileId);
-            if (!$path) {
-                continue;
-            }
-            $id = (int) $row['ID'];
-            $byId[$id] ??= [];
-            $byId[$id][] = $path;
-        }
-
-        return $byId;
-    }
-
     // ---- hydration ----------------------------------------------------------
 
     /**
      * @param array<string, mixed> $row
      * @param string[]             $functions
-     * @param string[]             $gallery
      */
-    private function hydrate(array $row, OfferCollection $offers, array $functions = [], array $gallery = []): ProductDto
+    private function hydrate(array $row, OfferCollection $offers, array $functions = []): ProductDto
     {
         // First in-stock offer (or first overall) — used as the "primary" for
         // the detail-page initial render; JS swaps spec values when the user
@@ -396,7 +361,6 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
             kitText: $this->localized($row, 'KIT_TEXT'),
             installationText: $this->localized($row, 'INSTALLATION_TEXT'),
             functions: $functions,
-            gallery: $gallery,
             offers: $offers,
         );
     }

@@ -13,6 +13,13 @@ use Gree\Enum\Color;
  */
 final readonly class OfferDto extends BaseDto
 {
+    /**
+     * @param string[] $gallery URL-ы фото торгового предложения. На детальной
+     *                          товара слайдер показывает именно эти картинки
+     *                          для текущего offer; при смене цвета/мощности
+     *                          (т.е. другой offer) слайдер перерисовывается.
+     *                          Пустой массив = fallback на ProductDto::gallery.
+     */
     public function __construct(
         public int $id,
         public int $productId,
@@ -27,6 +34,7 @@ final readonly class OfferDto extends BaseDto
         public string $outdoorDimensions = '',
         public string $indoorWeight = '',
         public string $outdoorWeight = '',
+        public array $gallery = [],
     ) {}
 
     public function toArray(): array
@@ -46,6 +54,7 @@ final readonly class OfferDto extends BaseDto
             'outdoor_dimensions' => $this->outdoorDimensions,
             'indoor_weight' => $this->indoorWeight,
             'outdoor_weight' => $this->outdoorWeight,
+            'gallery' => $this->gallery,
         ];
     }
 
@@ -65,6 +74,7 @@ final readonly class OfferDto extends BaseDto
             outdoorDimensions: (string) ($data['outdoor_dimensions'] ?? ''),
             indoorWeight: (string) ($data['indoor_weight'] ?? ''),
             outdoorWeight: (string) ($data['outdoor_weight'] ?? ''),
+            gallery: array_values(array_map('strval', (array) ($data['gallery'] ?? []))),
         );
     }
 }
