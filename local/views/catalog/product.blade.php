@@ -22,7 +22,7 @@
         <div class="wrapper container">
           {{-- Type switch — quick access to other catalog sections --}}
           <div class="catalog">
-            <div class="catalog__title">{{ Language::t('product.types.' . $product->type->value) }}</div>
+            <div class="catalog__title">{{ Language::t('product.types_heading') }}</div>
             <div class="catalog-items">
               @foreach (ProductType::cases() as $type)
                 <a
@@ -75,6 +75,11 @@
                       </svg>
                     </button>
                   </div>
+                  {{-- Bullet-пагинация Swiper на mobile.
+                       product.js: pagination.el = '.product-carousel-mobile-pagination',
+                       Swiper сам наполняет <span class="product-carousel-mobile-pagination__item">
+                       по числу слайдов и подсвечивает активный --active-классом. --}}
+                  <div class="product-carousel-mobile-pagination"></div>
                 @endif
               </div>
 

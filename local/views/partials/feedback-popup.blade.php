@@ -22,12 +22,12 @@
                     </div>
                     <div class="feedback-form-body">
                         <label class="feedback-form-label">
-                            <div class="feedback-form-label__title">{{ Language::t('feedback.name') }} <span style="color:#e53935">*</span></div>
+                            <div class="feedback-form-label__title">{{ Language::t('feedback.name') }}</div>
                             <input class="feedback-form-label__control form-control" type="text" name="name"
                                    placeholder="{{ Language::t('feedback.name_placeholder') }}" required maxlength="100" />
                         </label>
                         <label class="feedback-form-label">
-                            <div class="feedback-form-label__title">{{ Language::t('feedback.phone') }} <span style="color:#e53935">*</span></div>
+                            <div class="feedback-form-label__title">{{ Language::t('feedback.phone') }}</div>
                             <input class="feedback-form-label__control form-control" type="tel" name="phone"
                                    placeholder="{{ Language::t('feedback.phone_placeholder') }}" required />
                         </label>
