@@ -172,7 +172,9 @@
 }
 @media (max-width: 1319px) {
   .catalog-header {
+    scrollbar-color: #0000 #0000;
     justify-content: flex-start;
+    padding-inline: calc(50% - 180px);
     overflow-x: auto;
   }
 }
@@ -194,6 +196,11 @@
 }
 .catalog-section {
   scroll-margin-top: 30px;
+  overflow-x: clip;
+}
+.catalog-section > .container {
+  z-index: 1;
+  position: relative;
 }
 .catalog-section__title {
   text-align: center;
@@ -253,6 +260,49 @@
     margin-top: 65px;
   }
 }
+:is(:nth-child(2 of .catalog-section), :nth-child(3 of .catalog-section)) {
+  position: relative;
+}
+:nth-child(2 of .catalog-section) .catalog-section__bloom:nth-child(1 of .catalog-section__bloom) {
+  filter: blur(300px);
+  background-color: #2f40d5;
+  width: 1100px;
+  height: 425px;
+  position: absolute;
+  top: -160px;
+  left: -455px;
+  rotate: -10deg;
+}
+:nth-child(2 of .catalog-section) .catalog-section__bloom:nth-child(2 of .catalog-section__bloom) {
+  filter: blur(300px);
+  background-color: #2f40d5;
+  width: 1100px;
+  height: 630px;
+  position: absolute;
+  top: -100px;
+  right: -525px;
+  rotate: -10deg;
+}
+:nth-child(3 of .catalog-section) .catalog-section__bloom:nth-child(1 of .catalog-section__bloom) {
+  filter: blur(300px);
+  background-color: #2f40d5;
+  width: 1400px;
+  height: 435px;
+  position: absolute;
+  top: 60px;
+  left: -275px;
+  rotate: -10deg;
+}
+:nth-child(3 of .catalog-section) .catalog-section__bloom:nth-child(2 of .catalog-section__bloom) {
+  filter: blur(300px);
+  background-color: #2f40d5;
+  width: 1400px;
+  height: 285px;
+  position: absolute;
+  top: 260px;
+  right: -285px;
+  rotate: -10deg;
+}
 .gree {
   margin-top: 150px;
 }
@@ -262,14 +312,20 @@
   }
 }
 .gree-app {
+  margin-top: 250px;
+  position: relative;
+  overflow-x: clip;
+}
+.gree-app > .container {
+  z-index: 1;
   background-color: #1b1f2c;
   border: 1px solid #292e3a;
   border-radius: 32px;
-  margin-top: 250px;
   padding: 60px 40px 0;
+  position: relative;
 }
 @media (max-width: 1319px) {
-  .gree-app {
+  .gree-app > .container {
     margin-top: 80px;
     padding: 40px 30px 15px;
   }
@@ -390,6 +446,26 @@
     margin-top: 15px;
     translate: none;
   }
+}
+:nth-child(1 of .gree-app__bloom) {
+  filter: blur(300px);
+  background-color: #2f40d5;
+  width: 1400px;
+  height: 875px;
+  position: absolute;
+  top: 0;
+  left: -405px;
+  rotate: -10deg;
+}
+:nth-child(2 of .gree-app__bloom) {
+  filter: blur(300px);
+  background-color: #2f40d5;
+  width: 1400px;
+  height: 765px;
+  position: absolute;
+  top: -140px;
+  right: -200px;
+  rotate: 10deg;
 }
 .technologies {
   margin-top: 150px;

@@ -1,0 +1,24 @@
+/**
+ * Кастомные стили проекта поверх dist-сборки фронта.
+ * Подключается глобально из BaseController::addPageAssets().
+ * dist/styles/*.css не трогаем — это артефакт сборки верстальщика.
+ */
+
+/* ── Детальная товара ──────────────────────────────────────────────────────
+   Гасим color/area-опции, у которых нет соответствующего ТП.
+   JS (product-page.js → refreshAvailability) вешает .is-disabled на label. */
+.product-colors-item.is-disabled,
+.product-area-item.is-disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+/* ── Корзина ───────────────────────────────────────────────────────────────
+   Локализованный префикс цены («от » в RU, пусто в UZ) через
+   attr(data-price-prefix). ::before живёт отдельно от textContent и
+   переживает любые JS-перерендеры (фронтовый cart.js перетирает textContent). */
+.cart-item__price::before,
+.cart-summary-price::before,
+.cart-sidebar-total__price::before {
+    content: attr(data-price-prefix);
+}

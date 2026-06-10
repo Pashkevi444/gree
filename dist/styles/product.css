@@ -53,6 +53,7 @@
 }
 @media (max-width: 1319px) {
   .catalog-items {
+    scrollbar-color: #0000 #0000;
     flex-direction: row;
     column-gap: 10px;
     margin-top: 0;
@@ -436,6 +437,7 @@
 }
 @media (max-width: 1319px) {
   .product-tabs-header {
+    scrollbar-color: #0000 #0000;
     border-bottom: none;
     padding-inline: 0;
     overflow-x: scroll;

@@ -85,14 +85,19 @@ foreach ($menu as $item) {
         $isRu = $currentLocale === Locale::Ru;
         $otherLocale = $isRu ? Locale::Uz : Locale::Ru;
         $otherLocaleUrl = Route::to('lang.switch', ['locale' => $otherLocale->value]);
-        $currentLabel = Language::t('header.lang.' . $currentLocale->value);
+        // Полное название («Русский»/«Узбекский») — main.js копирует label
+        // выбранного <option> в .language-select__text И в текст кнопки
+        // бургер-меню (.header-hamburger-menu-navigation-language__text).
+        // Короткие «Рус»/«Узб» (header.lang.*) больше не используем — иначе
+        // бургер-кнопка после инициализации main.js показывает «Рус».
+        $currentLabel = Language::t('language.full.' . $currentLocale->value);
         ?>
         <?php
         // ВНИМАНИЕ: тут <div>, не <a>. HTML-spec запрещает <select> внутри <a>,
         // браузер выкидывает его наружу — main.js не находит .language-select__control,
         // падает с TypeError на selectedIndex, и handler header-popup-menu не вешается.
         ?>
-        <div class="language-select" title="<?= Language::t('header.lang.' . $otherLocale->value) ?>">
+        <div class="language-select" title="<?= Language::t('language.full.' . $otherLocale->value) ?>">
           <div class="language-select__country-icon">
             <?php
             // main.js скрывает все svg с data-id !== select.value — поэтому
@@ -129,7 +134,7 @@ foreach ($menu as $item) {
           </div>
           <select class="language-select__control" autocomplete="off" onchange="window.location='/lang/'+this.value+'/'">
             <?php foreach (Locale::cases() as $loc): ?>
-              <option value="<?= $loc->value ?>"<?= $loc === $currentLocale ? ' selected' : '' ?>><?= Language::t('header.lang.' . $loc->value) ?></option>
+              <option value="<?= $loc->value ?>"<?= $loc === $currentLocale ? ' selected' : '' ?>><?= Language::t('language.full.' . $loc->value) ?></option>
             <?php endforeach; ?>
           </select>
         </div>
@@ -286,7 +291,7 @@ foreach ($menu as $item) {
           <span class="header-hamburger-menu-navigation-language">
             <span class="header-hamburger-menu-navigation-language__icon">
               <?php foreach (Locale::cases() as $loc): ?>
-                <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="<?= $loc->value ?>"<?= $loc === $currentLocale ? '' : ' style="display:none"' ?>>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" data-id="<?= $loc->value ?>"<?= $loc === $currentLocale ? '' : ' style="display:none"' ?>>
                   <?php if ($loc === Locale::Ru): ?>
                     <g clip-path="url(#clip_lang_ru_h)"><path d="M0 0H18V6.00117H0V0Z" fill="white"/><path d="M0 6.00098H18V11.9986H0V6.00098Z" fill="#729AE6"/><path d="M0 11.999H18V18.0002H0V11.999Z" fill="#C64F45"/></g>
                     <defs><clipPath id="clip_lang_ru_h"><rect width="18" height="18" fill="white"/></clipPath></defs>

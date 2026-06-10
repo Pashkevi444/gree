@@ -127,6 +127,9 @@ abstract class BaseController
         $asset = \Bitrix\Main\Page\Asset::getInstance();
         $asset->addCss('/dist/styles/main.css');
         $asset->addCss('/dist/styles/' . $page . '.css');
+        // Кастомные правки поверх dist-сборки (см. файл) — после dist-CSS,
+        // чтобы выигрывать каскад при равной специфичности.
+        $asset->addCss('/local/templates/gree/assets/custom.css');
         $asset->addString('<script defer src="/dist/scripts/main.js"></script>');
         $asset->addString('<script defer src="/dist/scripts/' . $page . '.js"></script>');
     }

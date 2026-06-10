@@ -40,104 +40,127 @@
       </section>
 
       {{-- Каталог (статика — товары выводятся отдельно) --}}
-      <section class="catalog container">
+      {{-- Новая структура (dist 06-09): section.catalog без .container;
+           каждая catalog-section оборачивает контент в .container и закрывается
+           двумя декоративными __bloom (фоновые свечения, рисуются CSS-ом). --}}
+      <section class="catalog">
         <div class="catalog-header">
           <a class="catalog-header__button" href="#catalog-wall"> {{ Language::t('home.anchor.wall') }} <span>{{ Language::t('home.anchor.wall.range') }}</span> </a>
           <a class="catalog-header__button" href="#catalog-column"> {{ Language::t('home.anchor.column') }} <span>{{ Language::t('home.anchor.column.range') }}</span> </a>
           <a class="catalog-header__button" href="#catalog-industry"> {{ Language::t('home.anchor.industrial') }} <span>{{ Language::t('home.anchor.industrial.range') }}</span> </a>
         </div>
         <div id="catalog-wall" class="catalog-section">
-          <h2 class="catalog-section__title">{{ Language::t('home.section.wall.title') }}</h2>
-          <p class="catalog-section__description">{{ Language::t('home.section.wall.desc') }}</p>
-          <div class="catalog-section__items">
-            @foreach ($wallProducts as $product)
-              @include('partials.product-card', ['product' => $product])
-            @endforeach
+          <div class="container">
+            <h2 class="catalog-section__title">{{ Language::t('home.section.wall.title') }}</h2>
+            <p class="catalog-section__description">{{ Language::t('home.section.wall.desc') }}</p>
+            <div class="catalog-section__items">
+              @foreach ($wallProducts as $product)
+                @include('partials.product-card', ['product' => $product])
+              @endforeach
+            </div>
+            <a class="catalog-section__button" href="{{ Route::to('catalog.section', ['section' => 'nastennie']) }}">{{ Language::t('home.section.viewAll') }}</a>
           </div>
-          <a class="catalog-section__button" href="{{ Route::to('catalog.section', ['section' => 'nastennie']) }}">{{ Language::t('home.section.viewAll') }}</a>
+          <div class="catalog-section__bloom"></div>
+          <div class="catalog-section__bloom"></div>
         </div>
         <div id="catalog-column" class="catalog-section">
-          <h2 class="catalog-section__title">{{ Language::t('home.section.column.title') }}</h2>
-          <p class="catalog-section__description">{{ Language::t('home.section.column.desc') }}</p>
-          <div class="catalog-section__items">
-            @foreach ($columnProducts as $product)
-              @include('partials.product-card', ['product' => $product])
-            @endforeach
+          <div class="container">
+            <h2 class="catalog-section__title">{{ Language::t('home.section.column.title') }}</h2>
+            <p class="catalog-section__description">{{ Language::t('home.section.column.desc') }}</p>
+            <div class="catalog-section__items">
+              @foreach ($columnProducts as $product)
+                @include('partials.product-card', ['product' => $product])
+              @endforeach
+            </div>
+            <a class="catalog-section__button" href="{{ Route::to('catalog.section', ['section' => 'kolonnye']) }}">{{ Language::t('home.section.viewAll') }}</a>
           </div>
-          <a class="catalog-section__button" href="{{ Route::to('catalog.section', ['section' => 'kolonnye']) }}">{{ Language::t('home.section.viewAll') }}</a>
+          <div class="catalog-section__bloom"></div>
+          <div class="catalog-section__bloom"></div>
         </div>
         <div id="catalog-industry" class="catalog-section">
-          <h2 class="catalog-section__title">{{ Language::t('home.section.industrial.title') }}</h2>
-          <p class="catalog-section__description">{{ Language::t('home.section.industrial.desc') }}</p>
-          <div class="catalog-section__items">
-            @foreach ($industrialProducts as $product)
-              @include('partials.product-card', ['product' => $product])
-            @endforeach
+          <div class="container">
+            <h2 class="catalog-section__title">{{ Language::t('home.section.industrial.title') }}</h2>
+            <p class="catalog-section__description">{{ Language::t('home.section.industrial.desc') }}</p>
+            <div class="catalog-section__items">
+              @foreach ($industrialProducts as $product)
+                @include('partials.product-card', ['product' => $product])
+              @endforeach
+            </div>
+            <a class="catalog-section__button" href="{{ Route::to('catalog.section', ['section' => 'promyshlennye']) }}">{{ Language::t('home.section.viewAll') }}</a>
           </div>
-          <a class="catalog-section__button" href="{{ Route::to('catalog.section', ['section' => 'promyshlennye']) }}">{{ Language::t('home.section.viewAll') }}</a>
+          <div class="catalog-section__bloom"></div>
+          <div class="catalog-section__bloom"></div>
         </div>
       </section>
 
       {{-- Почему выбирают Gree: карточки + статистика --}}
-      <section class="gree container">
-        <h2 class="gree__title">{{ Language::t('home.gree.title') }}</h2>
-        <p class="gree__description">{{ Language::t('home.gree.description') }}</p>
-        <a class="gree__button" href="{{ Route::to('brand.show', ['code' => 'gree']) }}">{{ Language::t('home.gree.cta') }}</a>
+      <section class="gree">
+        <div class="container">
+          <h2 class="gree__title">{{ Language::t('home.gree.title') }}</h2>
+          <p class="gree__description">{{ Language::t('home.gree.description') }}</p>
+          <a class="gree__button" href="{{ Route::to('brand.show', ['code' => 'gree']) }}">{{ Language::t('home.gree.cta') }}</a>
 
-        <div class="gree-cards">
-          @foreach ($greeCards as $card)
-            <div class="gree-card">
-              <div class="gree-card__icon">
-                @include('partials.icon', ['code' => $card->iconCode])
+          <div class="gree-cards">
+            @foreach ($greeCards as $card)
+              <div class="gree-card">
+                <div class="gree-card__icon">
+                  @include('partials.icon', ['code' => $card->iconCode])
+                </div>
+                <div class="gree-card__title">{{ $card->name }}</div>
+                <div class="gree-card__description">{{ $card->description }}</div>
               </div>
-              <div class="gree-card__title">{{ $card->name }}</div>
-              <div class="gree-card__description">{{ $card->description }}</div>
-            </div>
-          @endforeach
-        </div>
+            @endforeach
+          </div>
 
-        <div class="gree-items gree-items-columns-3">
-          @foreach ($greeStats as $stat)
-            <div class="gree-item">
-              <div class="gree-item-title">
-                {{ $stat->numberPrefix }}
-                <number-flow data-value="{{ $stat->numberValue }}"></number-flow>
-                {{ $stat->numberSuffix }}
+          <div class="gree-items gree-items-columns-3">
+            @foreach ($greeStats as $stat)
+              <div class="gree-item">
+                <div class="gree-item-title">
+                  {{ $stat->numberPrefix }}
+                  <number-flow data-value="{{ $stat->numberValue }}"></number-flow>
+                  {{ $stat->numberSuffix }}
+                </div>
+                <div class="gree-item__description">{{ $stat->description }}</div>
               </div>
-              <div class="gree-item__description">{{ $stat->description }}</div>
-            </div>
-          @endforeach
+            @endforeach
+          </div>
         </div>
+        <div class="gree__bloom"></div>
+        <div class="gree__bloom"></div>
       </section>
 
       {{-- Приложение + фичи --}}
-      <section class="gree-app container">
-        <h2 class="gree-app__title">{{ Language::t('home.app.title') }}</h2>
-        {{-- raw-вывод: значение перевода может содержать <br> и др. безопасные
-             inline-теги — UF_VALUE_RU/UZ теперь типа TEXT (см. Version20260608000002). --}}
-        <p class="gree-app__description">{!! Language::t('home.app.description') !!}</p>
-        <div
-          class="gree-app-wrapper"
-          style="--background-image: url('/dist/images/e601a45048fdf16bef9fc2cb2f7e10115b005a31.png')"
-        >
-          {{-- На mobile фон через --background-image не показывается (CSS делает
-               display:none у .gree-app-wrapper background-area). Отдельный <img>
-               .gree-app-wrapper__mobile-image скрыт на desktop и виден на mobile. --}}
-          <img
-            class="gree-app-wrapper__mobile-image"
-            src="/dist/images/e601a45048fdf16bef9fc2cb2f7e10115b005a31.png"
-            alt=""
-          />
-          @foreach ($appFeatures as $feature)
-            <div class="gree-app-card">
-              <div class="gree-app-card__icon">
-                @include('partials.icon', ['code' => $feature->iconCode])
+      <section class="gree-app">
+        <div class="container">
+          <h2 class="gree-app__title">{{ Language::t('home.app.title') }}</h2>
+          {{-- raw-вывод: значение перевода может содержать <br> и др. безопасные
+               inline-теги — UF_VALUE_RU/UZ теперь типа TEXT (см. Version20260608000002). --}}
+          <p class="gree-app__description">{!! Language::t('home.app.description') !!}</p>
+          <div
+            class="gree-app-wrapper"
+            style="--background-image: url('/dist/images/e601a45048fdf16bef9fc2cb2f7e10115b005a31.png')"
+          >
+            {{-- На mobile фон через --background-image не показывается (CSS делает
+                 display:none у .gree-app-wrapper background-area). Отдельный <img>
+                 .gree-app-wrapper__mobile-image скрыт на desktop и виден на mobile. --}}
+            <img
+              class="gree-app-wrapper__mobile-image"
+              src="/dist/images/e601a45048fdf16bef9fc2cb2f7e10115b005a31.png"
+              alt=""
+            />
+            @foreach ($appFeatures as $feature)
+              <div class="gree-app-card">
+                <div class="gree-app-card__icon">
+                  @include('partials.icon', ['code' => $feature->iconCode])
+                </div>
+                <div class="gree-app-card__title">{{ $feature->name }}</div>
+                <div class="gree-app-card__description">{{ $feature->description }}</div>
               </div>
-              <div class="gree-app-card__title">{{ $feature->name }}</div>
-              <div class="gree-app-card__description">{{ $feature->description }}</div>
-            </div>
-          @endforeach
+            @endforeach
+          </div>
         </div>
+        <div class="gree-app__bloom"></div>
+        <div class="gree-app__bloom"></div>
       </section>
 
       {{-- Технологии --}}

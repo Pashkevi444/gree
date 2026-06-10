@@ -235,9 +235,14 @@
                 @if ($product->functions)
                   <div class="product-tabs-item">
                     <div class="product-functions">
+                      {{-- Первые 9 функций (3 ряда × 3 колонки grid-а) видимы,
+                           остальные получают --hidden. Фронтовый product.js
+                           показывает кнопку «Показать ещё» ТОЛЬКО если на
+                           странице есть .product-functions-item--hidden, и
+                           по клику тоглит их видимость. --}}
                       <div class="product-functions-items">
                         @foreach ($product->functions as $fn)
-                          <div class="product-functions-item">
+                          <div class="product-functions-item @if ($loop->index >= 9)product-functions-item--hidden @endif">
                             <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path
                                 d="M5.75 9.75L9.75 0.75C10.5456 0.75 11.3087 1.06607 11.8713 1.62868C12.4339 2.19129 12.75 2.95435 12.75 3.75V7.75H18.41C18.6999 7.74672 18.9871 7.8065 19.2516 7.92522C19.5161 8.04393 19.7516 8.21873 19.9419 8.43751C20.1321 8.65629 20.2725 8.91382 20.3533 9.19225C20.4342 9.47068 20.4535 9.76336 20.41 10.05L19.03 19.05C18.9577 19.5269 18.7154 19.9616 18.3479 20.274C17.9804 20.5864 17.5123 20.7555 17.03 20.75H5.75M5.75 9.75V20.75M5.75 9.75H2.75C2.21957 9.75 1.71086 9.96071 1.33579 10.3358C0.960714 10.7109 0.75 11.2196 0.75 11.75V18.75C0.75 19.2804 0.960714 19.7891 1.33579 20.1642C1.71086 20.5393 2.21957 20.75 2.75 20.75H5.75"
@@ -329,245 +334,15 @@
     @if ($product !== null && $product->offers !== null && $product->offers->count() > 0)
       @php
         $offersJson = array_map(fn($o) => $o->toArray(), $product->offers->toArray());
+        $pageConfig = [
+            'addUrl'          => Route::to('api.v1.cart.items.add'),
+            'cartGetUrl'      => Route::to('api.v1.cart.get'),
+            'itemUrlTemplate' => preg_replace('/0$/', '', Route::to('api.v1.cart.items.update', ['id' => 0])),
+            'initialGallery'  => $slides ?? [],
+        ];
       @endphp
       <script type="application/json" id="product-offers-json">@json($offersJson)</script>
-      <script>
-        (function () {
-          const dataEl = document.getElementById('product-offers-json');
-          if (!dataEl) return;
-          let offers;
-          try {
-            offers = JSON.parse(dataEl.textContent || '[]');
-          } catch (e) {
-            return;
-          }
-          if (!Array.isArray(offers) || offers.length === 0) return;
-
-          const form = document.getElementById('product-form');
-          if (!form) return;
-
-          const priceEl = form.querySelector('.product-price__text');
-          const stockEl = form.querySelector('.product-stock');
-          const submitBtn = form.querySelector('[data-add-to-cart]');
-          const counterEl = form.querySelector('[data-cart-counter]');
-          const counterValue = counterEl?.querySelector('input[name="amount"]');
-          const specCells = document.querySelectorAll('[data-spec]');
-          const fmt = new Intl.NumberFormat('ru-RU');
-          const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-          const addUrl = '{{ Route::to('api.v1.cart.items.add') }}';
-          const cartGetUrl = '{{ Route::to('api.v1.cart.get') }}';
-          const itemUrlTemplate = '{{ Route::to('api.v1.cart.items.update', ['id' => 0]) }}'.replace(/0$/, '');
-
-          function findOffer(color, area) {
-            // 1) exact match
-            let m = offers.find(o => o.color === color && Number(o.area) === Number(area));
-            if (m) return m;
-            // 2) same color, any area
-            m = offers.find(o => o.color === color);
-            if (m) return m;
-            // 3) same area, any color
-            m = offers.find(o => Number(o.area) === Number(area));
-            return m || offers[0];
-          }
-
-          const offerIdInput = form.querySelector('[data-offer-id]');
-
-          // Перерисовка слайдеров галереи при смене offer. Фронтовый product.js
-          // инициализирует Swiper на DOMContentLoaded (mainCarouselEl.swiper и
-          // thumbsCarouselEl.swiper). Стратегия:
-          //   - если кол-во слайдов совпадает с текущим Swiper-instance —
-          //     просто меняем .src у существующих <img> (Swiper не страдает,
-          //     dimensions те же, навигация работает);
-          //   - если кол-во изменилось — fallback: подменяем innerHTML wrapper-а
-          //     и зовём swiper.update() (могут потеряться расчёты bullet-пагинации,
-          //     но это редкий случай — все ТП имеют одинаковое число фото).
-          // lastGallerySig инициализирован server-rendered набором (firstOffer.gallery),
-          // чтобы первый update() на load не пытался перерисовать только что
-          // отрисованный Swiper.
-          const mainCarouselEl = document.querySelector('.product-carousel--main');
-          const thumbsCarouselEl = document.querySelector('.product-carousel--thumbs');
-          const initialGallery = @json($slides ?? []);
-          let lastGallerySig = initialGallery.join('|');
-
-          function renderGallery(gallery) {
-            const list = (gallery && gallery.length) ? gallery : [];
-            if (list.length === 0) return;
-
-            const sig = list.join('|');
-            if (sig === lastGallerySig) return;
-            lastGallerySig = sig;
-
-            for (const el of [mainCarouselEl, thumbsCarouselEl]) {
-              if (!el) continue;
-              const wrapper = el.querySelector('.product-carousel-wrapper');
-              if (!wrapper) continue;
-
-              const imgs = wrapper.querySelectorAll('.product-carousel__slide');
-              if (imgs.length === list.length) {
-                imgs.forEach((img, i) => { img.src = list[i]; });
-              } else {
-                wrapper.innerHTML = list.map(src => `<img class="product-carousel__slide" src="${src}" alt="" />`).join('');
-                const sw = el.swiper;
-                if (sw) { sw.update(); sw.slideTo(0, 0); }
-              }
-            }
-          }
-
-          function update({ touchGallery = false } = {}) {
-            const color = form.querySelector('input[name="color"]:checked')?.value;
-            const area  = form.querySelector('input[name="area"]:checked')?.value;
-            const offer = findOffer(color, area);
-            if (!offer) return;
-
-            if (offerIdInput) offerIdInput.value = offer.id;
-
-            if (priceEl) {
-              const tpl = priceEl.dataset.priceTemplate || '__PRICE__ UZS';
-              priceEl.textContent = tpl.replace('__PRICE__', fmt.format(offer.price));
-            }
-            if (stockEl) {
-              stockEl.style.display = offer.in_stock ? '' : 'none';
-            }
-            if (submitBtn) {
-              submitBtn.disabled = !offer.in_stock;
-            }
-            specCells.forEach(td => {
-              const key = td.dataset.spec;
-              if (key in offer && offer[key] !== '' && offer[key] !== null) {
-                const tpl = td.dataset.specTemplate;
-                td.textContent = tpl ? tpl.replace('__VAL__', String(offer[key])) : String(offer[key]);
-              }
-            });
-
-            // Слайдер трогаем ТОЛЬКО на пользовательском change. На initial load
-            // server-rendered DOM уже совпадает с firstOffer.gallery, фронтовый
-            // Swiper уже инициализировался — повторный innerHTML/swap.src ему
-            // только мешает.
-            if (touchGallery) {
-              renderGallery(offer.gallery);
-            }
-          }
-
-          form.addEventListener('change', e => {
-            if (e.target.name === 'color' || e.target.name === 'area') {
-              update({ touchGallery: true });
-              syncCart();
-            }
-          });
-          update();
-
-          // Текущая «строка корзины» для выбранного offer — { id, quantity } или null.
-          let currentLine = null;
-
-          function renderCounter() {
-            // CSS .number-input { display:flex } перекрывает [hidden] — управляем
-            // через style.display напрямую, чтобы работать поверх любых CSS-правил.
-            if (currentLine && currentLine.quantity > 0) {
-              if (submitBtn)  submitBtn.style.display = 'none';
-              if (counterEl)  counterEl.style.display = '';
-              if (counterValue) counterValue.value = String(currentLine.quantity);
-            } else {
-              if (submitBtn)  submitBtn.style.display = '';
-              if (counterEl)  counterEl.style.display = 'none';
-              if (counterValue) counterValue.value = '0';
-            }
-          }
-
-          function applyLines(lines, offerId) {
-            const match = (lines || []).find(l => Number(l.offer_id) === Number(offerId));
-            currentLine = match ? { id: Number(match.id), quantity: Number(match.quantity) } : null;
-            renderCounter();
-          }
-
-          async function fetchJson(url, options = {}) {
-            const r = await fetch(url, {
-              credentials: 'same-origin',
-              headers: {
-                'Accept': 'application/json',
-                ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-                ...(options.method && options.method !== 'GET' ? { 'X-CSRF-Token': csrf } : {}),
-                ...(options.headers || {}),
-              },
-              ...options,
-            });
-            if (!r.ok) throw new Error(`${options.method || 'GET'} ${url} ${r.status}`);
-            return r.json();
-          }
-
-          async function syncCart() {
-            const offerId = parseInt(offerIdInput?.value || '0', 10);
-            if (!offerId) return;
-            try {
-              const data = await fetchJson(cartGetUrl);
-              applyLines(data.lines, offerId);
-            } catch (err) {
-              console.error(err);
-            }
-          }
-
-          // 1) Subscribe: «Купить» — POST на наш API, без редиректа.
-          //
-          // Capture-фаза + stopImmediatePropagation — обязательно. Фронтовый
-          // product.js навешивает свой submit-handler (bubble), который делает
-          // `fetch(form.action, {method:'POST', body: FormData(form)})` — а
-          // action у формы пустой, поэтому POST уходит на текущий URL страницы
-          // и возвращает 404. Capture-handler перехватывает событие первым и
-          // глушит все остальные listeners на форме.
-          //
-          // На initial load (r() из main.js) и на change по ±-кнопкам фронт
-          // вызывает form.requestSubmit() — submitter будет null. Игнорируем
-          // такие programmatic-submits: за ±-изменения отвечает change-handler
-          // ниже, который шлёт PATCH/DELETE.
-          form.addEventListener('submit', async e => {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            if (!e.submitter || !('addToCart' in e.submitter.dataset)) return;
-
-            const offerId = parseInt(offerIdInput?.value || '0', 10);
-            if (!offerId) return;
-            if (submitBtn) submitBtn.disabled = true;
-            try {
-              const data = await fetchJson(addUrl, {
-                method: 'POST',
-                body: JSON.stringify({ offer_id: offerId, quantity: 1 }),
-              });
-              applyLines(data.lines, offerId);
-            } catch (err) {
-              console.error(err);
-            } finally {
-              if (submitBtn) submitBtn.disabled = false;
-            }
-          }, true);
-
-          // 2) «+»/«−» — обработку DOM-инкремента вешает фронтовый main.js
-          //    (querySelectorAll('.number-input').forEach → click → valueAsNumber±1 →
-          //    dispatchEvent('change')). Мы только слушаем итоговый change-event и
-          //    дёргаем API. Самостоятельно вешать click — НЕЛЬЗЯ: получится двойной
-          //    inc/dec за один клик.
-          counterValue?.addEventListener('change', async () => {
-            const offerId = parseInt(offerIdInput?.value || '0', 10);
-            if (!offerId || !currentLine) return;
-            const next = Math.max(0, parseInt(counterValue.value, 10) || 0);
-            if (next === currentLine.quantity) return;
-            try {
-              const data = next <= 0
-                ? await fetchJson(itemUrlTemplate + currentLine.id, { method: 'DELETE' })
-                : await fetchJson(itemUrlTemplate + currentLine.id, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ quantity: next }),
-                  });
-              applyLines(data.lines, offerId);
-            } catch (err) {
-              console.error(err);
-              // если сервер отказал — откатим UI к прежнему quantity
-              renderCounter();
-            }
-          });
-
-          // 3) Initial sync — если этот offer уже в корзине (например после refresh),
-          //    сразу показать counter вместо кнопки «Купить».
-          syncCart();
-        })();
-      </script>
+      <script type="application/json" id="product-page-config">@json($pageConfig)</script>
+      <script defer src="/local/templates/gree/assets/product-page.js"></script>
     @endif
 @endsection
