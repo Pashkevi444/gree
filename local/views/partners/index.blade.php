@@ -29,8 +29,10 @@
         {{-- ── Hero ──────────────────────────────────────────────── --}}
         <section class="hero container">
             <div class="hero-wrapper" style="--background-image: url('/dist/images/6311bac5bcac86eed9564a7ad5501eda4bbfd3a0.png')">
-                <h2 class="hero__title">{{ Language::t('partners.hero.title') }}</h2>
-                <p class="hero__description">{{ Language::t('partners.hero.description') }}</p>
+                {{-- raw: переводы могут содержать <br> и др. inline-теги
+                     (UF_VALUE_RU/UZ типа TEXT, см. Version20260608000002) --}}
+                <h2 class="hero__title">{!! Language::t('partners.hero.title') !!}</h2>
+                <p class="hero__description">{!! Language::t('partners.hero.description') !!}</p>
                 @if ($partnerCtaUrl)
                     <a class="hero__button" href="{{ $partnerCtaUrl }}" target="_blank" rel="noopener noreferrer">{{ Language::t('partners.hero.cta') }}</a>
                 @endif

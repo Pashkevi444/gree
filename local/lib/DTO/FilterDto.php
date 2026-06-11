@@ -10,7 +10,6 @@ use Gree\Enum\SortField;
 
 final readonly class FilterDto extends BaseDto
 {
-    private const SESSION_KEY = 'catalog_filter';
 
     /**
      * @param ProductType[] $types
@@ -30,24 +29,23 @@ final readonly class FilterDto extends BaseDto
         public int $perPage = 9,
     ) {}
 
+    /**
+     * Фильтр живёт ТОЛЬКО в параметрах запроса — сессионного хранения нет
+     * сознательно. Раньше фильтр сохранялся в сессию и подставлялся на любой
+     * каталожной странице без параметров; из-за этого:
+     *   1) выбранный фильтр «переезжал» в другие разделы каталога;
+     *   2) кнопка «Сбросить всё» (HTML type="reset") не работала — reset
+     *      возвращает поля к атрибутам разметки, а разметка рендерилась с
+     *      @checked из сессии, т.е. «сброс» восстанавливал тот же фильтр.
+     * catalog.js передаёт все поля формы в каждом fetch (включая пагинацию),
+     * так что серверу ничего запоминать не нужно.
+     */
     public static function fromRequest(\Bitrix\Main\HttpRequest $request): static
     {
-        $session = \Bitrix\Main\Application::getInstance()->getSession();
-
         $post = $request->getPostList()->toArray();
         $get = $request->getQueryList()->toArray();
-        $params = $post ?: $get;
 
-        $filterKeys = ['type', 'price', 'area', 'bestseller', 'inverter_motor', 'color', 'sort', 'page'];
-        $hasFilterParams = (bool) array_intersect_key($params, array_flip($filterKeys));
-
-        if ($hasFilterParams) {
-            $session->set(self::SESSION_KEY, $params);
-        } elseif ($session->has(self::SESSION_KEY)) {
-            $params = $session->get(self::SESSION_KEY);
-        }
-
-        return static::fromArray($params);
+        return static::fromArray($post ?: $get);
     }
 
     public static function fromArray(array $params): static

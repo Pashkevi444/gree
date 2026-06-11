@@ -85,7 +85,7 @@ final class BlogController extends BaseController
         return $this->view('blog/show', new BlogArticleViewData(
             breadcrumbs:   $this->breadcrumbs->blogArticle($article),
             article:       $article,
-            categoryLabel: Language::t($categoryKey),
+            categoryLabel: (string) Language::t($categoryKey),
             related:       $this->blogService->recent($article->category, $article->id, 3),
         ));
     }

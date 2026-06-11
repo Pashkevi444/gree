@@ -16,7 +16,9 @@
               class="hero-slide"
               style="--background-image: url('{{ $slide->backgroundImage }}')"
             >
-              <h2 class="hero-slide__title">{{ $slide->name }}</h2>
+              {{-- raw: заголовок слайда может содержать <br> и др. inline-теги
+                   (контент из админки, как и subtitle строкой ниже) --}}
+              <h2 class="hero-slide__title">{!! $slide->name !!}</h2>
               <p class="hero-slide__description">{!! $slide->subtitle !!}</p>
               <a class="hero-slide__button" href="{{ $slide->buttonUrl }}">{{ $slide->buttonText }}</a>
             </div>

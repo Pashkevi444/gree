@@ -7,6 +7,7 @@ namespace Gree\Helpers;
 use Gree\Contract\Service\LanguageServiceInterface;
 use Gree\Contract\Service\TranslatorServiceInterface;
 use Gree\Core\App;
+use Gree\Support\HtmlText;
 
 /**
  * Static facade over the i18n stack — meant for use in templates / static
@@ -21,12 +22,20 @@ use Gree\Core\App;
 final class Language extends BaseHelper
 {
     /**
+     * Возвращает HtmlText (Htmlable + Stringable + JsonSerializable):
+     * Blade `{{ }}` НЕ экранирует результат — inline-теги (<br>, <strong>)
+     * из переводов рендерятся как разметка. В строковых контекстах работает
+     * __toString; в PHP-коде со strict_types для string-параметров нужен
+     * явный (string)-каст.
+     *
      * @param array<string, string|int|float> $params
      */
-    public static function t(string $code, array $params = []): string
+    public static function t(string $code, array $params = []): HtmlText
     {
-        return App::get(TranslatorServiceInterface::class)
-            ->translate($code, App::get(LanguageServiceInterface::class)->get(), $params);
+        return new HtmlText(
+            App::get(TranslatorServiceInterface::class)
+                ->translate($code, App::get(LanguageServiceInterface::class)->get(), $params)
+        );
     }
 
     /**

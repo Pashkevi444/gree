@@ -92,7 +92,7 @@ final class FilterDtoTest extends TestCase
         $this->assertContains(ProductType::Wall, $filter->types);
     }
 
-    public function testFromRequestPostSavesFullStateToSession(): void
+    public function testFromRequestPostParsesAllFields(): void
     {
         $request = new BitrixHttpRequest(
             post: ['type' => ['wall'], 'sort' => 'price_desc', 'page' => '2', 'color' => ['black']],
@@ -105,15 +105,24 @@ final class FilterDtoTest extends TestCase
         $this->assertSame(2, $filter->page);
         $this->assertContains(ProductType::Wall, $filter->types);
         $this->assertContains(Color::Black, $filter->colors);
-
-        $session = \Bitrix\Main\Application::getInstance()->getSession();
-        $this->assertTrue($session->has('catalog_filter'));
-        $saved = $session->get('catalog_filter');
-        $this->assertSame('price_desc', $saved['sort']);
-        $this->assertSame(['wall'], $saved['type']);
     }
 
-    public function testFromRequestGetReadsFromSession(): void
+    public function testFromRequestDoesNotPersistToSession(): void
+    {
+        // Сессионного хранения фильтра нет сознательно: оно «перевозило» фильтр
+        // между разделами каталога и ломало HTML-reset (см. fromRequest doc).
+        $request = new BitrixHttpRequest(
+            post: ['type' => ['wall'], 'sort' => 'price_desc'],
+            method: 'POST',
+        );
+
+        FilterDto::fromRequest($request);
+
+        $session = \Bitrix\Main\Application::getInstance()->getSession();
+        $this->assertFalse($session->has('catalog_filter'));
+    }
+
+    public function testFromRequestGetIgnoresSessionState(): void
     {
         $session = \Bitrix\Main\Application::getInstance()->getSession();
         $session->set('catalog_filter', ['sort' => 'price_asc', 'type' => ['column'], 'page' => '3']);
@@ -122,12 +131,13 @@ final class FilterDtoTest extends TestCase
 
         $filter = FilterDto::fromRequest($request);
 
-        $this->assertSame(SortField::PriceAsc, $filter->sortField);
-        $this->assertSame(3, $filter->page);
-        $this->assertContains(ProductType::Column, $filter->types);
+        // Запрос без параметров = дефолтный фильтр, даже если в сессии что-то лежит.
+        $this->assertSame(SortField::Popular, $filter->sortField);
+        $this->assertSame(1, $filter->page);
+        $this->assertSame([], $filter->types);
     }
 
-    public function testFromRequestGetSavesParamsToSession(): void
+    public function testFromRequestGetParsesQueryParams(): void
     {
         $request = new BitrixHttpRequest(
             query: ['sort' => 'price_desc', 'type' => ['wall'], 'page' => '2'],
@@ -139,28 +149,9 @@ final class FilterDtoTest extends TestCase
         $this->assertSame(SortField::PriceDesc, $filter->sortField);
         $this->assertSame(2, $filter->page);
         $this->assertContains(ProductType::Wall, $filter->types);
-
-        $session = \Bitrix\Main\Application::getInstance()->getSession();
-        $this->assertSame('price_desc', $session->get('catalog_filter')['sort']);
     }
 
-    public function testFromRequestGetWithParamsOverwritesSession(): void
-    {
-        $session = \Bitrix\Main\Application::getInstance()->getSession();
-        $session->set('catalog_filter', ['sort' => 'price_asc', 'page' => '3']);
-
-        $request = new BitrixHttpRequest(
-            query: ['page' => '5'],
-            method: 'GET',
-        );
-
-        $filter = FilterDto::fromRequest($request);
-
-        $this->assertSame(5, $filter->page);
-        $this->assertSame(SortField::Popular, $filter->sortField);
-    }
-
-    public function testFromRequestGetWithoutSessionUsesDefaults(): void
+    public function testFromRequestGetWithoutParamsUsesDefaults(): void
     {
         $request = new BitrixHttpRequest(method: 'GET');
 

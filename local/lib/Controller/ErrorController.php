@@ -18,7 +18,7 @@ final class ErrorController extends BaseController
 {
     public function notFound(): HttpResponse
     {
-        $this->setMeta(Language::t('404.title'), Language::t('404.description'));
+        $this->setMeta((string) Language::t('404.title'), (string) Language::t('404.description'));
         $this->addPageAssets('404');
 
         $response = $this->view('errors/404', new NotFoundViewData());
