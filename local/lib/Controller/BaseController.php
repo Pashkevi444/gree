@@ -19,14 +19,11 @@ abstract class BaseController
     {
         global $APPLICATION;
 
-        // Issue CSRF cookie on every HTML render so the front-end has a fresh
-        // token to mirror into headers on subsequent API calls.
+        // CSRF-кука нужна фронту на каждом HTML-рендере для последующих API-вызовов.
         App::get(CsrfServiceInterface::class)->readOrIssue();
 
         $data = $data instanceof BaseViewData ? $data->toArray() : $data;
 
-        // BitrixBladeEngine::evaluatePath uses require (no OB wrap) so Bitrix's
-        // AddBufferContent can cycle its OBs normally during header/footer rendering.
         Blade::factory()->make(str_replace('/', '.', $template), $data)->render();
 
         $html = $APPLICATION->EndBufferContentMan();
@@ -39,16 +36,13 @@ abstract class BaseController
         return $response;
     }
 
-    /**
-     * Return a JSON response for API routes.
-     */
     protected function json(mixed $data, int $status = 200): HttpResponse
     {
         $response = new HttpResponse();
         $this->applySecurityHeaders($response);
         $this->flushCookies($response);
         $response->addHeader('Content-Type', 'application/json; charset=utf-8');
-        // JSON responses should never be cached by intermediaries — they reveal user state.
+        // no-store: JSON отдаёт пользовательский стейт, кешировать нельзя.
         $response->addHeader('Cache-Control', 'no-store');
         $response->setStatus($status . ' ' . $this->statusText($status));
         $response->setContent(Json::encode($data));
@@ -56,10 +50,7 @@ abstract class BaseController
         return $response;
     }
 
-    /**
-     * Set page meta before calling view() — must be called before view()
-     * so that $APPLICATION->ShowHead() picks up the values.
-     */
+    /** Вызывать до view() — иначе ShowHead() не подхватит значения. */
     protected function setMeta(string $title, string $description = '', string $keywords = ''): void
     {
         global $APPLICATION;
@@ -72,17 +63,7 @@ abstract class BaseController
         }
     }
 
-    /**
-     * Apply a resolved SeoDto onto the Bitrix page. Title and meta
-     * description/keywords go through page properties (ShowHead() renders
-     * them). Open Graph tags can't ride page properties because Bitrix only
-     * auto-renders the keys explicitly listed in iblock/site settings — we
-     * emit them as raw <meta> via the asset manager.
-     *
-     * Empty fields are skipped so a page-specific SEO override doesn't blank
-     * out values that another layer (default site SEO, IPROPERTY templates)
-     * may have set.
-     */
+    /** OG-теги идут raw <meta> через Asset (page properties их не рендерят); пустые поля пропускаются, чтобы не затирать SEO других слоёв. */
     protected function applySeo(SeoDto $seo): void
     {
         global $APPLICATION;
@@ -113,22 +94,13 @@ abstract class BaseController
         $emit('og:image', $seo->ogImage);
     }
 
-    /**
-     * Register page CSS + JS. Assets are served straight from /dist/ — the frontend
-     * dev's build directory. No duplication at the project root: drop a new build
-     * into /dist/ and these URLs continue to work.
-     *
-     * Scripts MUST be deferred — Bitrix Asset::addJs() injects them into <head>
-     * without defer, which runs them before DOM exists and crashes querySelector
-     * calls inside main.js. Using addString preserves the `defer` attribute.
-     */
+    /** Скрипты через addString с defer — Asset::addJs() кладёт их в <head> без defer, и main.js падает до построения DOM. */
     protected function addPageAssets(string $page): void
     {
         $asset = \Bitrix\Main\Page\Asset::getInstance();
         $asset->addCss('/dist/styles/main.css');
         $asset->addCss('/dist/styles/' . $page . '.css');
-        // Кастомные правки поверх dist-сборки (см. файл) — после dist-CSS,
-        // чтобы выигрывать каскад при равной специфичности.
+        // custom.css после dist-CSS — выигрывает каскад при равной специфичности.
         $asset->addCss('/local/templates/gree/assets/custom.css');
         $asset->addString('<script defer src="/dist/scripts/main.js"></script>');
         $asset->addString('<script defer src="/dist/scripts/' . $page . '.js"></script>');
@@ -139,14 +111,6 @@ abstract class BaseController
         return \Bitrix\Main\Application::getInstance()->getContext()->getRequest();
     }
 
-    /**
-     * Defense-in-depth response hardening:
-     *   nosniff     — kills MIME-confusion attacks on JS/HTML
-     *   DENY        — clickjacking via <iframe>
-     *   strict-origin-when-cross-origin — leaks no path on outbound nav
-     *   X-XSS-Protection 0 — disables the legacy IE/Edge XSS auditor (it's
-     *                        been a known footgun for years)
-     */
     private function applySecurityHeaders(HttpResponse $response): void
     {
         $response->addHeader('X-Content-Type-Options', 'nosniff');
@@ -156,11 +120,7 @@ abstract class BaseController
         $response->addHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
     }
 
-    /**
-     * Drain queued outgoing cookies (CSRF, cart_token) onto the response.
-     * Until this runs, services that called HttpContext::setCookie() haven't
-     * actually written anything to the wire.
-     */
+    /** Без этого вызова куки из HttpContext::setCookie() не уходят на клиента. */
     private function flushCookies(HttpResponse $response): void
     {
         App::get(HttpContextInterface::class)->flushCookiesInto($response);

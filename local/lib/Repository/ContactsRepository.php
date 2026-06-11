@@ -13,6 +13,8 @@ use Gree\Enum\IblockCode;
 
 final class ContactsRepository extends BaseRepository implements ContactsRepositoryInterface
 {
+    protected const int TTL = self::TTL_STATIC;
+
     public function getChannels(): ContactChannelCollection
     {
         \Bitrix\Main\Loader::includeModule('iblock');

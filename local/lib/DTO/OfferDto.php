@@ -6,20 +6,10 @@ namespace Gree\DTO;
 
 use Gree\Enum\Color;
 
-/**
- * One trade offer (SKU) belonging to a parent ProductDto. Combinations of
- * color × area produce separate offers, each with its own price and stock
- * state plus capacity-dependent specs.
- */
+/** Торговое предложение: пара color×area + цена/наличие/спеки. */
 final readonly class OfferDto extends BaseDto
 {
-    /**
-     * @param string[] $gallery URL-ы фото торгового предложения. На детальной
-     *                          товара слайдер показывает именно эти картинки
-     *                          для текущего offer; при смене цвета/мощности
-     *                          (т.е. другой offer) слайдер перерисовывается.
-     *                          Пустой массив = fallback на ProductDto::gallery.
-     */
+    /** @param string[] $gallery Фото текущего ТП — на детальной слайдер перерисовывается при смене ТП. */
     public function __construct(
         public int $id,
         public int $productId,

@@ -9,20 +9,7 @@ use Gree\Core\Env;
 use Gree\Enum\LogLevel;
 use Gree\Traits\LoggerLevelMethodsTrait;
 
-/**
- * Singleton file logger.
- *
- * Files:
- *   logs/{YYYY-MM-DD}.log         — combined timeline of every level
- *   logs/{YYYY-MM-DD}-errors.log  — duplicate stream of warning+ for fast scanning
- *
- * Configuration is read from the .env file:
- *   LOG_DIR=local/logs   (relative to project root, or absolute)
- *   LOG_DEBUG=false      (debug messages are dropped unless true)
- *
- * Info / Warning / Error / Critical are always written. Info-level logging
- * isn't used on this project; if you add it later the call will just write.
- */
+/** Singleton-логгер: logs/YYYY-MM-DD.log + дубль warning+ в YYYY-MM-DD-errors.log. Конфиг — LOG_DIR / LOG_DEBUG в .env. */
 final class FileLogger implements LoggerInterface
 {
     use LoggerLevelMethodsTrait;
@@ -42,10 +29,7 @@ final class FileLogger implements LoggerInterface
         return self::$instance;
     }
 
-    /**
-     * Override the singleton — used by tests to inject a deterministic instance.
-     * Pass null to force the next getInstance() to rebuild from env.
-     */
+    /** Тестовый override; null — следующий getInstance() пересоздаст из env. */
     public static function setInstance(?self $instance): void
     {
         self::$instance = $instance;
@@ -75,7 +59,7 @@ final class FileLogger implements LoggerInterface
 
         $this->write($this->directory . '/' . $today . '.log', $line);
 
-        // Hot-path file for ops: warnings and above duplicated into a dedicated file.
+        // Дублируем warning+ в отдельный файл — быстрый скан для дежурного.
         if ($level->priority() >= LogLevel::Warning->priority()) {
             $this->write($this->directory . '/' . $today . '-errors.log', $line);
         }
@@ -86,8 +70,7 @@ final class FileLogger implements LoggerInterface
         $timestamp = date('c');
         $upper = strtoupper($level->value);
 
-        // \Throwable serialises as a structured payload — full string trace stays out
-        // of context so JSON encoding doesn't blow up.
+        // Throwable → structured payload; full string-trace не лезет, чтоб JSON не лопался.
         $normalized = [];
         foreach ($context as $key => $value) {
             if ($value instanceof \Throwable) {
@@ -112,7 +95,7 @@ final class FileLogger implements LoggerInterface
         if (!is_dir($this->directory)) {
             @mkdir($this->directory, 0775, true);
         }
-        // LOCK_EX so concurrent fpm workers don't interleave half-written lines.
+        // LOCK_EX — concurrent fpm-воркеры не перемешают строки.
         @file_put_contents($path, $line, FILE_APPEND | LOCK_EX);
     }
 }

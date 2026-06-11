@@ -74,9 +74,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 throw new EmptyCartException('cart is empty');
             }
 
-            // Pull fresh offer + product data and build snapshot lines. Anything
-            // missing (offer deleted between Add-to-cart and Place) silently
-            // skipped; if EVERY line is missing we treat as empty cart.
+            // Снапшот по свежим данным; offer удалённый между add-to-cart и place — пропускаем; все пропущены → пустая корзина.
             $items = $this->snapshot($cartLines);
             if ($items->isEmpty()) {
                 throw new EmptyCartException('all cart items invalid');
@@ -99,9 +97,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 userAgent:  $this->truncate((string) ($this->http->getHeader('User-Agent') ?? ''), self::MAX_STRING),
             );
 
-            // Persistence block — all-or-nothing. Если упадёт вставка строки
-            // позиций или удаление корзинной строки, шапка заказа тоже не
-            // должна остаться в БД (orphan).
+            // All-or-nothing: упадёт insert позиции / delete корзинной строки → шапка заказа не должна осиротеть.
             $orderId = $this->tx->run(function () use ($orderDto, $items, $cartLines) {
                 $id = $this->orders->insert($orderDto);
 
@@ -119,8 +115,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
                     ));
                 }
 
-                // Empty the cart after success — prevents the same items from
-                // being ordered again by a double-submit / browser back.
+                // Чистим корзину — иначе double-submit / browser-back закажет то же самое.
                 foreach ($cartLines as $row) {
                     $this->cartItems->delete($row->id);
                 }
@@ -215,11 +210,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
         }
     }
 
-    /**
-     * Builds the order-line snapshot from current cart contents. Cross-references
-     * each cart row with a fresh offer + product fetch so the price and the
-     * product name are captured at order time.
-     */
+    /** Снапшот строк по свежим offer+product — цена и название «замораживаются» в момент заказа. */
     private function snapshot(\Gree\Collection\CartItemCollection $cartLines): OrderItemCollection
     {
         $offerIds = [];
@@ -287,10 +278,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
         return mb_strlen($s) > $max ? mb_substr($s, 0, $max) : $s;
     }
 
-    /**
-     * 12-char hex (48 bits, ~281T combos). Retries up to N times on the rare
-     * collision; raises after that — the hosting filesystem clearly hates us.
-     */
+    /** 12-char hex (48 бит). Несколько ретраев на редкую коллизию, дальше — кидаем. */
     private function generatePublicId(): string
     {
         for ($i = 0; $i < self::PUBLIC_ID_MAX_TRIES; $i++) {

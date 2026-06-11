@@ -9,24 +9,12 @@ use Gree\Contract\Service\TranslatorServiceInterface;
 use Gree\Core\App;
 use Gree\Support\HtmlText;
 
-/**
- * Static facade over the i18n stack — meant for use in templates / static
- * contexts where DI injection is impractical:
- *
- *   <?= Language::t('header.catalog') ?>
- *   {{ \Gree\Helpers\Language::t('catalog.found', ['count' => $total]) }}
- *
- * Inside services / controllers / repositories prefer injecting
- * TranslatorServiceInterface + LanguageServiceInterface explicitly.
- */
+/** Статический фасад над i18n — для шаблонов; в сервисах инжектируйте TranslatorServiceInterface + LanguageServiceInterface. */
 final class Language extends BaseHelper
 {
     /**
-     * Возвращает HtmlText (Htmlable + Stringable + JsonSerializable):
-     * Blade `{{ }}` НЕ экранирует результат — inline-теги (<br>, <strong>)
-     * из переводов рендерятся как разметка. В строковых контекстах работает
-     * __toString; в PHP-коде со strict_types для string-параметров нужен
-     * явный (string)-каст.
+     * Возвращает HtmlText — Blade `{{ }}` НЕ экранирует, inline-теги переводов рендерятся как HTML.
+     * В strict_types-контексте для string-параметров нужен явный (string)-каст.
      *
      * @param array<string, string|int|float> $params
      */
@@ -38,13 +26,7 @@ final class Language extends BaseHelper
         );
     }
 
-    /**
-     * Форматирует ISO-дату (`Y-m-d` или любой strtotime-парсимый ввод) в
-     * локализованную строку «1 мая 2026» / «1 may 2026». Пустой ввод → ''.
-     *
-     * Без IntlDateFormatter сознательно: intl-расширение не гарантировано на
-     * всех хостах, словарь нужен всего на 2 локали.
-     */
+    /** ISO-дата → «1 мая 2026» / «1 may 2026». Без IntlDateFormatter (не гарантирован на всех хостах). */
     public static function date(string $iso): string
     {
         if ($iso === '') {

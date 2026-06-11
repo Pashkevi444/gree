@@ -11,63 +11,16 @@ use Gree\Enum\ProductType;
 
 interface BreadcrumbsServiceInterface
 {
-    /**
-     * Home → Catalog (current).
-     */
     public function catalog(): BreadcrumbCollection;
-
-    /**
-     * Home → Catalog → <type> (current).
-     */
     public function catalogSection(ProductType $type): BreadcrumbCollection;
-
-    /**
-     * Home → Catalog → <type> → <product name> (current).
-     */
     public function product(ProductDto $product): BreadcrumbCollection;
-
-    /**
-     * Home → Blog (current).
-     */
     public function blog(): BreadcrumbCollection;
-
-    /**
-     * Home → Blog → <category> (current).
-     */
     public function blogCategory(\Gree\Enum\BlogCategory $category): BreadcrumbCollection;
-
-    /**
-     * Home → Blog → <category> → <article title> (current).
-     */
     public function blogArticle(BlogArticleDto $article): BreadcrumbCollection;
-
-    /**
-     * Home → Cart (current).
-     */
     public function cart(): BreadcrumbCollection;
-
-    /**
-     * Home → Cart → Checkout (current).
-     */
     public function checkout(): BreadcrumbCollection;
-
-    /**
-     * Home → Help (current).
-     */
     public function help(): BreadcrumbCollection;
-
-    /**
-     * Home → Contacts (current).
-     */
     public function contacts(): BreadcrumbCollection;
-
-    /**
-     * Home → Where to buy (current).
-     */
     public function whereToBuy(): BreadcrumbCollection;
-
-    /**
-     * Home → Partners (current).
-     */
     public function partners(): BreadcrumbCollection;
 }

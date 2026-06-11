@@ -22,14 +22,7 @@ final class App
     }
 
     /**
-     * Typed shortcut to fetch a service from the container. The generic PHPDoc
-     * lets PhpStorm / PHPStan / Psalm infer the concrete return type from the
-     * passed class-string, so navigation and autocompletion work:
-     *
-     *   App::get(CatalogService::class)->getList($filter)  // ↑ CatalogService
-     *   App::get(LanguageServiceInterface::class)->get()    // ↑ LanguageServiceInterface
-     *
-     * Prefer this over `App::container()->get(...)` everywhere outside DI bootstrap.
+     * Типизированный shortcut: дженерик-PHPDoc даёт навигацию в IDE. Использовать вместо App::container()->get(...) вне DI-bootstrap.
      *
      * @template T of object
      * @param class-string<T> $id

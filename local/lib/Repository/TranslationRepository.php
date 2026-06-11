@@ -30,7 +30,7 @@ final class TranslationRepository extends BaseHlblockRepository implements Trans
         try {
             $result = $this->query()
                 ->setSelect(['UF_CODE', 'UF_VALUE_RU', 'UF_VALUE_UZ'])
-                ->setCacheTtl(3600)
+                ->setCacheTtl(static::TTL_STATIC)
                 ->exec();
         } catch (\RuntimeException) {
             return $this->cache = [];

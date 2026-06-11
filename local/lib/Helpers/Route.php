@@ -8,26 +8,7 @@ use Bitrix\Main\Application;
 use Bitrix\Main\Routing\Exceptions\ParameterNotFoundException;
 use Gree\Logging\FileLogger;
 
-/**
- * Static facade over Bitrix Router::route() — generates URLs from route
- * names declared in `local/routes/{web,api}.php`.
- *
- * Why a facade and not DI: templates (`*.blade.php`, `header.php`, `footer.php`)
- * pull URLs all the time and don't have access to a service container without
- * passing it through every ViewData. A static call keeps templates clean.
- *
- *   Route::to('cart.index')
- *     → "/cart/"
- *
- *   Route::to('catalog.product', ['section' => 'nastennie', 'code' => 'gree-bora-x-07'])
- *     → "/catalog/nastennie/gree-bora-x-07/"
- *
- *   Route::to('api.v1.cart.items.update', ['id' => 42])
- *     → "/api/v1/cart/items/42"
- *
- * If the name is unknown or required parameters are missing — returns "#" and
- * logs critical. Better a broken link than a 500 on render.
- */
+/** Статический фасад над Bitrix Router::route(). При неизвестном имени или missing-параметре — "#" + critical-лог (лучше битая ссылка, чем 500 на рендере). */
 final class Route extends BaseHelper
 {
     /**

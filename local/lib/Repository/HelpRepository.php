@@ -20,6 +20,8 @@ use Gree\Enum\IblockCode;
 
 final class HelpRepository extends BaseRepository implements HelpRepositoryInterface
 {
+    protected const int TTL = self::TTL_STATIC;
+
     public function getPaymentMethods(): PaymentMethodCollection
     {
         $iblockId = $this->iblockId(IblockCode::HelpPaymentMethods);

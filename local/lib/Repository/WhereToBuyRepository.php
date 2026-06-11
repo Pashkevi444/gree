@@ -14,6 +14,8 @@ use Gree\Enum\IblockCode;
 
 final class WhereToBuyRepository extends BaseRepository implements WhereToBuyRepositoryInterface
 {
+    protected const int TTL = self::TTL_STATIC;
+
     public function getLocations(): WhereToBuyLocationCollection
     {
         \Bitrix\Main\Loader::includeModule('iblock');

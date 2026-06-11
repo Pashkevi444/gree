@@ -11,7 +11,12 @@ use Gree\Enum\Locale;
 
 abstract class BaseRepository
 {
-    protected const int TTL = 3600;
+
+    protected const int TTL_STATIC = 2592000;  // 30 дней
+    protected const int TTL_CONTENT = 604800;   // 7 дней
+    protected const int TTL_CATALOG = 3600;     // 1 час
+
+    protected const int TTL = self::TTL_CATALOG;
     protected const array SORT = ['SORT' => 'ASC', 'TIMESTAMP_X' => 'DESC', 'DATE_CREATE' => 'DESC'];
 
     public function __construct(
@@ -63,7 +68,7 @@ abstract class BaseRepository
         $row = IblockTable::query()
             ->where('API_CODE', $code->value)
             ->setSelect(['ID'])
-            ->setCacheTtl(self::TTL)
+            ->setCacheTtl(static::TTL)
             ->exec()
             ->fetch();
 

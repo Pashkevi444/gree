@@ -63,7 +63,7 @@ final class SeoService extends BaseService implements SeoServiceInterface
         $row = IblockTable::query()
             ->where('API_CODE', $code->value)
             ->setSelect(['ID'])
-            ->setCacheTtl(3600)
+            ->setCacheTtl(2592000) // маппинг API_CODE → ID меняется только при пересоздании iblock
             ->exec()
             ->fetch();
 

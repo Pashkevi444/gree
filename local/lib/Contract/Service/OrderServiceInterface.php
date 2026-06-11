@@ -12,19 +12,10 @@ use Gree\Enum\PaymentMethod;
 interface OrderServiceInterface
 {
     /**
-     * Places a new order from the visitor's current cart cookie + the
-     * checkout form payload. Atomically:
-     *   1. Validates input + cart not empty.
-     *   2. Snapshots every cart item (price, name, color, area) from current
-     *      catalog state.
-     *   3. Inserts Orders header + OrderItems lines.
-     *   4. Empties the cart (so the same items can't be re-ordered by a
-     *      double-submit).
+     * Атомарно: валидация → snapshot строк корзины → insert Orders+OrderItems → очистка корзины.
      *
-     * Returns the persisted OrderDto with `publicId` / `id` populated.
-     *
-     * @throws \Gree\Service\Exception\CheckoutValidationException  per-field errors
-     * @throws \Gree\Service\Exception\EmptyCartException           cart had no items
+     * @throws \Gree\Service\Exception\CheckoutValidationException per-field
+     * @throws \Gree\Service\Exception\EmptyCartException
      */
     public function place(
         OrderCustomerDto $customer,
@@ -32,9 +23,5 @@ interface OrderServiceInterface
         PaymentMethod $payment,
     ): OrderDto;
 
-    /**
-     * Looks up a placed order by its public ID. Returns null when not found —
-     * controller renders 404 in that case.
-     */
     public function findByPublicId(string $publicId): ?OrderDto;
 }

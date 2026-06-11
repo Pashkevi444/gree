@@ -12,6 +12,8 @@ use Gree\Enum\Locale;
 
 final class MenuRepository extends BaseRepository implements MenuRepositoryInterface
 {
+    protected const int TTL = self::TTL_STATIC;
+
     public function getTree(): MenuItemCollection
     {
         return $this->buildTreeFor(IblockCode::Menu);

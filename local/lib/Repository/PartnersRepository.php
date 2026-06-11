@@ -15,6 +15,8 @@ use Gree\Enum\IblockCode;
 
 final class PartnersRepository extends BaseRepository implements PartnersRepositoryInterface
 {
+    protected const int TTL = self::TTL_STATIC;
+
     public function getB2b(): B2bCardCollection
     {
         \Bitrix\Main\Loader::includeModule('iblock');

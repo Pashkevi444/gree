@@ -9,25 +9,7 @@ use Bitrix\Main\Db\SqlQueryException;
 use Gree\Contract\DB\TransactionServiceInterface;
 use Gree\Logging\FileLogger;
 
-/**
- * Транзакции для Bitrix-проекта с поддержкой вложенности через SAVEPOINT.
- *
- *   MySQL не умеет нативно вложенные транзакции — мы эмулируем их
- *   savepoint'ами: первый `startTransaction()` открывает реальную транзакцию,
- *   каждый последующий — кладёт новый SAVEPOINT. Аналогично commit/rollback
- *   снимают/откатывают конкретный savepoint, а последний — закрывает
- *   физическую транзакцию.
- *
- *   Дополнительно ловим неявный rollback, который MySQL выполняет при
- *   deadlock / lock-timeout / constraint violation — все savepoint'ы при этом
- *   уничтожаются, и попытка `RELEASE/ROLLBACK TO SAVEPOINT` упадёт с
- *   ER_SP_DOES_NOT_EXIST. В этой ветке сбрасываем внутреннее состояние,
- *   делаем безопасный финальный `ROLLBACK/COMMIT` и логируем критикал.
- *
- *   Singleton — стейт savepoint'ов общий на запрос (одна транзакция на
- *   процесс/коннекшен Bitrix). Для DI/моков юзайте интерфейс
- *   {@see TransactionServiceInterface}.
- */
+/** Вложенные транзакции через SAVEPOINT (MySQL нативно не умеет) + обработка неявного rollback при deadlock/timeout. */
 final class TransactionService extends BaseDbService implements TransactionServiceInterface
 {
     /** @var array<string, string> stack of savepoint names */
@@ -154,10 +136,7 @@ final class TransactionService extends BaseDbService implements TransactionServi
         return 'sp' . (count($this->points) + 1);
     }
 
-    /**
-     * Сброс внутреннего состояния при неявном rollback от MySQL
-     * (deadlock / timeout / constraint violation уничтожают все savepoint'ы).
-     */
+    /** Deadlock/timeout/constraint в MySQL уничтожают все savepoint'ы — синхронизируем своё состояние. */
     private function resetStateOnImplicitRollback(string $point, SqlQueryException $e): void
     {
         $lostPoints = array_merge([$point], array_values($this->points));
@@ -180,11 +159,7 @@ final class TransactionService extends BaseDbService implements TransactionServi
         $this->debugStartLog = [];
     }
 
-    /**
-     * Выполнение SQL без выброса. После неявного rollback от MySQL коннекшен
-     * может уже сидеть в autocommit и повторный ROLLBACK/COMMIT может не
-     * пройти — это нормально, проглатываем.
-     */
+    /** После implicit rollback коннекшен в autocommit — повторный ROLLBACK/COMMIT не пройдёт, и это нормально. */
     private function safeQuery(string $sql): void
     {
         try {
