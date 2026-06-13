@@ -13,44 +13,63 @@ final class TranslatorServiceTest extends TestCase
     public function testReturnsRuValueForRuLocale(): void
     {
         $translator = $this->buildTranslator([
-            'header.catalog' => ['ru' => 'Каталог', 'en' => 'Catalog'],
+            'header.catalog' => ['ru' => 'Каталог', 'uz' => 'Katalog'],
         ]);
 
         $this->assertSame('Каталог', $translator->translate('header.catalog', Locale::Ru));
     }
 
-    public function testReturnsEnValueForEnLocale(): void
+    public function testReturnsUzValueForUzLocale(): void
     {
         $translator = $this->buildTranslator([
-            'header.catalog' => ['ru' => 'Каталог', 'en' => 'Catalog'],
+            'header.catalog' => ['ru' => 'Каталог', 'uz' => 'Katalog'],
         ]);
 
-        $this->assertSame('Catalog', $translator->translate('header.catalog', Locale::En));
+        $this->assertSame('Katalog', $translator->translate('header.catalog', Locale::Uz));
     }
 
-    public function testFallsBackToRuWhenEnEmpty(): void
+    public function testFallsBackToRuWhenUzEmpty(): void
     {
         $translator = $this->buildTranslator([
-            'header.catalog' => ['ru' => 'Каталог', 'en' => ''],
+            'header.catalog' => ['ru' => 'Каталог', 'uz' => ''],
         ]);
 
-        $this->assertSame('Каталог', $translator->translate('header.catalog', Locale::En));
+        $this->assertSame('Каталог', $translator->translate('header.catalog', Locale::Uz));
     }
 
     public function testReturnsCodeWhenMissing(): void
     {
         $translator = $this->buildTranslator([]);
 
-        $this->assertSame('header.catalog', $translator->translate('header.catalog', Locale::En));
+        $this->assertSame('header.catalog', $translator->translate('header.catalog', Locale::Uz));
+    }
+
+    public function testFallsBackToUzWhenRuEmptyForRuLocale(): void
+    {
+        // Симметричный fallback: если в предпочтительной локали пусто —
+        // тянем из любой другой непустой. Раньше ru→uz не падал — кейс
+        // вроде header.lang.uz с пустым RU возвращал сам код.
+        $translator = $this->buildTranslator([
+            'header.lang.uz' => ['ru' => '', 'uz' => 'O\'zb'],
+        ]);
+        $this->assertSame('O\'zb', $translator->translate('header.lang.uz', Locale::Ru));
+    }
+
+    public function testReturnsCodeWhenAllLocalesEmpty(): void
+    {
+        $translator = $this->buildTranslator([
+            'header.catalog' => ['ru' => '', 'uz' => ''],
+        ]);
+        $this->assertSame('header.catalog', $translator->translate('header.catalog', Locale::Ru));
     }
 
     public function testReplacesParameters(): void
     {
         $translator = $this->buildTranslator([
-            'catalog.found' => ['ru' => 'Найдено :count моделей', 'en' => 'Found :count models'],
+            'catalog.found' => ['ru' => 'Найдено :count моделей', 'uz' => ':count ta model topildi'],
         ]);
 
-        $this->assertSame('Found 12 models', $translator->translate('catalog.found', Locale::En, ['count' => 12]));
+        $this->assertSame('12 ta model topildi', $translator->translate('catalog.found', Locale::Uz, ['count' => 12]));
         $this->assertSame('Найдено 12 моделей', $translator->translate('catalog.found', Locale::Ru, ['count' => 12]));
     }
 

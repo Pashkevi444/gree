@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Bitrix\Main\Routing\RoutingConfigurator;
-use Gree\Controller\BlogController;
 use Gree\Controller\CartController;
 use Gree\Controller\CatalogController;
+use Gree\Controller\FeedbackController;
 use Gree\Controller\OrderController;
 use Gree\Core\App;
 
@@ -36,11 +36,6 @@ return static function (RoutingConfigurator $routes): void {
     // ─── Versioned API ───────────────────────────────────────────────────────
     $routes->prefix('api/v1')->name('api.v1.')->group(static function (RoutingConfigurator $routes): void {
 
-        // Blog: GET /api/v1/blog?category=tips&offset=3&limit=3
-        $routes
-            ->get('blog', static fn() => App::get(BlogController::class)->paginate())
-            ->name('blog.paginate');
-
         // Cart: 1 read + 3 mutations
         $routes->prefix('cart')->name('cart.')->group(static function (RoutingConfigurator $routes): void {
             // GET /api/v1/cart/ — empty URI gets a trailing slash from prefix join
@@ -64,5 +59,13 @@ return static function (RoutingConfigurator $routes): void {
         $routes
             ->post('order', static fn() => App::get(OrderController::class)->place())
             ->name('order.place');
+
+        // Любая feedback-форма: канал берётся из URL, FeedbackController
+        // резолвит его в FeedbackChannelRegistry и пишет в нужный HL.
+        // Сейчас зарегистрирован один: catalog-help (форма «Нужна помощь?»).
+        $routes
+            ->post('feedback/{channel}', static fn(string $channel) => App::get(FeedbackController::class)->create($channel))
+            ->where('channel', '[a-z0-9\-]+')
+            ->name('feedback.create');
     });
 };

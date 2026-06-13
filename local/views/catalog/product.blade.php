@@ -22,22 +22,14 @@
         <div class="wrapper container">
           {{-- Type switch — quick access to other catalog sections --}}
           <div class="catalog">
-            <div class="catalog__title">{{ Language::t('product.types.' . $product->type->value) }}</div>
+            <div class="catalog__title">{{ Language::t('product.types_heading') }}</div>
             <div class="catalog-items">
               @foreach (ProductType::cases() as $type)
                 <a
                   class="catalog__item @if ($product->type === $type)catalog__item--active @endif"
                   href="{{ Route::to('catalog.section', ['section' => $type->slug()]) }}"
                 >
-                  <svg viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M0.727539 0.72728H3.63663L5.58572 10.4655C5.65223 10.8003 5.83438 11.1011 6.1003 11.3151C6.36622 11.5292 6.69896 11.6429 7.04027 11.6364H14.1094C14.4507 11.6429 14.7834 11.5292 15.0493 11.3151C15.3152 11.1011 15.4974 10.8003 15.5639 10.4655L16.7275 4.36364H4.3639M7.27299 15.2727C7.27299 15.6744 6.94738 16 6.54572 16C6.14406 16 5.81845 15.6744 5.81845 15.2727C5.81845 14.8711 6.14406 14.5455 6.54572 14.5455C6.94738 14.5455 7.27299 14.8711 7.27299 15.2727ZM15.273 15.2727C15.273 15.6744 14.9474 16 14.5457 16C14.1441 16 13.8184 15.6744 13.8184 15.2727C13.8184 14.8711 14.1441 14.5455 14.5457 14.5455C14.9474 14.5455 15.273 14.8711 15.273 15.2727Z"
-                      stroke="currentColor"
-                      stroke-width="1.45455"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+                  @include('partials.product-type-icon', ['type' => $type])
                   {{ Language::t('product.types.' . $type->value) }}
                 </a>
               @endforeach
@@ -52,7 +44,13 @@
                 @endif
 
                 @php
-                    $slides = $product->gallery ?: ($product->image !== '' ? [$product->image] : []);
+                    // Initial slides — из галереи ПЕРВОГО ТП (выбран по умолчанию).
+                    // У iblock products галереи нет сознательно (см. ProductDto-доку):
+                    // фото живут на торговом предложении и должны меняться при
+                    // выборе цвета/мощности. Fallback: одиночный PREVIEW_PICTURE.
+                    $firstOffer = $product->offers->first() ?? null;
+                    $slides = ($firstOffer?->gallery ?? [])
+                        ?: ($product->image !== '' ? [$product->image] : []);
                 @endphp
                 @if ($slides)
                   <div class="product-carousel-main">
@@ -83,6 +81,11 @@
                       </svg>
                     </button>
                   </div>
+                  {{-- Bullet-пагинация Swiper на mobile.
+                       product.js: pagination.el = '.product-carousel-mobile-pagination',
+                       Swiper сам наполняет <span class="product-carousel-mobile-pagination__item">
+                       по числу слайдов и подсвечивает активный --active-классом. --}}
+                  <div class="product-carousel-mobile-pagination"></div>
                 @endif
               </div>
 
@@ -127,16 +130,37 @@
 
                 <div class="product-price">
                   <div class="product-price__title">{{ Language::t('product.price') }}</div>
-                  <div class="product-price__text" data-price-suffix=" UZS">{{ number_format($product->price, 0, '.', ' ') }} UZS</div>
+                  {{-- data-price-template — i18n-шаблон цены с плейсхолдером __PRICE__.
+                       JS при смене offer делает: el.textContent = template.replace('__PRICE__', fmt(price)).
+                       Работает и для RU («от 123 UZS»), и для UZ («123 UZS dan»). --}}
+                  <div class="product-price__text" data-price-template="{{ Language::t('product.price_from', ['price' => '__PRICE__']) }}">{{ Language::t('product.price_from', ['price' => number_format($product->price, 0, '.', ' ')]) }}</div>
                 </div>
 
                 <div class="product-stock product-stock--in-stock" @unless ($product->inStock) style="display:none" @endunless>{{ Language::t('product.in_stock') }}</div>
 
                 <div class="product-buttons">
-                  <button class="product-buttons__item product-buttons__item--add-to-cart" type="submit">
+                  <button class="product-buttons__item product-buttons__item--add-to-cart" type="submit" data-add-to-cart>
                     {{ Language::t('product.add_to_cart') }}
                   </button>
-                  <a class="product-buttons__item product-buttons__item--help" href="">{{ Language::t('product.help') }}</a>
+                  {{-- Counter заменяет кнопку «Купить» после добавления в корзину.
+                       Инлайн style:display:none нужен потому что CSS .number-input
+                       объявлен с display:flex и перекрывает атрибут hidden. JS
+                       тоже управляет видимостью через style.display, не hidden. --}}
+                  <div class="product__number-input number-input" data-cart-counter style="display:none">
+                    <button class="number-input__button number-input__button--minus" type="button">
+                      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3.33398 8H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                    <input class="number-input__control" type="number" name="amount" value="0" min="0" readonly />
+                    <button class="number-input__button number-input__button--plus" type="button" data-counter-increase>
+                      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 3.33334V12.6667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3.33398 8H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <button class="product-buttons__item product-buttons__item--help" type="button" data-popup="feedback">{{ Language::t('product.help') }}</button>
                 </div>
               </form>
             </div>
@@ -211,9 +235,14 @@
                 @if ($product->functions)
                   <div class="product-tabs-item">
                     <div class="product-functions">
+                      {{-- Первые 9 функций (3 ряда × 3 колонки grid-а) видимы,
+                           остальные получают --hidden. Фронтовый product.js
+                           показывает кнопку «Показать ещё» ТОЛЬКО если на
+                           странице есть .product-functions-item--hidden, и
+                           по клику тоглит их видимость. --}}
                       <div class="product-functions-items">
                         @foreach ($product->functions as $fn)
-                          <div class="product-functions-item">
+                          <div class="product-functions-item @if ($loop->index >= 9)product-functions-item--hidden @endif">
                             <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path
                                 d="M5.75 9.75L9.75 0.75C10.5456 0.75 11.3087 1.06607 11.8713 1.62868C12.4339 2.19129 12.75 2.95435 12.75 3.75V7.75H18.41C18.6999 7.74672 18.9871 7.8065 19.2516 7.92522C19.5161 8.04393 19.7516 8.21873 19.9419 8.43751C20.1321 8.65629 20.2725 8.91382 20.3533 9.19225C20.4342 9.47068 20.4535 9.76336 20.41 10.05L19.03 19.05C18.9577 19.5269 18.7154 19.9616 18.3479 20.274C17.9804 20.5864 17.5123 20.7555 17.03 20.75H5.75M5.75 9.75V20.75M5.75 9.75H2.75C2.21957 9.75 1.71086 9.96071 1.33579 10.3358C0.960714 10.7109 0.75 11.2196 0.75 11.75V18.75C0.75 19.2804 0.960714 19.7891 1.33579 20.1642C1.71086 20.5393 2.21957 20.75 2.75 20.75H5.75"
@@ -227,7 +256,12 @@
                           </div>
                         @endforeach
                       </div>
-                      <button class="product-functions__button" type="button"></button>
+                      <button
+                        class="product-functions__button"
+                        type="button"
+                        data-show-text="{{ Language::t('product.functions.show_more') }}"
+                        data-hide-text="{{ Language::t('product.functions.hide') }}"
+                      ></button>
                     </div>
                   </div>
                 @endif
@@ -295,106 +329,20 @@
       @endif
     </main>
 
+    @include('partials.feedback-popup')
+
     @if ($product !== null && $product->offers !== null && $product->offers->count() > 0)
       @php
         $offersJson = array_map(fn($o) => $o->toArray(), $product->offers->toArray());
+        $pageConfig = [
+            'addUrl'          => Route::to('api.v1.cart.items.add'),
+            'cartGetUrl'      => Route::to('api.v1.cart.get'),
+            'itemUrlTemplate' => preg_replace('/0$/', '', Route::to('api.v1.cart.items.update', ['id' => 0])),
+            'initialGallery'  => $slides ?? [],
+        ];
       @endphp
       <script type="application/json" id="product-offers-json">@json($offersJson)</script>
-      <script>
-        (function () {
-          const dataEl = document.getElementById('product-offers-json');
-          if (!dataEl) return;
-          let offers;
-          try {
-            offers = JSON.parse(dataEl.textContent || '[]');
-          } catch (e) {
-            return;
-          }
-          if (!Array.isArray(offers) || offers.length === 0) return;
-
-          const form = document.getElementById('product-form');
-          if (!form) return;
-
-          const priceEl = form.querySelector('.product-price__text');
-          const stockEl = form.querySelector('.product-stock');
-          const submitBtn = form.querySelector('button[type="submit"]');
-          const specCells = document.querySelectorAll('[data-spec]');
-          const lang = document.documentElement.lang || 'ru';
-          const fmt = new Intl.NumberFormat(lang.startsWith('en') ? 'en-US' : 'ru-RU');
-
-          function findOffer(color, area) {
-            // 1) exact match
-            let m = offers.find(o => o.color === color && Number(o.area) === Number(area));
-            if (m) return m;
-            // 2) same color, any area
-            m = offers.find(o => o.color === color);
-            if (m) return m;
-            // 3) same area, any color
-            m = offers.find(o => Number(o.area) === Number(area));
-            return m || offers[0];
-          }
-
-          const offerIdInput = form.querySelector('[data-offer-id]');
-
-          function update() {
-            const color = form.querySelector('input[name="color"]:checked')?.value;
-            const area  = form.querySelector('input[name="area"]:checked')?.value;
-            const offer = findOffer(color, area);
-            if (!offer) return;
-
-            if (offerIdInput) offerIdInput.value = offer.id;
-
-            if (priceEl) {
-              const suffix = priceEl.dataset.priceSuffix || '';
-              priceEl.textContent = fmt.format(offer.price) + suffix;
-            }
-            if (stockEl) {
-              stockEl.style.display = offer.in_stock ? '' : 'none';
-            }
-            if (submitBtn) {
-              submitBtn.disabled = !offer.in_stock;
-            }
-            specCells.forEach(td => {
-              const key = td.dataset.spec;
-              if (key in offer && offer[key] !== '' && offer[key] !== null) {
-                const tpl = td.dataset.specTemplate;
-                td.textContent = tpl ? tpl.replace('__VAL__', String(offer[key])) : String(offer[key]);
-              }
-            });
-          }
-
-          form.addEventListener('change', e => {
-            if (e.target.name === 'color' || e.target.name === 'area') update();
-          });
-          update();
-
-          form.addEventListener('submit', async e => {
-            e.preventDefault();
-            const offerId = parseInt(offerIdInput?.value || '0', 10);
-            if (!offerId) return;
-            if (submitBtn) submitBtn.disabled = true;
-            try {
-              const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-              const addUrl = '{{ Route::to('api.v1.cart.items.add') }}';
-              const cartUrl = '{{ Route::to('cart.index') }}';
-              const r = await fetch(addUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                  'X-CSRF-Token': csrf,
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ offer_id: offerId, quantity: 1 }),
-              });
-              if (!r.ok) throw new Error('add-to-cart ' + r.status);
-              location.href = cartUrl;
-            } catch (err) {
-              console.error(err);
-              if (submitBtn) submitBtn.disabled = false;
-            }
-          });
-        })();
-      </script>
+      <script type="application/json" id="product-page-config">@json($pageConfig)</script>
+      <script defer src="/local/templates/gree/assets/product-page.js"></script>
     @endif
 @endsection

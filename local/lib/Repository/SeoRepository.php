@@ -11,16 +11,7 @@ use Gree\DTO\SeoDto;
 use Gree\Enum\HlblockCode;
 use Gree\Enum\Locale;
 
-/**
- * SEO storage adapter:
- *   - Static pages: Highloadblock «Seo» (UF_PAGE_CODE → SeoDto), paired RU/EN.
- *   - Detail pages: Bitrix native IPROPERTY values (b_iblock_element_iprop +
- *     iblock-level templates configured in Version20260517000006).
- *
- * Locale resolution: every RU/EN field has a fallback to the opposite language
- * if the requested one is empty — same rule we use across BaseRepository for
- * property pairs.
- */
+/** Статические страницы → HL «Seo» (UF_PAGE_CODE, RU/UZ). Детальные товаров → Bitrix IPROPERTY. Пустой RU → fallback на UZ и наоборот. */
 final class SeoRepository extends BaseHlblockRepository implements SeoRepositoryInterface
 {
     protected function hlblock(): HlblockCode
@@ -34,15 +25,15 @@ final class SeoRepository extends BaseHlblockRepository implements SeoRepository
             $row = $this->query()
                 ->where('UF_PAGE_CODE', $code)
                 ->setSelect([
-                    'UF_TITLE_RU', 'UF_TITLE_EN',
-                    'UF_DESCRIPTION_RU', 'UF_DESCRIPTION_EN',
-                    'UF_KEYWORDS_RU', 'UF_KEYWORDS_EN',
-                    'UF_OG_TITLE_RU', 'UF_OG_TITLE_EN',
-                    'UF_OG_DESCRIPTION_RU', 'UF_OG_DESCRIPTION_EN',
+                    'UF_TITLE_RU', 'UF_TITLE_UZ',
+                    'UF_DESCRIPTION_RU', 'UF_DESCRIPTION_UZ',
+                    'UF_KEYWORDS_RU', 'UF_KEYWORDS_UZ',
+                    'UF_OG_TITLE_RU', 'UF_OG_TITLE_UZ',
+                    'UF_OG_DESCRIPTION_RU', 'UF_OG_DESCRIPTION_UZ',
                     'UF_OG_IMAGE',
                 ])
                 ->setLimit(1)
-                ->setCacheTtl(3600)
+                ->setCacheTtl(static::TTL_STATIC)
                 ->exec()
                 ->fetch();
         } catch (\RuntimeException) {
@@ -73,8 +64,7 @@ final class SeoRepository extends BaseHlblockRepository implements SeoRepository
         $ipropValues = new ElementValues($iblockId, $elementId);
         $values = $ipropValues->getValues();
 
-        // Bitrix returns array<string, string> keyed by code (e.g. ELEMENT_META_TITLE).
-        // Empty templates/overrides yield empty strings — treat as missing.
+        // Пустой ELEMENT_META_TITLE = шаблон не настроен → null.
         $title = (string) ($values['ELEMENT_META_TITLE'] ?? '');
         if ($title === '') {
             return null;
@@ -90,20 +80,15 @@ final class SeoRepository extends BaseHlblockRepository implements SeoRepository
         );
     }
 
-    /**
-     * Pick the locale-appropriate value from a `_RU` / `_EN` pair, with
-     * fallback to the opposite locale when the preferred one is empty.
-     *
-     * @param array<string, mixed> $row
-     */
+    /** @param array<string, mixed> $row  Берёт {base}_{LOC}, fallback на противоположную локаль если пусто. */
     private function pick(array $row, string $base, Locale $locale): string
     {
         $ru = (string) ($row[$base . '_RU'] ?? '');
-        $en = (string) ($row[$base . '_EN'] ?? '');
+        $uz = (string) ($row[$base . '_UZ'] ?? '');
 
-        if ($locale === Locale::En) {
-            return $en !== '' ? $en : $ru;
+        if ($locale === Locale::Uz) {
+            return $uz !== '' ? $uz : $ru;
         }
-        return $ru !== '' ? $ru : $en;
+        return $ru !== '' ? $ru : $uz;
     }
 }

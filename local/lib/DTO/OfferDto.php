@@ -6,13 +6,10 @@ namespace Gree\DTO;
 
 use Gree\Enum\Color;
 
-/**
- * One trade offer (SKU) belonging to a parent ProductDto. Combinations of
- * color × area produce separate offers, each with its own price and stock
- * state plus capacity-dependent specs.
- */
+/** Торговое предложение: пара color×area + цена/наличие/спеки. */
 final readonly class OfferDto extends BaseDto
 {
+    /** @param string[] $gallery Фото текущего ТП — на детальной слайдер перерисовывается при смене ТП. */
     public function __construct(
         public int $id,
         public int $productId,
@@ -27,6 +24,7 @@ final readonly class OfferDto extends BaseDto
         public string $outdoorDimensions = '',
         public string $indoorWeight = '',
         public string $outdoorWeight = '',
+        public array $gallery = [],
     ) {}
 
     public function toArray(): array
@@ -46,6 +44,7 @@ final readonly class OfferDto extends BaseDto
             'outdoor_dimensions' => $this->outdoorDimensions,
             'indoor_weight' => $this->indoorWeight,
             'outdoor_weight' => $this->outdoorWeight,
+            'gallery' => $this->gallery,
         ];
     }
 
@@ -65,6 +64,7 @@ final readonly class OfferDto extends BaseDto
             outdoorDimensions: (string) ($data['outdoor_dimensions'] ?? ''),
             indoorWeight: (string) ($data['indoor_weight'] ?? ''),
             outdoorWeight: (string) ($data['outdoor_weight'] ?? ''),
+            gallery: array_values(array_map('strval', (array) ($data['gallery'] ?? []))),
         );
     }
 }

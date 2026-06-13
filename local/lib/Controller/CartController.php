@@ -58,7 +58,7 @@ final class CartController extends BaseController
         if ($offerId <= 0) {
             return $this->json(['error' => 'offer_id is required'], 400);
         }
-        // Hard cap so a hostile client can't fill the table with a single call.
+        // Hard cap — иначе один вызов забьёт таблицу.
         if ($quantity < 1 || $quantity > 999) {
             return $this->json(['error' => 'quantity out of range'], 400);
         }
@@ -111,10 +111,7 @@ final class CartController extends BaseController
         return $this->json($this->serialise($lines));
     }
 
-    /**
-     * Runs the API guard. Returns a 403 JSON response if the request fails,
-     * or null when the request is safe to proceed.
-     */
+    /** 403 JSON если guard сработал, null если запрос безопасный. */
     private function ensureSafe(): ?HttpResponse
     {
         try {
@@ -141,13 +138,7 @@ final class CartController extends BaseController
         ];
     }
 
-    /**
-     * Reads request body. Bitrix exposes parsed JSON bodies via getJsonList();
-     * x-www-form-urlencoded falls through to getPostList(). No php://input or
-     * superglobals here — both routes go through HttpRequest.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> JSON через getJsonList(), urlencoded — через getPostList(). */
     private function payload(): array
     {
         $request = $this->getRequest();

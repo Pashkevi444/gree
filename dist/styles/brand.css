@@ -1,31 +1,68 @@
 .main {
   padding-block: 40px 150px;
 }
+@media (max-width: 1319px) {
+  .main {
+    padding-block: 15px 80px;
+  }
+}
 .hero__title {
   text-align: center;
   font-size: 44px;
   font-weight: 500;
 }
+@media (max-width: 1319px) {
+  .hero__title {
+    font-size: 24px;
+  }
+}
 .hero__description {
   margin-top: 25px;
   font-size: 24px;
 }
+@media (max-width: 1319px) {
+  .hero__description {
+    margin-top: 15px;
+    font-size: 18px;
+  }
+}
 .gree {
   margin-top: 150px;
 }
+@media (max-width: 1319px) {
+  .gree {
+    margin-top: 80px;
+  }
+}
 .about {
   margin-top: 250px;
+}
+@media (max-width: 1319px) {
+  .about {
+    margin-top: 80px;
+  }
 }
 .about__title {
   text-align: center;
   font-size: 44px;
   font-weight: 500;
 }
+@media (max-width: 1319px) {
+  .about__title {
+    font-size: 24px;
+  }
+}
 .about-cards {
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-top: 65px;
   display: grid;
+}
+@media (max-width: 1319px) {
+  .about-cards {
+    flex-direction: column;
+    display: flex;
+  }
 }
 .about-card {
   background-color: #1b1f2c;
@@ -38,10 +75,25 @@
   font-size: 24px;
   font-weight: 500;
 }
+@media (max-width: 1319px) {
+  .about-card__title {
+    font-size: 18px;
+  }
+}
 .about-card__description {
   color: #fff9;
   margin-top: 10px;
 }
+@media (max-width: 1319px) {
+  .about-card__description {
+    font-size: 14px;
+  }
+}
 .technologies {
   margin-top: 150px;
+}
+@media (max-width: 1319px) {
+  .technologies {
+    margin-top: 80px;
+  }
 }

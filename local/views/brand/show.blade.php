@@ -17,9 +17,13 @@
         <section class="gree container">
           <h2 class="gree__title">{{ $whyGree->name }}</h2>
           <p class="gree__description">{{ $whyGree->description }}</p>
+          {{-- Кнопка «Узнать больше о Gree» отключена по запросу — пока ведёт в никуда.
+               URL/текст остаются в iblock (whyGree->buttonUrl / buttonText) на случай возврата. --}}
+          {{--
           @if ($whyGree->buttonUrl)
             <a class="gree__button" href="{{ $whyGree->buttonUrl }}">{{ $whyGree->buttonText }}</a>
           @endif
+          --}}
 
           @if ($greeCards->count())
             <div class="gree-cards">

@@ -12,7 +12,6 @@
             <img class="hero__image" src="/dist/images/9d6a1af34169ceecd352ce6bf8955f4460d32bd6.png" alt="">
             <h1 class="hero__title">{{ Language::t('order_success.title') }}</h1>
             <p class="hero__description">{{ Language::t('order_success.description') }}</p>
-            <p class="hero__signature">{{ Language::t('order_success.signature') }}</p>
             <a class="hero__button" href="{{ Route::to('home') }}">{{ Language::t('order_success.cta') }}</a>
         </section>
     </main>

@@ -139,7 +139,27 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
         └── Integration/    # HTTP-тесты против live-сервера
 ```
 
-`/dist/` (на корне) — фронтенд-билд: `styles/*.css`, `scripts/*.js`, `images/*`. Контроллер регистрирует через `addPageAssets('page')`, которое отдаёт `/dist/styles/page.css` + `/dist/scripts/page.js`.
+`/dist/` (на корне) — фронтенд-билд: `styles/*.css`, `scripts/*.js`, `images/*`, `fonts/*`. Контроллер регистрирует через `addPageAssets('page')`, которое отдаёт `/dist/styles/page.css` + `/dist/scripts/page.js`.
+
+### Обновление dist — обязательная правка путей
+
+Верстальщик собирает бандл без `publicPath: '/dist/'`, поэтому `dist/styles/main.css` содержит абсолютные ссылки на корень: `@font-face url(/fonts/...)`, `background: url(/images/...)`. На локалке Apache + симлинк «прощает», на проде nginx отдаёт 404 (а `.htaccess` он не читает в принципе — и сам файл в `.gitignore`).
+
+**После каждого обновления `/dist/`** прогнать из корня репо:
+
+```bash
+# Превращает url(/X/...) → url(/dist/X/...) для любого X кроме "dist"
+perl -pi -e 's#url\(/(?!dist/)([^)]+)\)#url(/dist/$1)#g' dist/styles/main.css
+```
+
+Проверить, что не осталось корневых путей кроме `/dist/`:
+
+```bash
+grep -oE 'url\(/[a-z]+/' dist/styles/main.css | sort -u
+# ожидаем единственная строка: url(/dist/
+```
+
+Корневые симлинки `/styles`, `/scripts`, `/images`, `/fonts` в репозитории **не** хранятся (см. `.gitignore`) — у проекта единственный публичный корень статики `/dist/`.
 
 ---
 
@@ -162,25 +182,32 @@ API-маршруты возвращают `$this->json($data, $status)` — Blad
 | GET | `/catalog/{section}/{code}/` | `ProductController::show` | `catalog.product` |
 | GET | `/brand/{code}/` | `BrandController::show` | `brand.show` |
 | GET | `/blog/` | `BlogController::index` | `blog.index` |
+| GET | `/blog/{category}/` | `BlogController::category` | `blog.category` |
 | GET | `/blog/{code}/` | `BlogController::show` | `blog.show` |
 | GET | `/cart/` | `CartController::index` | `cart.index` |
 | GET | `/order/` | `OrderController::checkout` | `order.checkout` |
 | GET | `/order/success/{publicId}/` | `OrderController::success` | `order.success` |
+| GET | `/help/` | `HelpController::index` | `help.index` |
+| GET | `/contacts/` | `ContactsController::index` | `contacts.index` |
+| GET | `/where-to-buy/` | `WhereToBuyController::index` | `where_to_buy.index` |
+| GET | `/partners/` | `PartnersController::index` | `partners.index` |
 | GET | `/lang/{locale}/` | `LanguageController::switch` | `lang.switch` |
 
-`{section}` ограничен `nastennie|kolonnye|promyshlennye`, `{locale}` — `ru|en`.
+`{section}` ограничен `nastennie|kolonnye|promyshlennye`, `{locale}` — `ru|uz`,
+`{category}` (blog) — `advice|news`. Категорийный роут стоит ПЕРЕД show — оба
+шаблона совпадают на `/blog/{x}/`, конфликт разруливается regex'ом.
 
 ### API (`local/routes/api.php`)
 
 | Метод | URL | Контроллер | Имя |
 |-------|-----|-----------|-----|
 | GET | `/api/catalog` | `CatalogController::filter` | `api.catalog.filter` |
-| GET | `/api/v1/blog` | `BlogController::paginate` | `api.v1.blog.paginate` |
 | GET | `/api/v1/cart/` | `CartController::get` | `api.v1.cart.get` |
 | POST | `/api/v1/cart/items` | `CartController::add` | `api.v1.cart.items.add` |
 | PATCH | `/api/v1/cart/items/{id}` | `CartController::update` | `api.v1.cart.items.update` |
 | DELETE | `/api/v1/cart/items/{id}` | `CartController::remove` | `api.v1.cart.items.remove` |
 | POST | `/api/v1/order` | `OrderController::place` | `api.v1.order.place` |
+| POST | `/api/v1/feedback/{channel}` | `FeedbackController::create` | `api.v1.feedback.create` |
 
 State-changing методы (POST/PATCH/DELETE) защищены `ApiGuard` (см. ниже).
 
@@ -220,7 +247,7 @@ critical в лог и возвращает `#`. Лучше битый якорь
 
 | Что | Где хранится | Чем читается |
 |-----|--------------|--------------|
-| Статические страницы (home, catalog, blog, cart, brand) | HL-блок `Seo`, поля `UF_TITLE_RU/EN`, `UF_DESCRIPTION_RU/EN`, `UF_KEYWORDS_RU/EN`, `UF_OG_TITLE_RU/EN`, `UF_OG_DESCRIPTION_RU/EN`, `UF_OG_IMAGE`, ключ `UF_PAGE_CODE` | `SeoService::forPage('home')` |
+| Статические страницы (home, catalog, blog, cart, brand) | HL-блок `Seo`, поля `UF_TITLE_RU/UZ`, `UF_DESCRIPTION_RU/UZ`, `UF_KEYWORDS_RU/UZ`, `UF_OG_TITLE_RU/UZ`, `UF_OG_DESCRIPTION_RU/UZ`, `UF_OG_IMAGE`, ключ `UF_PAGE_CODE` | `SeoService::forPage('home')` |
 | Карточка товара / статья блога | Bitrix IPROPERTY-шаблоны на iblock-уровне (Products, Blog) — `ELEMENT_META_TITLE`, `ELEMENT_META_KEYWORDS`, `ELEMENT_META_DESCRIPTION`, `ELEMENT_PAGE_TITLE`. Плейсхолдеры `{=this.Name}` / `{=this.PreviewText}`. Поверх шаблона работают per-element overrides в админке Bitrix. | `SeoService::forElement(IblockCode::Products, $id)` через `Bitrix\Iblock\InheritedProperty\ElementValues::getValues()` |
 
 Применение в контроллере:
@@ -327,9 +354,9 @@ CSRF-токен (`Gree\Security\CsrfService`): 64 hex (256 бит), SameSite=Str
 
 ## Локализация
 
-Текущие языки: `ru`, `en`. Локаль хранится в сессии (Bitrix), переключение через `GET /lang/{locale}/`.
+Текущие языки: `ru`, `uz` (latin O'zbek). Локаль хранится в сессии (Bitrix), переключение через `GET /lang/{locale}/` (роут принимает только `ru|uz`).
 
-UI-строки — в HL-блоке `Translations` (`UF_CODE`, `UF_VALUE_RU`, `UF_VALUE_EN`). Чтение:
+UI-строки — в HL-блоке `Translations` (`UF_CODE`, `UF_VALUE_RU`, `UF_VALUE_UZ`). Чтение:
 
 ```php
 use Gree\Helpers\Language;
@@ -337,7 +364,11 @@ Language::t('header.catalog');                       // строка по тек
 Language::t('blog.reading_minutes', ['minutes' => 5]);   // :minutes плейсхолдер
 ```
 
-Текстовые поля iblock-элементов — пара `_RU` / `_EN`, читаются через `BaseRepository::localizedSelect('NAME')` + `localized($row, 'NAME')`. Fallback на противоположный язык, если пусто.
+`UF_VALUE_RU` / `UF_VALUE_UZ` — тип TEXT (`Version20260608000002`), редактор может писать многострочный контент с inline-HTML (`<br>`, `<strong>` и т.д.). В Blade-шаблонах для таких ключей выводить через `{!! Language::t(...) !!}` (raw), а не `{{ ... }}` — иначе теги экранируются. В шаблонах хедера/футера, где `<?= Language::t(...) ?>`, HTML и так не экранируется. Контент пишут админы — внешний XSS-вектор отсутствует, но не складывать сюда `<script>`.
+
+Текстовые поля iblock-элементов — пара `_RU` / `_UZ`, читаются через `BaseRepository::localizedSelect('NAME')` + `localized($row, 'NAME')`. Fallback на противоположный язык, если пусто.
+
+> Историческая справка: пара была `_RU/_EN`. Миграции `Version20260519000001/000002/000003` переименовали все `_EN` поля (iblock-свойства, HL UF-поля, UF секций menu) в `_UZ` и залили узбекский контент. Английский как локаль больше не поддерживается — `Locale::En` удалён, в `Accept-Language` английские теги фолбэчатся на `ru`.
 
 ---
 
@@ -491,7 +522,7 @@ php bitrix/modules/sprint.migration/tools/migrate.php down=Version20260517000005
 ### Правила для миграций
 
 - При `saveIblock()` — обязательно `saveIblockFields()` с авто-CODE, отключённые `ACTIVE_FROM/TO/XML_ID/TAGS` (см. CLAUDE.md).
-- Для текстовых полей создавать пары `<CODE>_RU` + `<CODE>_EN`.
+- Для текстовых полей создавать пары `<CODE>_RU` + `<CODE>_UZ`.
 - IPROPERTY-шаблоны для SEO деталок — через `new Bitrix\Iblock\InheritedProperty\IblockTemplates($iblockId)->set([...])`.
 - UF-поля на секции — `IBLOCK_<id>_SECTION` entity, `addUserTypeEntitiesIfNotExists()` (множественное число, плоский массив).
 
@@ -575,7 +606,14 @@ composer test               # оба прогона
 | Поправить SEO статической страницы | админка `/bitrix/admin/highloadblock_rows_list.php`, HL «Seo» |
 | Поправить SEO товара/статьи | админка iblock-элемента, таб «SEO» (per-element override) |
 | Поправить шаблоны SEO для всех товаров/статей | iblock → таб «Шаблоны полей» (IPROPERTY_TEMPLATES) |
-| UI-строка перевода | HL «Translations» в админке (UF_CODE + UF_VALUE_RU/EN) |
+| UI-строка перевода | HL «Translations» в админке (UF_CODE + UF_VALUE_RU/UZ) |
+| Пункт меню шапки | Iblock `menu` (секции, UF_LABEL_RU/UZ + UF_URL). Корни — пункты главного меню, дети — popup-подменю. |
+| Пункт меню футера | Iblock `footer_menu` (секции). Корневая секция = заголовок колонки, дети = ссылки внутри. |
+| Контакты / адреса | Тип iblock `contacts` → `contacts_channels` (telegram/офис/сервис/email) и `contacts_addresses` (фото, расписание, телефоны, lat/lon). Кнопка «Показать на карте» = `data-show-on-map="lat,lon"` → JS в footer меняет src iframe карты. |
+| Контент `/help/` | Тип iblock `help` → 7 iblock'ов (`help_payment_methods`, `help_delivery`, `help_exchange_steps`, `help_refund_steps`, `help_service_features`, `help_service_hero`, `help_service_cards`). |
+| Где купить | Тип iblock `where_to_buy` → 3 iblock'а: `where_to_buy_locations` (lat/lon + кнопка `data-show-on-map`), `where_to_buy_partners` (Swiper-карусель), `where_to_buy_chains` (статичная сетка). |
+| Партнёрам | Тип iblock `partners` → `partners_b2b` (карточки моделей сотрудничества, STEP_NUMBER), `partners_how_it_works` (карточки этапов + опциональный link), `partners_companies_trust` (Swiper-карусель логотипов). Hero/benefits — в HL Translations. Кнопка «Стать партнёром» = `<button data-popup="partner-feedback">`. |
+| Заявки с форм (модалок) | Strategy + Registry. Один `FeedbackController` → POST `/api/v1/feedback/{channel}`. Канал = реализация `Gree\Contract\Feedback\FeedbackChannelInterface` (id, allowedFields, requiredFields, hlblock, mapToRow), регистрируется в `FeedbackChannelRegistry` через DI. `FeedbackService` валидирует обязательные поля и пишет через универсальный `FeedbackRepository::insert(HlblockCode, $row)`. Сейчас зарегистрирован один канал — `catalog-help` (`Service/Feedback/Channel/CatalogHelpFeedbackChannel`, пишет в HL `CatalogHelpFeedback`). Новая модалка = `class Xxx implements FeedbackChannelInterface` + регистрация в `services.php`. |
 | Новая зависимость DI | `local/lib/config/services.php` |
 | Новый Bitrix-event handler | `local/lib/Core/Event/*.php` + регистрация в `local/php_interface/init.php` |
 | Новая миграция | `local/php_interface/migrations/VersionYYYYMMDDXXXXXX.php` |

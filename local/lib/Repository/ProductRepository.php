@@ -15,21 +15,7 @@ use Gree\Enum\IblockCode;
 use Gree\Enum\ProductType;
 use Gree\Enum\SortField;
 
-/**
- * Products live in the `products` iblock — model-level data only. Offer-level
- * attributes (price, area, color, in-stock, capacity-dependent specs) are read
- * via OfferRepository and attached to the product DTO. Aggregates exposed on
- * ProductDto (price, area, colors, inStock) are derived from the underlying
- * offers — min price / max area / unique colors / any-in-stock.
- *
- * Filter precedence:
- *   1. If the filter touches offer-level attrs (price/area/color), narrow the
- *      candidate product IDs via OfferRepository::findProductIds() first.
- *   2. Apply product-level filters (types/bestseller/inverter) with the ID
- *      constraint added.
- *   3. Popular sort uses DB-side LIMIT/OFFSET. Price sorts fetch all matches
- *      and sort in PHP — catalogue is small, this is fine.
- */
+/** Модельные данные из iblock products; офферные атрибуты и агрегаты (price/area/colors/inStock) приходят из OfferRepository. */
 final class ProductRepository extends BaseRepository implements ProductRepositoryInterface
 {
     public function __construct(
@@ -83,8 +69,7 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
             $rows[(int) $row['ID']] = $row;
         }
 
-        // Cart enrichment doesn't need offers/gallery/functions — hydrate with
-        // empty collections to keep ProductDto contract happy.
+        // Корзине офферы/галерея не нужны — гидрируем с пустыми коллекциями.
         $out = [];
         foreach ($rows as $id => $row) {
             $out[$id] = $this->hydrate($row, new OfferCollection());
@@ -112,9 +97,7 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
 
         $this->applyFilters($query, $filter);
 
-        // For Popular sort we can paginate at the DB level. For price sorts we
-        // need the min-offer-price per product, so we have to load everything
-        // first, then sort and slice in PHP.
+        // Price-сортировки требуют min-цену по офферам — пагинируем в PHP; Popular пагинируется в БД.
         $popularSort = $filter->sortField === SortField::Popular;
         if ($popularSort) {
             $query
@@ -201,18 +184,13 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
 
         $id = (int) $row['ID'];
         $offers = $this->offerRepository->getByProductIds([$id])[$id] ?? new OfferCollection();
-        $gallery = $this->fetchGalleryByElementIds($entity, [$id])[$id] ?? [];
         $functions = $this->fetchFunctionsByElementIds($entity, [$id])[$id] ?? [];
 
-        return $this->hydrate($row, $offers, $functions, $gallery);
+        return $this->hydrate($row, $offers, $functions);
     }
 
     // ---- SELECT lists -------------------------------------------------------
 
-    /**
-     * Brief: just the model identity. Offer-driven values (price/area/colors)
-     * come from the offers query.
-     */
     private function selectFieldsBrief(): array
     {
         return array_merge(
@@ -226,10 +204,6 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
         );
     }
 
-    /**
-     * Full: every model-level field needed by the detail page. Offer-level data
-     * still lives in offers — fetched separately by fetchByCode().
-     */
     private function selectFieldsFull(): array
     {
         return array_merge(
@@ -268,8 +242,7 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
                 : $query->whereNot('INVERTER_MOTOR.ITEM.XML_ID', 'Y');
         }
 
-        // Offer-level filters: pre-fetch the IDs of products with at least one
-        // matching offer, then constrain the product query by those IDs.
+        // Офферные фильтры: сначала сужаем кандидатов по ID через OfferRepository.
         $offerFiltersUsed = $filter->priceMin > 0
             || $filter->priceMax < PHP_INT_MAX
             || $filter->areas
@@ -314,51 +287,15 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
         return $byId;
     }
 
-    /**
-     * @param int[] $ids
-     * @return array<int, string[]>  element ID → image URLs
-     */
-    private function fetchGalleryByElementIds(string $entity, array $ids): array
-    {
-        if (!$ids) {
-            return [];
-        }
-
-        $result = $entity::query()
-            ->whereIn('ID', $ids)
-            ->setSelect(['ID', 'GALLERY_VALUE' => 'GALLERY.VALUE'])
-            ->exec();
-
-        $byId = [];
-        foreach ($result as $row) {
-            $fileId = (int) ($row['GALLERY_VALUE'] ?? 0);
-            if ($fileId <= 0) {
-                continue;
-            }
-            $path = \CFile::GetPath($fileId);
-            if (!$path) {
-                continue;
-            }
-            $id = (int) $row['ID'];
-            $byId[$id] ??= [];
-            $byId[$id][] = $path;
-        }
-
-        return $byId;
-    }
-
     // ---- hydration ----------------------------------------------------------
 
     /**
      * @param array<string, mixed> $row
      * @param string[]             $functions
-     * @param string[]             $gallery
      */
-    private function hydrate(array $row, OfferCollection $offers, array $functions = [], array $gallery = []): ProductDto
+    private function hydrate(array $row, OfferCollection $offers, array $functions = []): ProductDto
     {
-        // First in-stock offer (or first overall) — used as the "primary" for
-        // the detail-page initial render; JS swaps spec values when the user
-        // changes color/area.
+        // Primary-оффер (первый в наличии) — для первичного рендера деталки, дальше JS свапает спеки.
         $primaryOffer = null;
         foreach ($offers as $offer) {
             if ($offer->inStock) {
@@ -396,7 +333,6 @@ final class ProductRepository extends BaseRepository implements ProductRepositor
             kitText: $this->localized($row, 'KIT_TEXT'),
             installationText: $this->localized($row, 'INSTALLATION_TEXT'),
             functions: $functions,
-            gallery: $gallery,
             offers: $offers,
         );
     }

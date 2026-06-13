@@ -9,25 +9,11 @@ use Gree\Contract\Service\CsrfServiceInterface;
 use Gree\Http\CookieOptions;
 use Gree\Service\BaseService;
 
-/**
- * Double-submit cookie pattern.
- *
- * The CSRF token is written to a `csrf_token` cookie that is NOT HttpOnly so
- * page JS can read it and mirror the value into a request header. The server
- * compares header value with the cookie via constant-time compare. Because
- * cross-origin scripts can't read our cookies (SameSite=Strict on the cookie
- * AND CORS forbids reading set-cookie cross-origin), an attacker has no way
- * to fabricate the header — request fails.
- *
- * Why not store the token in HttpOnly cookie like cart_token: same-origin JS
- * must read it to forward in a header. HttpOnly would defeat that. The token
- * is meaningless without a matching cookie, so leaking it via JS to a same-
- * origin XSS is no worse than the XSS itself.
- */
+/** Double-submit: cookie без HttpOnly (JS читает и зеркалит в X-CSRF-Token), SameSite=Strict + CORS блокируют чужие сайты. */
 final class CsrfService extends BaseService implements CsrfServiceInterface
 {
     public const string COOKIE_NAME = 'csrf_token';
-    private const int LIFETIME_SECONDS = 31_536_000; // 1 year
+    private const int LIFETIME_SECONDS = 31536000; // 1 год
 
     public function __construct(
         private readonly HttpContextInterface $http,
@@ -51,7 +37,7 @@ final class CsrfService extends BaseService implements CsrfServiceInterface
         $token = bin2hex(random_bytes(32));
         $this->http->setCookie(self::COOKIE_NAME, $token, new CookieOptions(
             lifetimeSeconds: self::LIFETIME_SECONDS,
-            httpOnly: false,           // JS must mirror this into a header
+            httpOnly: false, // JS зеркалит в X-CSRF-Token
             sameSite: 'Strict',
         ));
         return $token;

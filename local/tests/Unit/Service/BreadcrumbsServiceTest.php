@@ -64,6 +64,59 @@ final class BreadcrumbsServiceTest extends TestCase
         $this->assertTrue($crumbs[3]->isCurrent());
     }
 
+    public function testBlogCategoryReturnsThreeCrumbsLastIsCategoryName(): void
+    {
+        $crumbs = $this->makeService([
+            'breadcrumbs.home' => 'Главная',
+            'blog.section'     => 'Блог',
+            'blog.news'        => 'Новости',
+        ])->blogCategory(\Gree\Enum\BlogCategory::News)->toArray();
+
+        $this->assertCount(3, $crumbs);
+        $this->assertSame('Главная', $crumbs[0]->label);
+        $this->assertSame('Блог',    $crumbs[1]->label);
+        $this->assertNotSame('', $crumbs[1]->url, 'middle crumb должен иметь URL на /blog/');
+        $this->assertSame('Новости', $crumbs[2]->label);
+        $this->assertTrue($crumbs[2]->isCurrent());
+    }
+
+    public function testHelpReturnsTwoCrumbs(): void
+    {
+        $crumbs = $this->makeService([
+            'breadcrumbs.home' => 'Главная',
+            'breadcrumbs.help' => 'Помощь',
+        ])->help()->toArray();
+
+        $this->assertCount(2, $crumbs);
+        $this->assertSame('Главная', $crumbs[0]->label);
+        $this->assertSame('Помощь', $crumbs[1]->label);
+        $this->assertTrue($crumbs[1]->isCurrent());
+    }
+
+    public function testContactsReturnsTwoCrumbs(): void
+    {
+        $crumbs = $this->makeService([
+            'breadcrumbs.home'     => 'Главная',
+            'breadcrumbs.contacts' => 'Контакты',
+        ])->contacts()->toArray();
+
+        $this->assertCount(2, $crumbs);
+        $this->assertSame('Контакты', $crumbs[1]->label);
+        $this->assertTrue($crumbs[1]->isCurrent());
+    }
+
+    public function testWhereToBuyReturnsTwoCrumbs(): void
+    {
+        $crumbs = $this->makeService([
+            'breadcrumbs.home'         => 'Главная',
+            'breadcrumbs.where_to_buy' => 'Где купить',
+        ])->whereToBuy()->toArray();
+
+        $this->assertCount(2, $crumbs);
+        $this->assertSame('Где купить', $crumbs[1]->label);
+        $this->assertTrue($crumbs[1]->isCurrent());
+    }
+
     /** @param array<string, string> $translations code → label */
     private function makeService(array $translations): BreadcrumbsService
     {
@@ -73,7 +126,7 @@ final class BreadcrumbsServiceTest extends TestCase
         );
 
         $language = $this->createMock(LanguageServiceInterface::class);
-        $language->method('get')->willReturn(Locale::En);
+        $language->method('get')->willReturn(Locale::Uz);
 
         return new BreadcrumbsService($translator, $language);
     }

@@ -8,17 +8,12 @@ use Gree\Collection\OfferCollection;
 use Gree\Enum\Color;
 use Gree\Enum\ProductType;
 
-/**
- * Detail-only fields (sku/model/specs/text-tabs/functions/gallery) default to
- * empty/zero so the same DTO can be returned from the catalog listing without
- * paying for the extra joins. Only fetchByCode() fills them.
- */
+/** Detail-only поля (sku/model/specs/text-tabs/functions) — пустые/нулевые в каталоге, заполняются только fetchByCode(). Галерея — на OfferDto, не здесь. */
 final readonly class ProductDto extends BaseDto
 {
     /**
-     * @param Color[]  $colors    typed color options (admin-selectable variants)
-     * @param string[] $functions feature codes (wifi/130v/turbo/...), labels via HL
-     * @param string[] $gallery   image URLs for the detail carousel
+     * @param Color[]  $colors
+     * @param string[] $functions feature-коды, лейблы — в HL Translations
      */
     public function __construct(
         public int $id,
@@ -49,7 +44,6 @@ final readonly class ProductDto extends BaseDto
         public string $kitText = '',
         public string $installationText = '',
         public array $functions = [],
-        public array $gallery = [],
         public ?OfferCollection $offers = null,
     ) {}
 

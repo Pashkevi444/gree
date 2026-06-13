@@ -7,14 +7,12 @@
 
 @section('content')
 <main class="main">
-    <section class="error-page">
-        <div class="container">
-            <div class="error-page__inner">
-                <h1 class="error-page__code">404</h1>
-                <p class="error-page__title">{{ Language::t('404.title') }}</p>
-                <p class="error-page__description">{{ Language::t('404.description') }}</p>
-                <a href="{{ Route::to('home') }}" class="btn btn--primary">{{ Language::t('404.home_link') }}</a>
-            </div>
+    <section class="hero container">
+        <div class="hero-wrapper">
+            <h1 class="hero__title">{{ Language::t('404.title') }}</h1>
+            <p class="hero__description">{{ Language::t('404.description') }}</p>
+            <a class="hero__button" href="{{ Route::to('home') }}">{{ Language::t('404.home_link') }}</a>
+            <img class="hero__image" src="/dist/images/img(1).png" alt="" />
         </div>
     </section>
 </main>

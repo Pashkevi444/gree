@@ -9,4 +9,6 @@ use Gree\Collection\MenuItemCollection;
 interface MenuServiceInterface
 {
     public function getHeaderMenu(): MenuItemCollection;
+
+    public function getFooterMenu(): MenuItemCollection;
 }

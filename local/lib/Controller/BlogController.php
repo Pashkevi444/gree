@@ -13,11 +13,16 @@ use Gree\Enum\BlogCategory;
 use Gree\Enum\IblockCode;
 use Gree\Helpers\Language;
 use Gree\View\BlogArticleViewData;
+use Gree\View\BlogCategoryViewData;
 use Gree\View\BlogViewData;
 
 final class BlogController extends BaseController
 {
-    private const int PAGE_SIZE = 3;
+    /** Сколько карточек в каждой секции на главной /blog/ (до кнопки «Показать ещё»). */
+    private const int INDEX_PREVIEW_SIZE = 3;
+
+    /** Жёсткий cap на /blog/{advice|news}/ — статей у нас немного, прокрутка прокрутится. */
+    private const int CATEGORY_PAGE_SIZE = 100;
 
     public function __construct(
         private readonly BlogServiceInterface $blogService,
@@ -30,16 +35,36 @@ final class BlogController extends BaseController
         $this->applySeo($this->seo->forPage('blog'));
         $this->addPageAssets('blog');
 
-        $tips = $this->blogService->paginate(BlogCategory::Tips, 0, self::PAGE_SIZE);
-        $news = $this->blogService->paginate(BlogCategory::News, 0, self::PAGE_SIZE);
+        $tips = $this->blogService->paginate(BlogCategory::Tips, 0, self::INDEX_PREVIEW_SIZE);
+        $news = $this->blogService->paginate(BlogCategory::News, 0, self::INDEX_PREVIEW_SIZE);
 
         return $this->view('blog/index', new BlogViewData(
             breadcrumbs: $this->breadcrumbs->blog(),
             tips:        $tips['items'],
-            hasMoreTips: $tips['hasMore'],
             news:        $news['items'],
-            hasMoreNews: $news['hasMore'],
-            pageSize:    self::PAGE_SIZE,
+        ));
+    }
+
+    /**
+     * GET /blog/{slug}/ где slug = advice|news. Полный список статей категории.
+     */
+    public function category(string $slug): HttpResponse
+    {
+        $category = BlogCategory::fromUrlSlug($slug);
+        if ($category === null) {
+            return $this->view('errors/404')->setStatus('404 Not Found');
+        }
+
+        $pageCode = 'blog-' . $slug;  // blog-advice / blog-news
+        $this->applySeo($this->seo->forPage($pageCode));
+        $this->addPageAssets('blog');
+
+        $page = $this->blogService->paginate($category, 0, self::CATEGORY_PAGE_SIZE);
+
+        return $this->view('blog/category', new BlogCategoryViewData(
+            breadcrumbs: $this->breadcrumbs->blogCategory($category),
+            category:    $category,
+            items:       $page['items'],
         ));
     }
 
@@ -60,37 +85,8 @@ final class BlogController extends BaseController
         return $this->view('blog/show', new BlogArticleViewData(
             breadcrumbs:   $this->breadcrumbs->blogArticle($article),
             article:       $article,
-            categoryLabel: Language::t($categoryKey),
+            categoryLabel: (string) Language::t($categoryKey),
             related:       $this->blogService->recent($article->category, $article->id, 3),
         ));
-    }
-
-    /**
-     * GET /api/v1/blog?category=tips&offset=3&limit=3
-     * → { items: [...], total: N, hasMore: bool }
-     */
-    public function paginate(): HttpResponse
-    {
-        $request = $this->getRequest();
-        $category = BlogCategory::tryFromOrNull($request->get('category'));
-
-        $offset = max(0, (int) $request->get('offset'));
-        $limit = (int) ($request->get('limit') ?? self::PAGE_SIZE);
-        $limit = $limit > 0 && $limit <= 50 ? $limit : self::PAGE_SIZE;
-
-        $page = $this->blogService->paginate($category, $offset, $limit);
-
-        $items = [];
-        foreach ($page['items'] as $article) {
-            $items[] = $article->toJson();
-        }
-
-        return $this->json([
-            'items'   => $items,
-            'total'   => $page['total'],
-            'hasMore' => $page['hasMore'],
-            'offset'  => $offset,
-            'limit'   => $limit,
-        ]);
     }
 }

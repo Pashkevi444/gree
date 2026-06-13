@@ -11,7 +11,12 @@ use Gree\Enum\Locale;
 
 abstract class BaseRepository
 {
-    protected const int TTL = 3600;
+
+    protected const int TTL_STATIC = 2592000;  // 30 дней
+    protected const int TTL_CONTENT = 604800;   // 7 дней
+    protected const int TTL_CATALOG = 3600;     // 1 час
+
+    protected const int TTL = self::TTL_CATALOG;
     protected const array SORT = ['SORT' => 'ASC', 'TIMESTAMP_X' => 'DESC', 'DATE_CREATE' => 'DESC'];
 
     public function __construct(
@@ -25,11 +30,11 @@ abstract class BaseRepository
 
     /**
      * Build a [alias => path] pair of locale-aware SELECT entries for a property whose
-     * RU/EN variants live in {$base}_RU / {$base}_EN. The alias MUST differ from the
+     * RU/UZ variants live in {$base}_RU / {$base}_UZ. The alias MUST differ from the
      * underlying property code (Bitrix D7 forbids alias-name collisions with entity
      * fields), so the alias gets a `_VALUE` suffix.
      *
-     *   ['SUBTITLE_RU_VALUE' => 'SUBTITLE_RU.VALUE', 'SUBTITLE_EN_VALUE' => 'SUBTITLE_EN.VALUE']
+     *   ['SUBTITLE_RU_VALUE' => 'SUBTITLE_RU.VALUE', 'SUBTITLE_UZ_VALUE' => 'SUBTITLE_UZ.VALUE']
      *
      * @return array<string, string>
      */
@@ -37,7 +42,7 @@ abstract class BaseRepository
     {
         return [
             $base . '_RU_VALUE' => $base . '_RU.VALUE',
-            $base . '_EN_VALUE' => $base . '_EN.VALUE',
+            $base . '_UZ_VALUE' => $base . '_UZ.VALUE',
         ];
     }
 
@@ -50,12 +55,12 @@ abstract class BaseRepository
     protected function localized(array $row, string $base): string
     {
         $ru = (string) ($row[$base . '_RU_VALUE'] ?? '');
-        $en = (string) ($row[$base . '_EN_VALUE'] ?? '');
+        $uz = (string) ($row[$base . '_UZ_VALUE'] ?? '');
 
-        if ($this->locale() === Locale::En) {
-            return $en !== '' ? $en : $ru;
+        if ($this->locale() === Locale::Uz) {
+            return $uz !== '' ? $uz : $ru;
         }
-        return $ru !== '' ? $ru : $en;
+        return $ru !== '' ? $ru : $uz;
     }
 
     protected function resolveIblockId(IblockCode $code): int
@@ -63,7 +68,7 @@ abstract class BaseRepository
         $row = IblockTable::query()
             ->where('API_CODE', $code->value)
             ->setSelect(['ID'])
-            ->setCacheTtl(self::TTL)
+            ->setCacheTtl(static::TTL)
             ->exec()
             ->fetch();
 

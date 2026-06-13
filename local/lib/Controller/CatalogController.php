@@ -132,7 +132,8 @@ final class CatalogController extends BaseController
         $totalPages = ($total > 0 && $perPage > 0) ? (int) ceil($total / $perPage) : 1;
 
         return [
-            'totalPages' => max(1, $totalPages),
+            'totalItems'  => max(0, $total),
+            'totalPages'  => max(1, $totalPages),
             'currentPage' => max(1, $page),
         ];
     }

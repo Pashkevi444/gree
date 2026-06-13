@@ -12,6 +12,8 @@ use Gree\Enum\IblockCode;
 
 final class BlogRepository extends BaseRepository implements BlogRepositoryInterface
 {
+    protected const int TTL = self::TTL_CONTENT;
+
     public function paginate(?BlogCategory $category, int $offset, int $limit): BlogArticleCollection
     {
         \Bitrix\Main\Loader::includeModule('iblock');

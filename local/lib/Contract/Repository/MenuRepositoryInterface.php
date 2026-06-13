@@ -9,7 +9,12 @@ use Gree\Collection\MenuItemCollection;
 interface MenuRepositoryInterface
 {
     /**
-     * Returns the menu tree: top-level items with nested children.
+     * Дерево пунктов главного (шапка) меню.
      */
     public function getTree(): MenuItemCollection;
+
+    /**
+     * Дерево пунктов футер-меню. Корневые секции — заголовки колонок.
+     */
+    public function getFooterTree(): MenuItemCollection;
 }

@@ -11,7 +11,7 @@ use Gree\Logging\FileLogger;
 
 final class TranslatorService extends BaseService implements TranslatorServiceInterface
 {
-    /** @var array<string, array{ru: string, en: string}>|null */
+    /** @var array<string, array{ru: string, uz: string}>|null */
     private ?array $cache = null;
 
     public function __construct(private readonly TranslationLoaderInterface $loader) {}
@@ -35,9 +35,17 @@ final class TranslatorService extends BaseService implements TranslatorServiceIn
             return $this->interpolate($code, $params);
         }
 
-        $value = $entry[$locale->value] ?? '';
-        if ($value === '' && $locale !== Locale::Ru) {
-            $value = $entry['ru'] ?? '';
+        // Симметричный fallback: если предпочтительная локаль пустая, тянем из
+        // любой другой непустой. Раньше fallback был односторонний (только uz→ru),
+        // и ключи вроде header.lang.uz с пустым RU возвращали сам код.
+        $value = (string) ($entry[$locale->value] ?? '');
+        if ($value === '') {
+            foreach ($entry as $candidate) {
+                if ($candidate !== '') {
+                    $value = (string) $candidate;
+                    break;
+                }
+            }
         }
 
         if ($value === '') {

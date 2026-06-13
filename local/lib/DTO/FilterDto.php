@@ -10,7 +10,6 @@ use Gree\Enum\SortField;
 
 final readonly class FilterDto extends BaseDto
 {
-    private const SESSION_KEY = 'catalog_filter';
 
     /**
      * @param ProductType[] $types
@@ -27,27 +26,16 @@ final readonly class FilterDto extends BaseDto
         public array $colors = [],
         public SortField $sortField = SortField::Popular,
         public int $page = 1,
-        public int $perPage = 3,
+        public int $perPage = 9,
     ) {}
 
+    /** Stateless: только query/post-параметры. Сессия не используется — иначе фильтр «переезжает» между разделами и ломает HTML-reset. */
     public static function fromRequest(\Bitrix\Main\HttpRequest $request): static
     {
-        $session = \Bitrix\Main\Application::getInstance()->getSession();
-
         $post = $request->getPostList()->toArray();
         $get = $request->getQueryList()->toArray();
-        $params = $post ?: $get;
 
-        $filterKeys = ['type', 'price', 'area', 'bestseller', 'inverter_motor', 'color', 'sort', 'page'];
-        $hasFilterParams = (bool) array_intersect_key($params, array_flip($filterKeys));
-
-        if ($hasFilterParams) {
-            $session->set(self::SESSION_KEY, $params);
-        } elseif ($session->has(self::SESSION_KEY)) {
-            $params = $session->get(self::SESSION_KEY);
-        }
-
-        return static::fromArray($params);
+        return static::fromArray($post ?: $get);
     }
 
     public static function fromArray(array $params): static
@@ -74,7 +62,7 @@ final readonly class FilterDto extends BaseDto
         $inverterMotorRaw = ($params['inverter_motor'][0] ?? null);
 
         $page = max(1, (int) ($params['page'] ?? 1));
-        $perPage = max(1, (int) ($params['per_page'] ?? 3));
+        $perPage = max(1, (int) ($params['per_page'] ?? 9));
 
         return new self(
             types: $types,

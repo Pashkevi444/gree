@@ -10,33 +10,21 @@ use Gree\DTO\FilterDto;
 interface OfferRepositoryInterface
 {
     /**
-     * Pull all active offers for the given product IDs in one query, grouped
-     * by parent product.
-     *
      * @param int[] $productIds
-     * @return array<int, OfferCollection>  product ID → its offers
+     * @return array<int, OfferCollection>  product ID → offers
      */
     public function getByProductIds(array $productIds): array;
 
     /**
-     * Apply offer-level filters (price range, areas, colors) and return the
-     * IDs of parent products that have at least one matching offer.
+     * Применяет офферные фильтры (price/areas/colors), возвращает ID товаров с хотя бы одним подходящим оффером.
      *
      * @return int[]
      */
     public function findProductIds(FilterDto $filter): array;
 
-    /**
-     * Load offers by ID. Returns a single flat collection — each OfferDto
-     * carries its productId, so the cart layer can resolve parent products.
-     *
-     * @param int[] $offerIds
-     */
+    /** @param int[] $offerIds */
     public function getByIds(array $offerIds): OfferCollection;
 
-    /**
-     * Lightweight existence check — used by the cart layer to validate
-     * client-supplied offer IDs without hydrating the full DTO graph.
-     */
+    /** Лёгкая проверка — корзина валидирует client-supplied offerId без гидрации полного DTO. */
     public function existsActive(int $offerId): bool;
 }

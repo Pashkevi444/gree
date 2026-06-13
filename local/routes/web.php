@@ -7,10 +7,14 @@ use Gree\Controller\BlogController;
 use Gree\Controller\BrandController;
 use Gree\Controller\CartController;
 use Gree\Controller\CatalogController;
+use Gree\Controller\ContactsController;
+use Gree\Controller\HelpController;
 use Gree\Controller\OrderController;
 use Gree\Controller\HomeController;
 use Gree\Controller\LanguageController;
+use Gree\Controller\PartnersController;
 use Gree\Controller\ProductController;
+use Gree\Controller\WhereToBuyController;
 use Gree\Core\App;
 
 /**
@@ -55,11 +59,19 @@ return static function (RoutingConfigurator $routes): void {
             ->name('show');
     });
 
-    // ─── Blog (listing + article) ────────────────────────────────────────────
+    // ─── Blog (listing + category + article) ─────────────────────────────────
     $routes->prefix('blog')->name('blog.')->group(static function (RoutingConfigurator $routes): void {
         $routes
             ->get('', static fn() => App::get(BlogController::class)->index())
             ->name('index');
+
+        // ВАЖНО: category-роут ДО show. У них одинаковый шаблон /blog/{x}/,
+        // регексы на параметры решают конфликт (advice|news vs остальное).
+        $routes
+            ->get('{category}/', static fn(string $category) => App::get(BlogController::class)->category($category))
+            ->where('category', 'advice|news')
+            ->name('category');
+
         $routes
             ->get('{code}/', static fn(string $code) => App::get(BlogController::class)->show($code))
             ->where('code', '[\w\d\-]+')
@@ -82,9 +94,33 @@ return static function (RoutingConfigurator $routes): void {
             ->name('success');
     });
 
+    // ─── Help / FAQ ─────────────────────────────────────────────────────────
+    $routes
+        ->get('/help/', static fn() => App::get(HelpController::class)->index())
+        ->name('help.index');
+
+    // ─── Contacts ───────────────────────────────────────────────────────────
+    $routes
+        ->get('/contacts/', static fn() => App::get(ContactsController::class)->index())
+        ->name('contacts.index');
+
+    // ─── Where to buy ───────────────────────────────────────────────────────
+    $routes
+        ->get('/where-to-buy/', static fn() => App::get(WhereToBuyController::class)->index())
+        ->name('where_to_buy.index');
+
+    // ─── Partners ───────────────────────────────────────────────────────────
+    $routes
+        ->get('/partners/', static fn() => App::get(PartnersController::class)->index())
+        ->name('partners.index');
+
     // ─── Language switch ─────────────────────────────────────────────────────
+    // ВАЖНО: pattern захардкожен. Использовать Gree\Enum\Locale::pattern() здесь
+    // нельзя — Bitrix Routing исполняет ->where(...) на стадии парсинга web.php
+    // в собственном routing-cache, где Composer-autoload ещё не прогрет, и
+    // получаем "Class Gree\Enum\Locale not found".
     $routes
         ->get('/lang/{locale}/', static fn(string $locale) => App::get(LanguageController::class)->switch($locale))
-        ->where('locale', 'ru|en')
+        ->where('locale', 'ru|uz')
         ->name('lang.switch');
 };

@@ -1,8 +1,19 @@
 <?php
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
 
+use Gree\Contract\Service\ContactsServiceInterface;
+use Gree\Contract\Service\MenuServiceInterface;
+use Gree\Core\App;
 use Gree\Helpers\Language;
 use Gree\Helpers\Route;
+
+$footerMenu = App::get(MenuServiceInterface::class)->getFooterMenu();
+
+$contacts = App::get(ContactsServiceInterface::class);
+$phoneChannel    = $contacts->findChannelByCode('office');
+$serviceChannel  = $contacts->findChannelByCode('service-center');
+$telegramChannel = $contacts->findChannelByCode('orders-telegram');
+$emailChannel    = $contacts->findChannelByCode('email');
 ?>
 <footer class="footer container">
       <div class="footer-columns">
@@ -28,12 +39,21 @@ use Gree\Helpers\Route;
           </div>
           <div class="footer-social">
             <div class="footer-social__numbers">
-              <a href="tel:+998 71 500 00 00">+998 71 500 00 00</a>
-              •
-              <a href="tel:+998 91 772 72 72">+998 91 772 72 72</a>
+              <?php
+              // Уникальные телефоны из доступных каналов. Один канал — один номер;
+              // если office и service-center с разными — увидим оба.
+              $phones = array_values(array_unique(array_filter([
+                  $phoneChannel?->phone,
+                  $serviceChannel?->phone,
+              ])));
+              foreach ($phones as $i => $phone): ?>
+                <?php if ($i > 0): ?>•<?php endif; ?>
+                <a href="tel:<?= htmlspecialchars(preg_replace('/\s+/', '', $phone), ENT_QUOTES) ?>"><?= htmlspecialchars($phone) ?></a>
+              <?php endforeach; ?>
             </div>
             <div class="footer-social-items">
-              <a class="footer-social__item" href="https://t.me/username" target="_blank" rel="noopener noreferrer">
+              <?php if ($telegramChannel?->buttonUrl): ?>
+              <a class="footer-social__item" href="<?= htmlspecialchars($telegramChannel->buttonUrl, ENT_QUOTES) ?>" target="_blank" rel="noopener noreferrer">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     d="M12 24C18.6274 24 24 18.6274 24 12C24 5.37258 18.6274 0 12 0C5.37258 0 0 5.37258 0 12C0 18.6274 5.37258 24 12 24Z"
@@ -60,57 +80,98 @@ use Gree\Helpers\Route;
                   </defs>
                 </svg>
               </a>
-              <a class="footer-social__item" href="mailto:mailto:example@example.com">
+              <?php endif; ?>
+              <?php if ($emailChannel?->buttonUrl): ?>
+              <a class="footer-social__item" href="<?= htmlspecialchars($emailChannel->buttonUrl, ENT_QUOTES) ?>">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12 24C18.6274 24 24 18.6274 24 12C24 5.37258 18.6274 0 12 0C5.37258 0 0 5.37258 0 12C0 18.6274 5.37258 24 12 24Z"
-                    fill="white"
-                  />
-                  <path
-                    d="M12.0002 14.6668C13.4729 14.6668 14.6668 13.4729 14.6668 12.0002C14.6668 10.5274 13.4729 9.3335 12.0002 9.3335C10.5274 9.3335 9.3335 10.5274 9.3335 12.0002C9.3335 13.4729 10.5274 14.6668 12.0002 14.6668Z"
-                    stroke="black"
-                    stroke-width="1.33333"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M14.6668 9.33357V12.6669C14.6668 13.1973 14.8775 13.706 15.2526 14.0811C15.6277 14.4562 16.1364 14.6669 16.6668 14.6669C17.1973 14.6669 17.706 14.4562 18.0811 14.0811C18.4561 13.706 18.6668 13.1973 18.6668 12.6669V12.0002C18.6667 10.4956 18.1577 9.03522 17.2224 7.85659C16.287 6.67796 14.9805 5.85039 13.5153 5.50844C12.05 5.16648 10.5121 5.33027 9.15173 5.97315C7.79134 6.61603 6.68843 7.70021 6.02234 9.04939C5.35625 10.3986 5.16615 11.9334 5.48295 13.4043C5.79975 14.8752 6.60482 16.1957 7.76726 17.1511C8.92969 18.1064 10.3811 18.6405 11.8855 18.6663C13.39 18.6922 14.8589 18.2084 16.0535 17.2936"
-                    stroke="black"
-                    stroke-width="1.33333"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+                  <path d="M12 24C18.6274 24 24 18.6274 24 12C24 5.37258 18.6274 0 12 0C5.37258 0 0 5.37258 0 12C0 18.6274 5.37258 24 12 24Z" fill="white"/>
+                  <path d="M12.0002 14.6668C13.4729 14.6668 14.6668 13.4729 14.6668 12.0002C14.6668 10.5274 13.4729 9.3335 12.0002 9.3335C10.5274 9.3335 9.3335 10.5274 9.3335 12.0002C9.3335 13.4729 10.5274 14.6668 12.0002 14.6668Z" stroke="black" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M14.6668 9.33357V12.6669C14.6668 13.1973 14.8775 13.706 15.2526 14.0811C15.6277 14.4562 16.1364 14.6669 16.6668 14.6669C17.1973 14.6669 17.706 14.4562 18.0811 14.0811C18.4561 13.706 18.6668 13.1973 18.6668 12.6669V12.0002C18.6667 10.4956 18.1577 9.03522 17.2224 7.85659C16.287 6.67796 14.9805 5.85039 13.5153 5.50844C12.05 5.16648 10.5121 5.33027 9.15173 5.97315C7.79134 6.61603 6.68843 7.70021 6.02234 9.04939C5.35625 10.3986 5.16615 11.9334 5.48295 13.4043C5.79975 14.8752 6.60482 16.1957 7.76726 17.1511C8.92969 18.1064 10.3811 18.6405 11.8855 18.6663C13.39 18.6922 14.8589 18.2084 16.0535 17.2936" stroke="black" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </a>
+              <?php endif; ?>
             </div>
           </div>
         </div>
         <nav class="footer-column">
-          <div class="footer-navigation">
-            <div class="footer-navigation__title"><?= Language::t('footer.col.catalog') ?></div>
-            <div class="footer-navigation-items">
-              <a class="footer-navigation__item" href="<?= Route::to('catalog.section', ['section' => 'nastennie']) ?>"><?= Language::t('footer.nav.wall') ?></a>
-              <a class="footer-navigation__item" href="<?= Route::to('catalog.section', ['section' => 'kolonnye']) ?>"><?= Language::t('footer.nav.column') ?></a>
-              <a class="footer-navigation__item" href="<?= Route::to('catalog.section', ['section' => 'promyshlennye']) ?>"><?= Language::t('footer.nav.industrial') ?></a>
+          <?php foreach ($footerMenu as $column): ?>
+            <div class="footer-navigation">
+              <div class="footer-navigation__title"><?= htmlspecialchars($column->label) ?></div>
+              <?php if ($column->hasChildren()): ?>
+                <div class="footer-navigation-items">
+                  <?php foreach ($column->children as $item): ?>
+                    <?php if ($item->hasUrl()): ?>
+                      <a class="footer-navigation__item" href="<?= htmlspecialchars($item->url, ENT_QUOTES) ?>"><?= htmlspecialchars($item->label) ?></a>
+                    <?php else: ?>
+                      <span class="footer-navigation__item"><?= htmlspecialchars($item->label) ?></span>
+                    <?php endif; ?>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
             </div>
-          </div>
-          <div class="footer-navigation">
-            <div class="footer-navigation__title"><?= Language::t('footer.col.company') ?></div>
-            <div class="footer-navigation-items">
-              <a class="footer-navigation__item" href="<?= Route::to('brand.show', ['code' => 'gree']) ?>"><?= Language::t('footer.nav.about') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.payment') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.delivery') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.exchange') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.return') ?></a>
-              <a class="footer-navigation__item" href=""><?= Language::t('footer.nav.service') ?></a>
-            </div>
-          </div>
+          <?php endforeach; ?>
         </nav>
       </div>
       <iframe
+        id="footer-map"
         class="footer__map"
+        data-default-src="https://yandex.ru/map-widget/v1/org/magazin_konditsionerov_gree/162570630328/?ll=64.399900%2C39.784117&utm_source=share&z=17"
         src="https://yandex.ru/map-widget/v1/org/magazin_konditsionerov_gree/162570630328/?ll=64.399900%2C39.784117&utm_source=share&z=17"
       ></iframe>
     </footer>
+    <script>
+        // Глобальный обработчик «Показать на карте». Любая кнопка с
+        // data-show-on-map="lat,lon" скроллит к iframe карты в футере и
+        // меняет его src на yandex map-widget URL с pin'ом на этих координатах.
+        (function () {
+            const iframe = document.getElementById('footer-map');
+            if (!iframe) return;
+            document.addEventListener('click', function (ev) {
+                const btn = ev.target.closest('[data-show-on-map]');
+                if (!btn) return;
+                const raw = (btn.dataset.showOnMap || '').trim();
+                const [lat, lon] = raw.split(',').map(s => s.trim());
+                if (!lat || !lon) return;
+                ev.preventDefault();
+                const ll = `${lon},${lat}`;
+                const pt = `${lon},${lat},pm2rdm`;
+                iframe.src = `https://yandex.ru/map-widget/v1/?ll=${ll}&z=17&pt=${pt}`;
+                iframe.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        })();
+
+        // Универсальный submit для всех feedback-форм (product/partner).
+        // На success-ответе скрывает форму и показывает alert внутри попапа.
+        (function () {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            // Любая форма с data-feedback-form="..." отправляется в свой action
+            // (на сейчас: feedback-form="catalog-help" → /api/v1/catalog-help-feedback;
+            // partner-форма заводится так же отдельным эндпоинтом).
+            document.querySelectorAll('form[data-feedback-form]').forEach(function (form) {
+                form.addEventListener('submit', async function (ev) {
+                    ev.preventDefault();
+                    const data = Object.fromEntries(new FormData(form).entries());
+                    try {
+                        const res = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrf,
+                            },
+                            credentials: 'same-origin',
+                            body: JSON.stringify(data),
+                        });
+                        if (!res.ok) throw new Error('feedback ' + res.status);
+                        form.style.display = 'none';
+                        const alert = form.parentNode.querySelector('.feedback-alert');
+                        if (alert) alert.style.display = '';
+                    } catch (e) {
+                        console.error('feedback submit failed', e);
+                    }
+                });
+            });
+        })();
+    </script>
   </body>
 </html>

@@ -19,6 +19,8 @@ use Gree\Enum\IblockCode;
 
 final class HomeRepository extends BaseRepository implements HomeRepositoryInterface
 {
+    protected const int TTL = self::TTL_CONTENT;
+
     public function getSlider(): SliderItemCollection
     {
         return $this->fetchSlider();

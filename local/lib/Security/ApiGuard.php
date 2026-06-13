@@ -10,30 +10,13 @@ use Gree\Contract\Service\CsrfServiceInterface;
 use Gree\Logging\FileLogger;
 use Gree\Service\BaseService;
 
-/**
- * Pre-controller gate for state-changing API requests.
- *
- * Two independent checks, both must pass:
- *
- *   1. Same-origin: Origin (or Referer when Origin is absent — Safari + cross-
- *      origin redirects sometimes drop it) must match the configured host.
- *      Defense-in-depth — SameSite=Strict cookies already block most cross-
- *      site abuse, this catches the rest.
- *
- *   2. CSRF: the `csrf_token` cookie value must equal the `X-CSRF-Token`
- *      header. See CsrfService for the rationale.
- *
- * GET / HEAD / OPTIONS are never gated — they must be safe.
- */
+/** Pre-controller gate для state-changing API: same-origin + CSRF cookie==header. GET/HEAD/OPTIONS не гейтятся. */
 final class ApiGuard extends BaseService implements ApiGuardInterface
 {
-    /** @var array<int, string> normalised allowed hosts ('host' or 'host:port') */
+    /** @var array<int, string> 'host' или 'host:port', нормализованные */
     private readonly array $allowedHosts;
 
-    /**
-     * @param string|array<int, string> $allowedHosts один хост или список —
-     *
-     */
+    /** @param string|array<int, string> $allowedHosts */
     public function __construct(
         private readonly CsrfServiceInterface $csrf,
         private readonly HttpContextInterface $http,

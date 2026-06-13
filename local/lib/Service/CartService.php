@@ -102,9 +102,7 @@ final class CartService extends BaseService implements CartServiceInterface
         }
 
         try {
-            // Validate the offer up front — before issuing a cookie or creating
-            // a cart row. A bogus offer_id from the client must produce 422
-            // with zero side effects (no orphan carts, no log noise).
+            // Валидация offer ДО создания корзины — bogus offer_id даст 422 без orphan-корзин.
             if (!$this->offers->existsActive($offerId)) {
                 throw new OfferNotFoundException('offer #' . $offerId . ' not found or inactive');
             }
@@ -123,7 +121,7 @@ final class CartService extends BaseService implements CartServiceInterface
             $this->carts->touch($cartId);
             return $itemId;
         } catch (OfferNotFoundException $e) {
-            // Domain-level rejection: don't pollute the critical log.
+            // Domain-rejection — без critical-лога.
             throw $e;
         } catch (\Throwable $e) {
             FileLogger::getInstance()->critical(__METHOD__ . ' failed', [
@@ -169,13 +167,7 @@ final class CartService extends BaseService implements CartServiceInterface
         }
     }
 
-    /**
-     * IDOR guard. Update/remove accept arbitrary item IDs from the URL —
-     * a hostile client could send /api/v1/cart/items/12345 hoping to touch
-     * somebody else's cart. We require the row's UF_CART_ID to match the
-     * caller's cart resolved from the cookie. Missing cookie / missing cart
-     * / cross-cart access all map to AccessDenied (404 would leak existence).
-     */
+    /** IDOR-guard: UF_CART_ID должен совпасть с корзиной из cookie. Любая ошибка → AccessDenied (404 палил бы существование). */
     private function assertItemBelongsToCurrentCart(int $itemId): void
     {
         $token = $this->tokens->read();
@@ -192,10 +184,7 @@ final class CartService extends BaseService implements CartServiceInterface
         }
     }
 
-    /**
-     * Lazily resolves an existing cart row by cookie token, or creates a new
-     * one (issuing a fresh token cookie). Always returns a valid cart_id.
-     */
+    /** Ищет корзину по cookie-токену, иначе создаёт новую (с новым cookie). Всегда возвращает валидный cart_id. */
     private function resolveOrCreateCart(): int
     {
         $token = $this->tokens->read() ?? $this->tokens->issue();

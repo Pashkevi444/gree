@@ -11,7 +11,7 @@ use Gree\Http\CookieOptions;
 final class CartTokenService extends BaseService implements CartTokenServiceInterface
 {
     public const string COOKIE_NAME = 'cart_token';
-    private const int LIFETIME_SECONDS = 31_536_000; // 1 year
+    private const int LIFETIME_SECONDS = 31536000; // 1 year
 
     public function __construct(
         private readonly HttpContextInterface $http,

@@ -368,6 +368,22 @@
         <div class="catalog-wrapper">
           <div class="catalog-header">
             <div class="catalog-header__title">{{ Language::t('catalog.found', ['count' => $total]) }}</div>
+            {{-- Mobile-only кнопки (CSS прячет на desktop). Открывают drawer-ы
+                 в конце <main>, main.js навешан на [data-drawer]-buttons. --}}
+            <div class="catalog-header-mobile-buttons">
+              <button class="catalog-header-mobile-buttons__item" type="button" data-drawer="filters">
+                <svg width="16" height="15" viewBox="0 0 16 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.7251 0.724609H0.725098L6.3251 7.34661V11.9246L9.1251 13.3246V7.34661L14.7251 0.724609Z" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {{ Language::t('catalog.filters') }}
+              </button>
+              <button class="catalog-header-mobile-buttons__item" type="button" data-drawer="sort">
+                <svg width="21" height="12" viewBox="0 0 21 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11.4438 6.38146L15.6865 10.6241L19.9291 6.38146M15.6865 10.6241V0.724609M9.21038 4.96725L4.96774 0.724609L0.725098 4.96725M4.96774 0.724609V10.6241" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                {{ Language::t('catalog.sort.title') }}
+              </button>
+            </div>
             <div class="catalog-sort-button">
               <div class="catalog-sort-button__text"></div>
               <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -379,7 +395,7 @@
                   stroke-linejoin="round"
                 />
               </svg>
-              <select class="catalog-sort-button__control" name="sort" form="filters-form">
+              <select class="catalog-sort-button__control" name="sort">
                 <option value="popular" @selected($filter->sortField === \Gree\Enum\SortField::Popular)>{{ Language::t('catalog.sort.popular') }}</option>
                 <option value="price_asc" @selected($filter->sortField === \Gree\Enum\SortField::PriceAsc)>{{ Language::t('catalog.sort.price_asc') }}</option>
                 <option value="price_desc" @selected($filter->sortField === \Gree\Enum\SortField::PriceDesc)>{{ Language::t('catalog.sort.price_desc') }}</option>
@@ -451,5 +467,31 @@
         </div>
         @endif
       </section>
+
+      {{-- Mobile drawer-ы. catalog.js на @media(max-width:1319px) перекладывает
+           <form id="filters-form"> внутрь .drawer[data-drawer="filters"] .drawer-content,
+           а на desktop — обратно в .catalog. Без них падает с TypeError на null.append().
+           .mobile-sort живёт внутри drawer-а sort — туда catalog.js рендерит
+           мобильный sort-picker. --}}
+      <div class="drawer" data-drawer="filters">
+        <div class="drawer__backdrop"></div>
+        <div class="drawer-wrapper">
+          <div class="drawer-header">
+            <div class="drawer-header__title">{{ Language::t('catalog.filters') }}</div>
+          </div>
+          <div class="drawer-content"></div>
+        </div>
+      </div>
+      <div class="drawer" data-drawer="sort">
+        <div class="drawer__backdrop"></div>
+        <div class="drawer-wrapper">
+          <div class="drawer-header">
+            <div class="drawer-header__title">{{ Language::t('catalog.sort.title') }}</div>
+          </div>
+          <div class="drawer-content">
+            <div class="mobile-sort"></div>
+          </div>
+        </div>
+      </div>
     </main>
 @endsection

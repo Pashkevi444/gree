@@ -8,9 +8,20 @@
     // The PATCH/DELETE routes carry the line ID in the path. Build the URL once
     // with a placeholder so JS can swap it without parsing routing rules.
     $patchTpl = Route::to('api.v1.cart.items.update', ['id' => '__ID__']);
+
+    // Префикс/постфикс цены — выдираем из i18n-шаблона product.price_from:
+    //   RU: «от :price UZS»  → пре «от », пост «UZS»     (формантема впереди)
+    //   UZ: «:price UZS dan» → пре «»,    пост «UZS dan» (формантема сзади)
+    // Один источник для двух локалей, без отдельного ключа/миграции.
+    $pricePartsRaw = explode('__PRICE__', Language::t('product.price_from', ['price' => '__PRICE__']), 2);
+    $pricePrefix   = $pricePartsRaw[0] ?? '';
+    $priceSuffix   = trim($pricePartsRaw[1] ?? 'UZS'); // без leading space — фронт сам добавит
 @endphp
 
 @section('content')
+    {{-- Префикс цены — через CSS::before + attr(data-price-prefix) (правило в
+         assets/custom.css). Перевод берётся из shared-ключа product.price_from
+         (на UZ префикс пустой — «от» там не пишется, после числа идёт «dan»). --}}
     @include('partials.breadcrumbs', ['breadcrumbs' => $breadcrumbs])
     <main class="main">
         <h1 class="title container">{{ Language::t('cart.title') }}</h1>
@@ -53,8 +64,12 @@
                                 </div>
                             </div>
                             <div class="cart-item-end">
-                                <div class="cart-item__price" data-line-total data-postfix="UZS">
-                                    {{ number_format($line->totalPrice, 0, '.', ' ') }} UZS
+                                {{-- ВНИМАНИЕ: data-postfix обязателен — фронтовый cart.js на load
+                                     перерендерит textContent как `${fmt(value)} ${dataset.postfix}`.
+                                     Префикс «от» добавляется CSS-правилом ::before (assets/custom.css),
+                                     поэтому он переживает перерендер. --}}
+                                <div class="cart-item__price" data-line-total data-postfix="{{ $priceSuffix }}" data-price-prefix="{{ $pricePrefix }}">
+                                    {{ number_format($line->totalPrice, 0, '.', ' ') }} {{ $priceSuffix }}
                                 </div>
                                 <div class="cart-item-amount">
                                     <div class="cart-item-amount__title">{{ Language::t('cart.item.qty') }}</div>
@@ -85,7 +100,7 @@
                         <div class="cart-sidebar__item">
                             <div data-cart-count
                                  data-count-template="{{ Language::t('cart.summary.items', ['count' => '__COUNT__']) }}">{{ Language::t('cart.summary.items', ['count' => $itemsCount]) }}</div>
-                            <div data-cart-total>{{ number_format($total, 0, '.', ' ') }} UZS</div>
+                            <div class="cart-summary-price" data-cart-total data-postfix="{{ $priceSuffix }}" data-price-prefix="{{ $pricePrefix }}">{{ number_format($total, 0, '.', ' ') }} {{ $priceSuffix }}</div>
                         </div>
                         <div class="cart-sidebar__item">
                             <div>{{ Language::t('cart.summary.delivery') }}</div>
@@ -95,7 +110,7 @@
                     <div class="cart-sidebar__divider"></div>
                     <div class="cart-sidebar-total">
                         <div class="cart-sidebar-total__title">{{ Language::t('cart.summary.total') }}</div>
-                        <div class="cart-sidebar-total__price" data-cart-grand-total>{{ number_format($total, 0, '.', ' ') }} UZS</div>
+                        <div class="cart-sidebar-total__price" data-cart-grand-total data-postfix="{{ $priceSuffix }}" data-price-prefix="{{ $pricePrefix }}">{{ number_format($total, 0, '.', ' ') }} {{ $priceSuffix }}</div>
                     </div>
                     <a class="cart-sidebar__button" href="{{ Route::to('order.checkout') }}">{{ Language::t('cart.checkout') }}</a>
                 </div>
@@ -103,72 +118,6 @@
         @endif
     </main>
 
-    <script>
-        (function () {
-            const lang = document.documentElement.lang || 'ru';
-            const fmt = new Intl.NumberFormat(lang.startsWith('en') ? 'en-US' : 'ru-RU');
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-
-            async function api(method, url, body) {
-                const opts = {
-                    method,
-                    headers: { 'Accept': 'application/json', 'X-CSRF-Token': csrf },
-                    credentials: 'same-origin',
-                };
-                if (body !== undefined) {
-                    opts.headers['Content-Type'] = 'application/json';
-                    opts.body = JSON.stringify(body);
-                }
-                const r = await fetch(url, opts);
-                if (!r.ok) throw new Error('Cart API ' + r.status);
-                return r.json();
-            }
-
-            function repaintSummary(data) {
-                document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = fmt.format(data.total) + ' UZS');
-                document.querySelectorAll('[data-cart-grand-total]').forEach(el => el.textContent = fmt.format(data.total) + ' UZS');
-                document.querySelectorAll('[data-cart-count]').forEach(el => {
-                    const tpl = el.dataset.countTemplate || '__COUNT__';
-                    el.textContent = tpl.replace('__COUNT__', String(data.count));
-                });
-            }
-
-            function repaintLineTotal(form, line) {
-                const el = form.querySelector('[data-line-total]');
-                if (el) el.textContent = fmt.format(line.total_price) + ' UZS';
-                const qty = form.querySelector('[data-cart-qty]');
-                if (qty) qty.value = line.quantity;
-            }
-
-            document.querySelectorAll('[data-cart-step]').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const form = btn.closest('[data-cart-item]');
-                    if (!form) return;
-                    const step = parseInt(btn.dataset.cartStep || '0', 10);
-                    const qtyEl = form.querySelector('[data-cart-qty]');
-                    const current = parseInt(qtyEl.value || '0', 10);
-                    const next = current + step;
-                    const itemId = parseInt(form.dataset.cartItem, 10);
-
-                    btn.disabled = true;
-                    try {
-                        const patchUrl = @json($patchTpl).replace('__ID__', String(itemId));
-                        const data = await api('PATCH', patchUrl, { quantity: next });
-                        const line = data.lines.find(l => l.id === itemId);
-                        if (!line) {
-                            form.remove();
-                            if (!data.lines.length) location.reload();
-                        } else {
-                            repaintLineTotal(form, line);
-                        }
-                        repaintSummary(data);
-                    } catch (e) {
-                        console.error(e);
-                    } finally {
-                        btn.disabled = false;
-                    }
-                });
-            });
-        })();
-    </script>
+    <script type="application/json" id="cart-page-config">@json(['patchTpl' => $patchTpl])</script>
+    <script defer src="/local/templates/gree/assets/cart-page.js"></script>
 @endsection

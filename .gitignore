@@ -117,3 +117,11 @@ core.*
 
 # Per-environment config (committed template lives in .env.example)
 /.env
+
+# Local dev: симлинки на /dist/* в корне, чтобы прямой просмотр dist/*.html
+# (для верстальщика) тянул /styles, /scripts, /images, /fonts без префикса /dist/.
+# В прод не нужны — Bitrix отдаёт статику по /dist/*.
+/styles
+/scripts
+/images
+/fonts

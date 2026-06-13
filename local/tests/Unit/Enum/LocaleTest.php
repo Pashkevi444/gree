@@ -12,7 +12,7 @@ final class LocaleTest extends TestCase
     public function testValues(): void
     {
         $this->assertSame('ru', Locale::Ru->value);
-        $this->assertSame('en', Locale::En->value);
+        $this->assertSame('uz', Locale::Uz->value);
     }
 
     public function testDefaultIsRu(): void
@@ -22,6 +22,7 @@ final class LocaleTest extends TestCase
 
     public function testTryFromInvalidReturnsNull(): void
     {
+        $this->assertNull(Locale::tryFrom('en'));
         $this->assertNull(Locale::tryFrom('de'));
     }
 
@@ -30,27 +31,38 @@ final class LocaleTest extends TestCase
         $this->assertCount(2, Locale::cases());
     }
 
+    public function testFromAcceptLanguageReturnsUzForUzbekTag(): void
+    {
+        $this->assertSame(Locale::Uz, Locale::fromAcceptLanguage('uz-UZ,uz;q=0.9,ru;q=0.8'));
+        $this->assertSame(Locale::Uz, Locale::fromAcceptLanguage('uz'));
+    }
+
     public function testFromAcceptLanguageReturnsRuForCisLanguage(): void
     {
-        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('ru-RU,ru;q=0.9,en;q=0.8'));
-        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('uk,en;q=0.7'));
-        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('uz-UZ,uz;q=0.9'));
+        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('ru-RU,ru;q=0.9'));
+        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('uk'));
         $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('be-BY'));
         $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('kk'));
         $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('ky'));
     }
 
-    public function testFromAcceptLanguageReturnsEnForNonCisLanguage(): void
+    public function testFromAcceptLanguageReturnsDefaultForNonCisLanguage(): void
     {
-        $this->assertSame(Locale::En, Locale::fromAcceptLanguage('en-US,en;q=0.9'));
-        $this->assertSame(Locale::En, Locale::fromAcceptLanguage('de-DE,de;q=0.9,en;q=0.5'));
-        $this->assertSame(Locale::En, Locale::fromAcceptLanguage('fr-FR'));
-        $this->assertSame(Locale::En, Locale::fromAcceptLanguage('zh-CN'));
+        // English / прочие иностранные → default (Ru), отдельной En-локали больше нет.
+        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('en-US,en;q=0.9'));
+        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('de-DE'));
+        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('fr-FR'));
+        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage('zh-CN'));
     }
 
-    public function testFromAcceptLanguageReturnsEnForEmptyHeader(): void
+    public function testFromAcceptLanguageReturnsDefaultForEmptyHeader(): void
     {
-        $this->assertSame(Locale::En, Locale::fromAcceptLanguage(''));
-        $this->assertSame(Locale::En, Locale::fromAcceptLanguage(null));
+        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage(''));
+        $this->assertSame(Locale::Ru, Locale::fromAcceptLanguage(null));
+    }
+
+    public function testPatternListsAllCases(): void
+    {
+        $this->assertSame('ru|uz', Locale::pattern());
     }
 }

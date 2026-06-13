@@ -19,6 +19,8 @@ use Gree\Enum\IblockCode;
 
 final class BrandRepository extends BaseRepository implements BrandRepositoryInterface
 {
+    protected const int TTL = self::TTL_STATIC;
+
     public function getHistory(): ?BrandHistoryDto
     {
         \Bitrix\Main\Loader::includeModule('iblock');
