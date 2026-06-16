@@ -152,14 +152,19 @@
         </section>
     </main>
 
-    <script type="application/json" id="checkout-page-config">@json([
-        'apiUrl'  => $apiUrl,
-        'cartUrl' => $cartUrl,
-        'text'    => [
-            'invalid' => Language::t('order.error.invalid'),
-            'network' => Language::t('order.error.network'),
-            'empty'   => Language::t('order.error.empty_cart'),
-        ],
-    ])</script>
+    @php
+        // Конфиг отдельной переменной: Blade-парсер @json([...]) на многострочном
+        // литерале пишет невалидный PHP (ParseError «Unclosed [»). @json($var) ок.
+        $checkoutConfig = [
+            'apiUrl'  => $apiUrl,
+            'cartUrl' => $cartUrl,
+            'text'    => [
+                'invalid' => Language::t('order.error.invalid'),
+                'network' => Language::t('order.error.network'),
+                'empty'   => Language::t('order.error.empty_cart'),
+            ],
+        ];
+    @endphp
+    <script type="application/json" id="checkout-page-config">@json($checkoutConfig)</script>
     <script defer src="/local/templates/gree/assets/checkout-page.js"></script>
 @endsection
