@@ -22,3 +22,12 @@
 .cart-sidebar-total__price::before {
     content: attr(data-price-prefix);
 }
+
+/* ── Главная ───────────────────────────────────────────────────────────────
+   Блоки «Кондиционеры»: HomeController отдаёт по 4 товара (заполняет grid
+   4×1 на desktop). На mobile дизайн требует 3 карточки — прячем 4-ю. */
+@media (max-width: 1319px) {
+    .catalog-section__items .product-card:nth-child(4) {
+        display: none;
+    }
+}

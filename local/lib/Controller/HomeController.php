@@ -14,7 +14,8 @@ use Gree\View\HomeViewData;
 
 final class HomeController extends BaseController
 {
-    private const PRODUCTS_PER_TYPE = 3;
+    /** Desktop 4 (grid 4×1), mobile показывает первые 3 — четвёртая прячется CSS-ом в custom.css. */
+    private const PRODUCTS_PER_TYPE = 4;
 
     public function __construct(
         private readonly HomeServiceInterface $homeService,

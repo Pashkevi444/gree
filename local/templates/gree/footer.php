@@ -46,8 +46,7 @@ $emailChannel    = $contacts->findChannelByCode('email');
                   $phoneChannel?->phone,
                   $serviceChannel?->phone,
               ])));
-              foreach ($phones as $i => $phone): ?>
-                <?php if ($i > 0): ?>•<?php endif; ?>
+              foreach ($phones as $phone): ?>
                 <a href="tel:<?= htmlspecialchars(preg_replace('/\s+/', '', $phone), ENT_QUOTES) ?>"><?= htmlspecialchars($phone) ?></a>
               <?php endforeach; ?>
             </div>
