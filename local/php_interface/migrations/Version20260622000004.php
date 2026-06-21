@@ -3,20 +3,21 @@
 namespace Sprint\Migration;
 
 /**
- * Меняем тип UF_ITEM_IDS с `integer multiple` на нативный `hlblock` —
- * «Привязка к элементам highload-блоков». В админке поле рисуется как
- * мульти-селект с поиском по записям HL «OrderItems», отображается через
- * UF_PRODUCT_NAME (а не голые ID).
+ * HL «Orders»: связка позиций через нативный USER_TYPE_ID='hlblock'
+ * («Привязка к элементам highload-блоков»). В админке поле — мульти-селект
+ * с поиском по записям HL «OrderItems», отображается через UF_PRODUCT_NAME.
  *
- * Изменить USER_TYPE_ID существующего UF Bitrix не даёт, поэтому удаляем поле
- * и создаём заново; backfill повторяется (одна проходка по OrderItems +
- * update Orders.UF_ITEM_IDS).
+ * За одну миграцию:
+ *   1) сносим UF_ITEMS_SUMMARY (от прошлого подхода — текстовый дубликат);
+ *   2) сносим UF_ITEM_IDS если уже есть (тип менять нельзя — только пересоздать);
+ *   3) создаём UF_ITEM_IDS как hlblock-привязку;
+ *   4) backfill для существующих заказов из OrderItems.UF_ORDER_ID.
  *
- * Идемпотентно: deleteFieldIfExists → saveField → backfill.
+ * Идемпотентно: чистки защищены проверкой getField, backfill — overwrite.
  */
 class Version20260622000004 extends Version
 {
-    protected $description = "Orders.UF_ITEM_IDS → тип «привязка к HL» (OrderItems) + backfill";
+    protected $description = "Orders.UF_ITEM_IDS — hlblock-привязка к OrderItems + backfill, чистка UF_ITEMS_SUMMARY";
 
     public function up(): void
     {
@@ -30,7 +31,7 @@ class Version20260622000004 extends Version
             return;
         }
 
-        // Display-поле: то, что менеджер видит в селекте вместо ID.
+        // Display-поле: что менеджер видит в селекте вместо ID.
         $displayField = \Bitrix\Main\UserFieldTable::query()
             ->where('ENTITY_ID', 'HLBLOCK_' . $itemsHlId)
             ->where('FIELD_NAME', 'UF_PRODUCT_NAME')
@@ -40,10 +41,15 @@ class Version20260622000004 extends Version
             ->fetch();
         $displayFieldId = (int) ($displayField['ID'] ?? 0);
 
-        // 1. Снести int-поле (тип менять нельзя — только удалить и пересоздать).
-        $helper->Hlblock()->deleteFieldIfExists('Orders', 'UF_ITEM_IDS');
+        // 1+2: чистим устаревшие поля. Sprint deleteField бросает, если поля нет — защищаемся getField.
+        foreach (['UF_ITEMS_SUMMARY', 'UF_ITEM_IDS'] as $oldField) {
+            if ($helper->Hlblock()->getField('Orders', $oldField)) {
+                $helper->Hlblock()->deleteField('Orders', $oldField);
+                $this->outSuccess('удалено старое поле %s', $oldField);
+            }
+        }
 
-        // 2. Создать заново как hlblock-привязку.
+        // 3: создаём заново как hlblock-привязку.
         $helper->Hlblock()->saveField('Orders', [
             'FIELD_NAME'        => 'UF_ITEM_IDS',
             'USER_TYPE_ID'      => 'hlblock',
@@ -58,9 +64,9 @@ class Version20260622000004 extends Version
                 'SHOW_NO_VALUE' => 'Y',
             ],
         ]);
-        $this->outSuccess('UF_ITEM_IDS пересоздан как hlblock-привязка (HLBLOCK_ID=%d, HLFIELD_ID=%d)', $itemsHlId, $displayFieldId);
+        $this->outSuccess('UF_ITEM_IDS создан (HLBLOCK_ID=%d, HLFIELD_ID=%d)', $itemsHlId, $displayFieldId);
 
-        // 3. Backfill: собрать ID OrderItems по UF_ORDER_ID и записать в Orders.UF_ITEM_IDS.
+        // 4: backfill из OrderItems.UF_ORDER_ID → Orders.UF_ITEM_IDS.
         $ordersHl = \Bitrix\Highloadblock\HighloadBlockTable::getById($ordersHlId)->fetch();
         $itemsHl  = \Bitrix\Highloadblock\HighloadBlockTable::getById($itemsHlId)->fetch();
         $ordersCls = \Bitrix\Highloadblock\HighloadBlockTable::compileEntity($ordersHl)->getDataClass();
