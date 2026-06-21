@@ -101,8 +101,9 @@ final class OrderService extends BaseService implements OrderServiceInterface
             $orderId = $this->tx->run(function () use ($orderDto, $items, $cartLines) {
                 $id = $this->orders->insert($orderDto);
 
+                $itemIds = [];
                 foreach ($items as $item) {
-                    $this->orderItems->insert(new OrderItemDto(
+                    $itemIds[] = $this->orderItems->insert(new OrderItemDto(
                         offerId:     $item->offerId,
                         productName: $item->productName,
                         productCode: $item->productCode,
@@ -114,6 +115,8 @@ final class OrderService extends BaseService implements OrderServiceInterface
                         orderId:     $id,
                     ));
                 }
+                // Связка Orders.UF_ITEM_IDS — менеджер видит в карточке заказа все позиции.
+                $this->orders->setItemIds($id, $itemIds);
 
                 // Чистим корзину — иначе double-submit / browser-back закажет то же самое.
                 foreach ($cartLines as $row) {

@@ -39,7 +39,6 @@ final class OrderRepository extends BaseHlblockRepository implements OrderReposi
 
             'UF_TOTAL'              => $order->total,
             'UF_ITEMS_COUNT'        => $order->itemsCount,
-            'UF_ITEMS_SUMMARY'      => $this->formatItemsSummary($order),
 
             'UF_LOCALE'             => $order->locale->value,
             'UF_IP'                 => $order->ip,
@@ -99,28 +98,18 @@ final class OrderRepository extends BaseHlblockRepository implements OrderReposi
         ]);
     }
 
-    /** Текстовый summary для UF_ITEMS_SUMMARY: «Gree BORA X 07 (Белый, 30 м²) × 2 — 4 000 000 UZS» по строке на позицию. */
-    private function formatItemsSummary(OrderDto $order): string
+    /** Связка Orders → OrderItems: UF_ITEM_IDS = массив ID строк позиций. Вызывается после insert OrderItems. */
+    public function setItemIds(int $orderId, array $itemIds): void
     {
-        $lines = [];
-        foreach ($order->items as $item) {
-            $meta = [];
-            if ($item->color !== null) {
-                $meta[] = $item->color->label();
-            }
-            if ($item->area > 0) {
-                $meta[] = $item->area . ' м²';
-            }
-            $metaPart = $meta ? ' (' . implode(', ', $meta) . ')' : '';
-            $lines[] = sprintf(
-                '%s%s × %d — %s UZS',
-                $item->productName,
-                $metaPart,
-                $item->quantity,
-                number_format($item->totalPrice, 0, '.', ' '),
-            );
-        }
-        return implode("\n", $lines);
+        $cls = $this->dataClassExt();
+        $cls::update($orderId, ['UF_ITEM_IDS' => array_values(array_map('intval', $itemIds))]);
+    }
+
+    /** @return class-string<\Bitrix\Main\ORM\Data\DataManager> */
+    private function dataClassExt(): string
+    {
+        // BaseHlblockRepository::dataClass() приватный — переиспользуем через query()->getEntity().
+        return $this->query()->getEntity()->getDataClass();
     }
 
     public function publicIdExists(string $publicId): bool
