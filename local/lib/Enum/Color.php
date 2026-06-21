@@ -7,17 +7,19 @@ namespace Gree\Enum;
 enum Color: string
 {
     case White = 'white';
-    case Silver = 'silver';
     case Black = 'black';
-    case Champagne = 'champagne';
+    case Gold = 'gold';
+    case Blue = 'blue';
+    case Silver = 'silver';
 
     public function hex(): string
     {
         return match ($this) {
             self::White => '#ffffff',
-            self::Silver => '#8c8c8c',
             self::Black => '#000000',
-            self::Champagne => '#f5deb3',
+            self::Gold => '#d4af37',
+            self::Blue => '#2f40d5',
+            self::Silver => '#8c8c8c',
         };
     }
 
@@ -25,9 +27,10 @@ enum Color: string
     {
         return match ($this) {
             self::White => 'Белый',
-            self::Silver => 'Серебристый',
             self::Black => 'Чёрный',
-            self::Champagne => 'Шампань',
+            self::Gold => 'Золотой',
+            self::Blue => 'Синий',
+            self::Silver => 'Серебряный',
         };
     }
 }

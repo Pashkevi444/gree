@@ -39,6 +39,7 @@ final class OrderRepository extends BaseHlblockRepository implements OrderReposi
 
             'UF_TOTAL'              => $order->total,
             'UF_ITEMS_COUNT'        => $order->itemsCount,
+            'UF_ITEMS_SUMMARY'      => $this->formatItemsSummary($order),
 
             'UF_LOCALE'             => $order->locale->value,
             'UF_IP'                 => $order->ip,
@@ -96,6 +97,30 @@ final class OrderRepository extends BaseHlblockRepository implements OrderReposi
             'userAgent'  => $row['UF_USER_AGENT'],
             'createdAt'  => $row['UF_CREATED_AT'] instanceof DateTime ? $row['UF_CREATED_AT']->format('Y-m-d H:i:s') : (string) $row['UF_CREATED_AT'],
         ]);
+    }
+
+    /** Текстовый summary для UF_ITEMS_SUMMARY: «Gree BORA X 07 (Белый, 30 м²) × 2 — 4 000 000 UZS» по строке на позицию. */
+    private function formatItemsSummary(OrderDto $order): string
+    {
+        $lines = [];
+        foreach ($order->items as $item) {
+            $meta = [];
+            if ($item->color !== null) {
+                $meta[] = $item->color->label();
+            }
+            if ($item->area > 0) {
+                $meta[] = $item->area . ' м²';
+            }
+            $metaPart = $meta ? ' (' . implode(', ', $meta) . ')' : '';
+            $lines[] = sprintf(
+                '%s%s × %d — %s UZS',
+                $item->productName,
+                $metaPart,
+                $item->quantity,
+                number_format($item->totalPrice, 0, '.', ' '),
+            );
+        }
+        return implode("\n", $lines);
     }
 
     public function publicIdExists(string $publicId): bool
