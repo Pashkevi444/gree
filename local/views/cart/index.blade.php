@@ -40,7 +40,9 @@
                               data-offer-id="{{ $line->offerId }}"
                               autocomplete="off">
                             @if ($line->image)
-                                <img class="cart-item__image" src="{{ $line->image }}" alt="">
+                                <a class="cart-item__image-link" href="{{ $line->productUrl }}" aria-label="{{ $line->productName }}">
+                                    <img class="cart-item__image" src="{{ $line->image }}" alt="">
+                                </a>
                             @endif
                             <div class="cart-item-body">
                                 <a class="cart-item__title" href="{{ $line->productUrl }}">{{ $line->productName }}</a>
