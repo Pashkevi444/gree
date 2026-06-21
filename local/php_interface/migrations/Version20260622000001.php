@@ -76,10 +76,14 @@ class Version20260622000001 extends Version
             if (isset($this->target[$xmlId])) {
                 continue;
             }
-            $inUse = \CIBlockElement::GetList([], [
-                'IBLOCK_ID'      => $iblockId,
-                'PROPERTY_COLOR' => (int) $row['ID'],
-            ], [])->SelectedRowsCount();
+            // arGroupBy=false — иначе GetList возвращает int/string count, а не CIBlockResult.
+            $inUse = (int) \CIBlockElement::GetList(
+                [],
+                ['IBLOCK_ID' => $iblockId, 'PROPERTY_COLOR' => (int) $row['ID']],
+                false,
+                false,
+                ['ID'],
+            )->SelectedRowsCount();
             if ($inUse > 0) {
                 $this->out('  оставлен %s — используется в %d ТП', $xmlId, $inUse);
                 continue;
