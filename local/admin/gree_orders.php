@@ -138,12 +138,17 @@ $lAdmin->AddHeaders([
 ]);
 
 // ── Данные + пагинация ────────────────────────────────────────────────────
+// ВАЖНО: один CDBResult на чтение страницы и на печать навигации. Каждый
+// NavStart() инкрементит глобальный NavNum, а GetNavPrint() рендерит ссылки
+// с тем NavNum, что у объекта. Если читать одним CDBResult, а печатать
+// другим — линки получают PAGEN_2, а $_REQUEST читается с PAGEN_1, и клик
+// на «2» не переключает страницу.
 $pageSize = 10;
 $total = (int) $ordersCls::getCount($ormFilter);
 
-$rs = new CDBResult();
-$rs->NavStart($pageSize);
-$page = max(1, (int) $rs->NavPageNomer);
+$rsList = new CDBResult();
+$rsList->NavStart($pageSize);
+$page = max(1, (int) $rsList->NavPageNomer);
 
 $query = $ordersCls::query()
     ->setFilter($ormFilter)
@@ -157,10 +162,7 @@ foreach ($query->exec() as $row) {
     $rows[] = $row;
 }
 
-// Финальный CDBResult для NavPrint (берёт total из NavRecordCount).
-$rsList = new CDBResult();
 $rsList->InitFromArray($rows);
-$rsList->NavStart($pageSize);
 $rsList->NavRecordCount = $total;
 $rsList->NavPageCount = (int) max(1, ceil($total / $pageSize));
 $rsList->NavPageNomer = $page;
