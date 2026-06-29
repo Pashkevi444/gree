@@ -34,6 +34,7 @@ final class OfferRepository extends BaseRepository implements OfferRepositoryInt
             ->setSelect(array_merge(
                 [
                     'ID',
+                    'CODE',
                     'CML2_LINK_VALUE' => 'CML2_LINK.VALUE',
                     'PRICE_VALUE' => 'PRICE.VALUE',
                     'AREA_VALUE' => 'AREA.VALUE',
@@ -169,6 +170,7 @@ final class OfferRepository extends BaseRepository implements OfferRepositoryInt
             ->setSelect(array_merge(
                 [
                     'ID',
+                    'CODE',
                     'CML2_LINK_VALUE' => 'CML2_LINK.VALUE',
                     'PRICE_VALUE' => 'PRICE.VALUE',
                     'AREA_VALUE' => 'AREA.VALUE',
@@ -246,6 +248,7 @@ final class OfferRepository extends BaseRepository implements OfferRepositoryInt
         return new OfferDto(
             id: (int) $row['ID'],
             productId: $productId,
+            code: (string) ($row['CODE'] ?? ''),
             price: (int) ($row['PRICE_VALUE'] ?? 0),
             area: (int) ($row['AREA_VALUE'] ?? 0),
             color: $colorXml !== '' ? Color::tryFrom($colorXml) : null,

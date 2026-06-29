@@ -29,7 +29,7 @@ final class OrderRepository extends BaseHlblockRepository implements OrderReposi
             'UF_CUSTOMER_PHONE'     => $order->customer->phone,
             'UF_CUSTOMER_TELEGRAM'  => $order->customer->telegram,
 
-            'UF_DELIVERY_CITY'      => $order->delivery->city->value,
+            'UF_DELIVERY_CITY'      => $order->delivery->city->id, // hlblock-привязка хранит ID записи Cities
             'UF_DELIVERY_STREET'    => $order->delivery->street,
             'UF_DELIVERY_HOUSE'     => $order->delivery->house,
             'UF_DELIVERY_APARTMENT' => $order->delivery->apartment,
@@ -82,7 +82,7 @@ final class OrderRepository extends BaseHlblockRepository implements OrderReposi
                 'telegram' => $row['UF_CUSTOMER_TELEGRAM'],
             ],
             'delivery'   => [
-                'city'      => $row['UF_DELIVERY_CITY'],
+                'city'      => ['id' => (int) ($row['UF_DELIVERY_CITY'] ?? 0)],
                 'street'    => $row['UF_DELIVERY_STREET'],
                 'house'     => $row['UF_DELIVERY_HOUSE'],
                 'apartment' => $row['UF_DELIVERY_APARTMENT'],

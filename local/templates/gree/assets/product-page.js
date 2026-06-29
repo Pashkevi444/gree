@@ -176,6 +176,12 @@
         const match = (lines || []).find(l => Number(l.offer_id) === Number(offerId));
         currentLine = match ? { id: Number(match.id), quantity: Number(match.quantity) } : null;
         renderCounter();
+        // Бейдж в шапке: сумма quantity всех строк корзины.
+        const total = (lines || []).reduce((s, l) => s + Number(l.quantity || 0), 0);
+        document.querySelectorAll('[data-cart-count-badge]').forEach(el => {
+            el.textContent = String(total);
+            if (total > 0) { el.removeAttribute('hidden'); } else { el.setAttribute('hidden', ''); }
+        });
     }
 
     async function fetchJson(url, options = {}) {

@@ -195,6 +195,12 @@ final class OrderService extends BaseService implements OrderServiceInterface
         if ($customer->telegram !== '' && mb_strlen($customer->telegram) > self::MAX_STRING) {
             $errors['telegram'] = 'invalid';
         }
+        // City: hlblock-привязка, ожидаем существующий ID записи Cities. Резолв
+        // в CityDto делает контроллер (через CityRepository); сюда если ID=0
+        // или nameRu/code пустые — значит ID невалидный.
+        if ($delivery->city->id <= 0 || $delivery->city->code === '') {
+            $errors['city'] = 'invalid';
+        }
         if ($delivery->street === '' || mb_strlen($delivery->street) > self::MAX_STRING) {
             $errors['street'] = 'invalid';
         }

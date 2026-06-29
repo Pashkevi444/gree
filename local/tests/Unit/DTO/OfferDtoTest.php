@@ -15,12 +15,13 @@ final class OfferDtoTest extends TestCase
         $dto = new OfferDto(
             id:        88,
             productId: 17,
-            price:     1_000_000,
+            price:     1000000,
             area:      30,
             color:     Color::White,
         );
 
         $this->assertSame([], $dto->gallery);
+        $this->assertSame('', $dto->code);
     }
 
     public function testGalleryRoundtripsThroughToArrayFromArray(): void
@@ -34,17 +35,20 @@ final class OfferDtoTest extends TestCase
         $dto = new OfferDto(
             id:        88,
             productId: 17,
-            price:     1_000_000,
+            price:     1000000,
             area:      30,
             color:     Color::White,
             gallery:   $gallery,
+            code:      'GWH12RPLA-K3NNA1B',
         );
 
         $arr = $dto->toArray();
         $this->assertSame($gallery, $arr['gallery']);
+        $this->assertSame('GWH12RPLA-K3NNA1B', $arr['code']);
 
         $restored = OfferDto::fromArray($arr);
         $this->assertSame($gallery, $restored->gallery);
+        $this->assertSame('GWH12RPLA-K3NNA1B', $restored->code);
     }
 
     public function testFromArrayCoercesMixedGalleryEntriesToStrings(): void
@@ -67,5 +71,6 @@ final class OfferDtoTest extends TestCase
             'id' => 1, 'product_id' => 1, 'price' => 1, 'area' => 1, 'color' => null,
         ]);
         $this->assertSame([], $restored->gallery);
+        $this->assertSame('', $restored->code);
     }
 }

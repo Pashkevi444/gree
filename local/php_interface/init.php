@@ -34,3 +34,11 @@ foreach (['OnAfterIBlockElementAdd', 'OnAfterIBlockElementUpdate', 'OnAfterIBloc
     'OnAfterIBlockElementSetPropertyValuesEx',
     static fn($elementId, $iblockId) => \Gree\Core\Event\Module::onIblockPropertyValuesChanged($elementId, $iblockId)
 );
+
+// ── Пункт меню «Заказы» в admin-навигации ────────────────────────────────
+\Bitrix\Main\EventManager::getInstance()->addEventHandler(
+    'main',
+    'OnBuildGlobalMenu',
+    static fn(array &$adminMenu, array &$moduleMenu) => \Gree\Core\Event\Module::onBuildGlobalMenu($adminMenu, $moduleMenu)
+);
+

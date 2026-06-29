@@ -11,6 +11,7 @@ use Gree\Contract\Repository\BrandRepositoryInterface;
 use Gree\Contract\Repository\CartItemRepositoryInterface;
 use Gree\Contract\Repository\CartRepositoryInterface;
 use Gree\Contract\Repository\CatalogRepositoryInterface;
+use Gree\Contract\Repository\CityRepositoryInterface;
 use Gree\Contract\Repository\ContactsRepositoryInterface;
 use Gree\Contract\Repository\FeedbackRepositoryInterface;
 use Gree\Contract\Repository\HelpRepositoryInterface;
@@ -64,6 +65,7 @@ use Gree\Repository\BrandRepository;
 use Gree\Repository\CartItemRepository;
 use Gree\Repository\CartRepository;
 use Gree\Repository\CatalogRepository;
+use Gree\Repository\CityRepository;
 use Gree\Repository\ContactsRepository;
 use Gree\Repository\FeedbackRepository;
 use Gree\Repository\HelpRepository;
@@ -158,6 +160,9 @@ $container
     ->addArgument(new Reference(LanguageServiceInterface::class))
     ->setPublic(true);
 $container->setAlias(ContactsRepositoryInterface::class, ContactsRepository::class)->setPublic(true);
+
+$container->register(CityRepository::class)->setPublic(true);
+$container->setAlias(CityRepositoryInterface::class, CityRepository::class)->setPublic(true);
 
 $container
     ->register(WhereToBuyRepository::class)
@@ -476,6 +481,7 @@ $container
     ->addArgument(new Reference(BreadcrumbsServiceInterface::class))
     ->addArgument(new Reference(SeoServiceInterface::class))
     ->addArgument(new Reference(ApiGuardInterface::class))
+    ->addArgument(new Reference(CityRepositoryInterface::class))
     ->setPublic(true);
 
 $container->compile();

@@ -9,6 +9,8 @@
 !/bitrix/admin/
 /bitrix/admin/*
 !/bitrix/admin/reports/
+# наши прокси-страницы (реальный код в /local/admin/)
+!/bitrix/admin/gree_*.php
 
 # оставляем нестандартные компоненты
 !/bitrix/components/

@@ -1,14 +1,17 @@
 @extends('layouts.app')
 
 @php
+    use Gree\Core\App;
+    use Gree\Contract\Service\LanguageServiceInterface;
     use Gree\Helpers\Language;
     use Gree\Helpers\Route;
     /** @var \Gree\Collection\CartLineCollection $lines */
-    /** @var array<int, \Gree\Enum\DeliveryCity> $cities */
+    /** @var \Gree\Collection\CityCollection $cities */
     /** @var array<int, \Gree\Enum\PaymentMethod> $paymentMethods */
 
     $apiUrl = Route::to('api.v1.order.place');
     $cartUrl = Route::to('cart.index');
+    $currentLocale = App::get(LanguageServiceInterface::class)->get();
 @endphp
 
 @section('content')
@@ -60,7 +63,7 @@
                                 <div class="label-content">
                                     <select class="form-control" name="city" required>
                                         @foreach ($cities as $city)
-                                            <option value="{{ $city->value }}">{{ Language::t($city->translationKey()) }}</option>
+                                            <option value="{{ $city->id }}">{{ $city->nameFor($currentLocale) }}</option>
                                         @endforeach
                                     </select>
                                 </div>

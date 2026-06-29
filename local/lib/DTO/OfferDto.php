@@ -25,6 +25,8 @@ final readonly class OfferDto extends BaseDto
         public string $indoorWeight = '',
         public string $outdoorWeight = '',
         public array $gallery = [],
+        /** CODE iblock-элемента ТП — показывается на детальной как «Модель» и меняется при смене color/area. */
+        public string $code = '',
     ) {}
 
     public function toArray(): array
@@ -32,6 +34,7 @@ final readonly class OfferDto extends BaseDto
         return [
             'id' => $this->id,
             'product_id' => $this->productId,
+            'code' => $this->code,
             'price' => $this->price,
             'area' => $this->area,
             'color' => $this->color?->value,
@@ -65,6 +68,7 @@ final readonly class OfferDto extends BaseDto
             indoorWeight: (string) ($data['indoor_weight'] ?? ''),
             outdoorWeight: (string) ($data['outdoor_weight'] ?? ''),
             gallery: array_values(array_map('strval', (array) ($data['gallery'] ?? []))),
+            code: (string) ($data['code'] ?? ''),
         );
     }
 }

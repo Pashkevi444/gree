@@ -24,8 +24,7 @@
                             <div class="location-card__text">{{ $loc->schedule }}</div>
                             @if (count($loc->phones) > 0)
                                 <div class="location-card__text">
-                                    @foreach ($loc->phones as $i => $phone)
-                                        @if ($i > 0) • @endif
+                                    @foreach ($loc->phones as $phone)
                                         <a href="tel:{{ preg_replace('/\s+/', '', $phone) }}">{{ $phone }}</a>
                                     @endforeach
                                 </div>

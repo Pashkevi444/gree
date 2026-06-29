@@ -1,6 +1,7 @@
 <?php
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) { die(); }
 
+use Gree\Contract\Service\CartServiceInterface;
 use Gree\Contract\Service\ContactsServiceInterface;
 use Gree\Contract\Service\CsrfServiceInterface;
 use Gree\Contract\Service\LanguageServiceInterface;
@@ -27,6 +28,13 @@ foreach ($menu as $item) {
     } else {
         $navItems[] = $item;
     }
+}
+
+// Бейдж количества товаров в корзине. fail-soft: при любой ошибке показываем 0.
+try {
+    $cartItemsCount = App::get(CartServiceInterface::class)->view()->itemsCount();
+} catch (\Throwable) {
+    $cartItemsCount = 0;
 }
 ?>
 <!doctype html>
@@ -196,6 +204,7 @@ foreach ($menu as $item) {
             />
           </svg>
           <?= Language::t('header.cart') ?>
+          <span class="header-cart-badge" data-cart-count-badge<?= $cartItemsCount === 0 ? ' hidden' : '' ?>><?= $cartItemsCount ?></span>
         </a>
       </div>
       <?php
@@ -216,6 +225,7 @@ foreach ($menu as $item) {
             <svg width="18" height="17" viewBox="0 0 18 17" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M0.727051 0.727539H3.63614L5.58523 10.4657C5.65174 10.8006 5.83389 11.1013 6.09981 11.3154C6.36573 11.5295 6.69847 11.6432 7.03978 11.6366H14.1089C14.4502 11.6432 14.7829 11.5295 15.0488 11.3154C15.3148 11.1013 15.4969 10.8006 15.5634 10.4657L16.7271 4.3639H4.36341M7.27251 15.273C7.27251 15.6747 6.94689 16.0003 6.54523 16.0003C6.14357 16.0003 5.81796 15.6747 5.81796 15.273C5.81796 14.8713 6.14357 14.5457 6.54523 14.5457C6.94689 14.5457 7.27251 14.8713 7.27251 15.273ZM15.2725 15.273C15.2725 15.6747 14.9469 16.0003 14.5452 16.0003C14.1436 16.0003 13.818 15.6747 13.818 15.273C13.818 14.8713 14.1436 14.5457 14.5452 14.5457C14.9469 14.5457 15.2725 14.8713 15.2725 15.273Z" stroke="white" stroke-width="1.45455" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
+            <span class="header-cart-badge header-cart-badge--mobile" data-cart-count-badge<?= $cartItemsCount === 0 ? ' hidden' : '' ?>><?= $cartItemsCount ?></span>
           </a>
           <button class="header-mobile__button" type="button" data-hamburger-menu-button aria-label="Menu">
             <svg width="14" height="12" viewBox="0 0 14 12" fill="none" xmlns="http://www.w3.org/2000/svg">

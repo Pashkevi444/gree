@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gree\Controller;
 
 use Bitrix\Main\HttpResponse;
+use Gree\Contract\Repository\CityRepositoryInterface;
 use Gree\Contract\Security\ApiGuardInterface;
 use Gree\Contract\Service\BreadcrumbsServiceInterface;
 use Gree\Contract\Service\CartServiceInterface;
@@ -12,7 +13,6 @@ use Gree\Contract\Service\OrderServiceInterface;
 use Gree\Contract\Service\SeoServiceInterface;
 use Gree\DTO\OrderCustomerDto;
 use Gree\DTO\OrderDeliveryDto;
-use Gree\Enum\DeliveryCity;
 use Gree\Enum\PaymentMethod;
 use Gree\Helpers\Route;
 use Gree\Security\AccessDeniedException;
@@ -29,6 +29,7 @@ final class OrderController extends BaseController
         private readonly BreadcrumbsServiceInterface $breadcrumbs,
         private readonly SeoServiceInterface $seo,
         private readonly ApiGuardInterface $guard,
+        private readonly CityRepositoryInterface $cities,
     ) {}
 
     /**
@@ -52,7 +53,7 @@ final class OrderController extends BaseController
             lines:          $lines,
             total:          $lines->total(),
             itemsCount:     $lines->itemsCount(),
-            cities:         DeliveryCity::cases(),
+            cities:         $this->cities->all(),
             paymentMethods: PaymentMethod::cases(),
         ));
     }
@@ -91,12 +92,18 @@ final class OrderController extends BaseController
             'phone'    => $payload['phone']    ?? '',
             'telegram' => $payload['telegram'] ?? '',
         ]);
-        $delivery = OrderDeliveryDto::fromArray($payload['delivery'] ?? [
-            'city'      => $payload['city']      ?? 'tashkent',
-            'street'    => $payload['street']    ?? '',
-            'house'     => $payload['house']     ?? '',
-            'apartment' => $payload['apartment'] ?? '',
-            'comment'   => $payload['comment']   ?? '',
+        // Frontend шлёт city как ID записи HL Cities (число). Резолвим в CityDto;
+        // если ID не нашёлся — пустой CityDto, OrderService::validate забракует с
+        // полем `city` в ответе 422.
+        $cityId = (int) ($payload['delivery']['city'] ?? $payload['city'] ?? 0);
+        $cityDto = $this->cities->findById($cityId);
+
+        $delivery = OrderDeliveryDto::fromArray([
+            'city'      => $cityDto?->toArray() ?? ['id' => $cityId],
+            'street'    => $payload['delivery']['street']    ?? $payload['street']    ?? '',
+            'house'     => $payload['delivery']['house']     ?? $payload['house']     ?? '',
+            'apartment' => $payload['delivery']['apartment'] ?? $payload['apartment'] ?? '',
+            'comment'   => $payload['delivery']['comment']   ?? $payload['comment']   ?? '',
         ]);
 
         $paymentRaw = (string) ($payload['payment'] ?? $payload['payment_method'] ?? '');

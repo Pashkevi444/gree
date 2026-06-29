@@ -31,6 +31,22 @@ final class Module
         $APPLICATION->AddHeadScript('/local/js/admin-iblock-form.js');
     }
 
+    /** Подменяем стандартное меню админки — пункт «Заказы» в Контенте. */
+    public static function onBuildGlobalMenu(array &$adminMenu, array &$moduleMenu): void
+    {
+        $moduleMenu[] = [
+            'parent_menu' => 'global_menu_content',
+            'sort'        => 200,
+            'text'        => 'Заказы',
+            'title'       => 'Заказы интернет-магазина',
+            'url'         => 'gree_orders.php?lang=' . LANGUAGE_ID,
+            'module_id'   => 'main',
+            'items_id'    => 'menu_gree_orders',
+            'icon'        => 'sale_menu_icon_order',
+            'page_icon'   => 'sale_page_icon_order',
+        ];
+    }
+
     /** @param array<string, mixed> $arFields  OnAfterIBlockElementAdd/Update/Delete — в $arFields всегда есть IBLOCK_ID. */
     public static function onIblockElementChanged(array $arFields): void
     {

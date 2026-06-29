@@ -192,8 +192,11 @@
 
                   <table class="product-table">
                     <tbody>
-                      @if ($product->model !== '')
-                        <tr><td>{{ Language::t('spec.model') }}</td><td>{{ $product->model }}</td></tr>
+                      @php $firstOfferCode = $product->offers?->first()?->code ?? ''; @endphp
+                      @if ($firstOfferCode !== '')
+                        {{-- «Модель» = CODE торгового предложения. JS меняет text при смене color/area
+                             через data-spec="code" (см. assets/product-page.js → update()). --}}
+                        <tr><td>{{ Language::t('spec.model') }}</td><td data-spec="code">{{ $firstOfferCode }}</td></tr>
                       @endif
                       <tr><td>{{ Language::t('spec.type') }}</td><td>{{ Language::t('product.type.' . $product->type->value) }}</td></tr>
                       @if ($product->coolingPower !== '')

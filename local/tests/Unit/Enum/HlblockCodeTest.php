@@ -22,7 +22,7 @@ final class HlblockCodeTest extends TestCase
 
     public function testCasesCount(): void
     {
-        $this->assertCount(7, HlblockCode::cases());
+        $this->assertCount(8, HlblockCode::cases());
     }
 
     public function testTryFromUnknownReturnsNull(): void

@@ -13,7 +13,7 @@ use Gree\Contract\Service\OrderServiceInterface;
 use Gree\Core\App;
 use Gree\DTO\OrderCustomerDto;
 use Gree\DTO\OrderDeliveryDto;
-use Gree\Enum\DeliveryCity;
+use Gree\DTO\CityDto;
 use Gree\Enum\OrderStatus;
 use Gree\Enum\PaymentMethod;
 use Gree\Service\Exception\CheckoutValidationException;
@@ -72,7 +72,7 @@ final class OrderCheckoutFlowTest extends IntegrationTestCase
         $order = $this->orders->place(
             new OrderCustomerDto(name: 'Иван Тестовый', phone: '+998 90 123 45 67', telegram: '@ivan'),
             new OrderDeliveryDto(
-                city:   DeliveryCity::Tashkent,
+                city:   new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'),
                 street: 'Amir Temur ave',
                 house:  '1',
             ),
@@ -117,14 +117,14 @@ final class OrderCheckoutFlowTest extends IntegrationTestCase
 
         $this->orders->place(
             new OrderCustomerDto(name: 'Иван', phone: '+998 90 123 45 67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
 
         $this->expectException(EmptyCartException::class);
         $this->orders->place(
             new OrderCustomerDto(name: 'Иван', phone: '+998 90 123 45 67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
     }
@@ -136,7 +136,7 @@ final class OrderCheckoutFlowTest extends IntegrationTestCase
         $this->expectException(CheckoutValidationException::class);
         $this->orders->place(
             new OrderCustomerDto(name: 'Иван', phone: 'qq'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
     }
@@ -147,7 +147,7 @@ final class OrderCheckoutFlowTest extends IntegrationTestCase
         $this->expectException(EmptyCartException::class);
         $this->orders->place(
             new OrderCustomerDto(name: 'Иван', phone: '+998 90 123 45 67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
     }

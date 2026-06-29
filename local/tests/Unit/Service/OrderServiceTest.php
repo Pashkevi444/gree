@@ -21,7 +21,7 @@ use Gree\DTO\OrderCustomerDto;
 use Gree\DTO\OrderDeliveryDto;
 use Gree\DTO\ProductDto;
 use Gree\Enum\Color;
-use Gree\Enum\DeliveryCity;
+use Gree\DTO\CityDto;
 use Gree\Enum\Locale;
 use Gree\Enum\OrderStatus;
 use Gree\Enum\PaymentMethod;
@@ -143,7 +143,7 @@ final class OrderServiceTest extends TestCase
 
         $order = $this->service->place(
             new OrderCustomerDto(name: 'Иван', phone: '+998 90 123 45 67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'Amir Temur', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'Amir Temur', house: '1'),
             PaymentMethod::Card,
         );
 
@@ -157,7 +157,7 @@ final class OrderServiceTest extends TestCase
         $this->expectException(CheckoutValidationException::class);
         $this->service->place(
             new OrderCustomerDto(name: '', phone: '+998 90 123 45 67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
     }
@@ -167,7 +167,7 @@ final class OrderServiceTest extends TestCase
         $this->expectException(CheckoutValidationException::class);
         $this->service->place(
             new OrderCustomerDto(name: 'Иван', phone: 'not a phone'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
     }
@@ -177,7 +177,7 @@ final class OrderServiceTest extends TestCase
         $this->expectException(CheckoutValidationException::class);
         $this->service->place(
             new OrderCustomerDto(name: 'Иван', phone: '+998 90 123 45 67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: '', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: '', house: '1'),
             PaymentMethod::Card,
         );
     }
@@ -193,7 +193,7 @@ final class OrderServiceTest extends TestCase
         $this->expectException(EmptyCartException::class);
         $this->service->place(
             new OrderCustomerDto(name: 'Иван', phone: '+998 90 123 45 67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
     }
@@ -206,7 +206,7 @@ final class OrderServiceTest extends TestCase
         $this->expectException(EmptyCartException::class);
         $this->service->place(
             new OrderCustomerDto(name: 'Иван', phone: '+998 90 123 45 67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
     }
@@ -227,7 +227,7 @@ final class OrderServiceTest extends TestCase
         $this->expectException(EmptyCartException::class);
         $this->service->place(
             new OrderCustomerDto(name: 'Иван', phone: '+998 90 123 45 67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
     }
@@ -257,7 +257,7 @@ final class OrderServiceTest extends TestCase
 
         $this->service->place(
             new OrderCustomerDto(name: 'Иван', phone: '+998 (90) 123-45-67'),
-            new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+            new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
             PaymentMethod::Card,
         );
     }
@@ -302,7 +302,7 @@ final class OrderServiceTest extends TestCase
         try {
             $service->place(
                 new OrderCustomerDto(name: 'Иван', phone: '+998 90 123 45 67'),
-                new OrderDeliveryDto(city: DeliveryCity::Tashkent, street: 'X', house: '1'),
+                new OrderDeliveryDto(city: new CityDto(id: 1, code: 'tashkent', nameRu: 'Ташкент', nameUz: 'Toshkent'), street: 'X', house: '1'),
                 PaymentMethod::Card,
             );
             $this->fail('Expected RuntimeException to bubble up');

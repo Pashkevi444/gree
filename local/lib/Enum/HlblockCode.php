@@ -12,5 +12,6 @@ enum HlblockCode: string
     case CartItems = 'CartItems';
     case Orders = 'Orders';
     case OrderItems = 'OrderItems';
+    case Cities = 'Cities';
     case CatalogHelpFeedback = 'CatalogHelpFeedback';
 }
