@@ -138,25 +138,21 @@ $lAdmin->AddHeaders([
 ]);
 
 // ── Данные + пагинация ────────────────────────────────────────────────────
-// Подводные камни:
-// 1) Один CDBResult на чтение страницы и на печать навигации — каждый
-//    NavStart() инкрементит глобальный NavNum, и GetNavPrint() ренедрит
-//    ссылки с NavNum объекта; если читать одним, а печатать другим — линки
-//    получают PAGEN_2, а $_REQUEST читается с PAGEN_1.
-// 2) CDBResult::NavStart() сбрасывает NavPageNomer в 1, если на момент
-//    вызова NavRecordCount = 0 (пустой объект): он сравнивает PAGEN с
-//    NavPageCount, который без records = 0, и любой PAGEN > 0 не проходит
-//    условие PAGEN <= NavPageCount. Поэтому проставляем NavRecordCount
-//    ДО вызова NavStart().
-$pageSize = 10;
+// Не дёргаем CDBResult::NavStart() — у него куча неявных правил (сбрасывает
+// NavPageNomer = 1 если NavRecordCount = 0, инкрементит глобальный счётчик
+// NavNum, etc), которые ломаются в нашем сценарии «D7-ORM + ручной offset».
+// Читаем PAGEN_1 / nav_page_size напрямую из $_REQUEST.
+$allowedSizes = [10, 20, 50, 100];
+$pageSize = (int) ($_REQUEST['nav_page_size'] ?? 10);
+if (!in_array($pageSize, $allowedSizes, true)) {
+    $pageSize = 10;
+}
+
 $total = (int) $ordersCls::getCount($ormFilter);
 $totalPages = (int) max(1, ceil($total / $pageSize));
 
-$rsList = new CDBResult();
-$rsList->NavRecordCount = $total;
-$rsList->NavPageCount   = $totalPages;
-$rsList->NavStart($pageSize);
-$page = max(1, min($totalPages, (int) $rsList->NavPageNomer));
+$pagenParam = 'PAGEN_1';
+$page = max(1, min($totalPages, (int) ($_REQUEST[$pagenParam] ?? 1)));
 
 $query = $ordersCls::query()
     ->setFilter($ormFilter)
@@ -170,22 +166,19 @@ foreach ($query->exec() as $row) {
     $rows[] = $row;
 }
 
-$rsList->InitFromArray($rows);
-$rsList->NavRecordCount = $total;
-$rsList->NavPageCount   = $totalPages;
-$rsList->NavPageNomer   = $page;
-
 // ── Кастомная пагинация ──────────────────────────────────────────────────
-// Дефолтный GetNavPrint() — это «Начало | Пред. | 1 2 | След. | Конец | Все»
-// текстом через | без какой-либо стилизации. Рисуем свой пагинатор с
-// кружочками-кнопками, состояниями active/disabled и эллипсисом.
-$pagenParam = 'PAGEN_' . (int) $rsList->NavNum;
-$rangeFrom  = $total > 0 ? ($page - 1) * $pageSize + 1 : 0;
-$rangeTo    = min($page * $pageSize, $total);
+$rangeFrom = $total > 0 ? ($page - 1) * $pageSize + 1 : 0;
+$rangeTo   = min($page * $pageSize, $total);
 
 $pageUrl = static function (int $p) use ($pagenParam): string {
     $params = $_GET;
     $params[$pagenParam] = $p;
+    return '?' . http_build_query($params);
+};
+$sizeUrl = static function (int $size) use ($pagenParam): string {
+    $params = $_GET;
+    $params['nav_page_size'] = $size;
+    unset($params[$pagenParam]); // сброс на 1-ю страницу при смене размера
     return '?' . http_build_query($params);
 };
 
@@ -200,8 +193,15 @@ if ($hi < $totalPages)     { if ($hi < $totalPages - 1) { $pages[] = '…'; } $p
 ob_start();
 ?>
 <style>
-.gree-pager { display:flex; align-items:center; justify-content:space-between; padding:10px 4px; gap:12px; flex-wrap:wrap; font-family:Verdana,Arial,sans-serif; }
+.gree-pager { display:flex; align-items:center; justify-content:space-between; padding:10px 4px; gap:16px; flex-wrap:wrap; font-family:Verdana,Arial,sans-serif; }
 .gree-pager__info { color:#535c69; font-size:12px; }
+.gree-pager__right { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.gree-pager__size { display:flex; align-items:center; gap:6px; font-size:12px; color:#535c69; }
+.gree-pager__size-links { display:flex; gap:2px; }
+.gree-pager__size-link { display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:24px; padding:0 6px; border-radius:3px; font-size:12px; text-decoration:none; color:#1f87e5; background:#fff; border:1px solid #d6dde2; }
+.gree-pager__size-link:hover { background:#eef4f9; color:#0b5fa3; text-decoration:none; border-color:#a8c5dd; }
+.gree-pager__size-link--active,
+.gree-pager__size-link--active:hover { background:#535c69; color:#fff; border-color:#535c69; cursor:default; }
 .gree-pager__nav { display:flex; gap:4px; align-items:center; }
 .gree-pager__btn,
 .gree-pager__gap { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px; padding:0 9px; border-radius:4px; font-size:13px; line-height:1; text-decoration:none; color:#1f87e5; background:#fff; border:1px solid #d6dde2; box-sizing:border-box; transition:background .12s,color .12s,border-color .12s; }
@@ -220,31 +220,45 @@ ob_start();
             Заказов не найдено
         <?php endif; ?>
     </div>
-    <?php if ($totalPages > 1): ?>
-        <div class="gree-pager__nav">
-            <?php if ($page > 1): ?>
-                <a class="gree-pager__btn" href="<?= htmlspecialchars($pageUrl($page - 1), ENT_QUOTES) ?>" title="Предыдущая">‹</a>
-            <?php else: ?>
-                <span class="gree-pager__btn gree-pager__btn--disabled">‹</span>
-            <?php endif; ?>
-
-            <?php foreach ($pages as $p): ?>
-                <?php if ($p === '…'): ?>
-                    <span class="gree-pager__gap">…</span>
-                <?php elseif ($p === $page): ?>
-                    <span class="gree-pager__btn gree-pager__btn--active"><?= (int) $p ?></span>
-                <?php else: ?>
-                    <a class="gree-pager__btn" href="<?= htmlspecialchars($pageUrl((int) $p), ENT_QUOTES) ?>"><?= (int) $p ?></a>
-                <?php endif; ?>
-            <?php endforeach; ?>
-
-            <?php if ($page < $totalPages): ?>
-                <a class="gree-pager__btn" href="<?= htmlspecialchars($pageUrl($page + 1), ENT_QUOTES) ?>" title="Следующая">›</a>
-            <?php else: ?>
-                <span class="gree-pager__btn gree-pager__btn--disabled">›</span>
-            <?php endif; ?>
+    <div class="gree-pager__right">
+        <div class="gree-pager__size">
+            <span>На странице:</span>
+            <div class="gree-pager__size-links">
+                <?php foreach ($allowedSizes as $size): ?>
+                    <?php if ($size === $pageSize): ?>
+                        <span class="gree-pager__size-link gree-pager__size-link--active"><?= $size ?></span>
+                    <?php else: ?>
+                        <a class="gree-pager__size-link" href="<?= htmlspecialchars($sizeUrl($size), ENT_QUOTES) ?>"><?= $size ?></a>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
         </div>
-    <?php endif; ?>
+        <?php if ($totalPages > 1): ?>
+            <div class="gree-pager__nav">
+                <?php if ($page > 1): ?>
+                    <a class="gree-pager__btn" href="<?= htmlspecialchars($pageUrl($page - 1), ENT_QUOTES) ?>" title="Предыдущая">‹</a>
+                <?php else: ?>
+                    <span class="gree-pager__btn gree-pager__btn--disabled">‹</span>
+                <?php endif; ?>
+
+                <?php foreach ($pages as $p): ?>
+                    <?php if ($p === '…'): ?>
+                        <span class="gree-pager__gap">…</span>
+                    <?php elseif ($p === $page): ?>
+                        <span class="gree-pager__btn gree-pager__btn--active"><?= (int) $p ?></span>
+                    <?php else: ?>
+                        <a class="gree-pager__btn" href="<?= htmlspecialchars($pageUrl((int) $p), ENT_QUOTES) ?>"><?= (int) $p ?></a>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+
+                <?php if ($page < $totalPages): ?>
+                    <a class="gree-pager__btn" href="<?= htmlspecialchars($pageUrl($page + 1), ENT_QUOTES) ?>" title="Следующая">›</a>
+                <?php else: ?>
+                    <span class="gree-pager__btn gree-pager__btn--disabled">›</span>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
 <?php
 $lAdmin->NavText(ob_get_clean());
