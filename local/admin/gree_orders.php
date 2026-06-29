@@ -138,17 +138,25 @@ $lAdmin->AddHeaders([
 ]);
 
 // ── Данные + пагинация ────────────────────────────────────────────────────
-// ВАЖНО: один CDBResult на чтение страницы и на печать навигации. Каждый
-// NavStart() инкрементит глобальный NavNum, а GetNavPrint() рендерит ссылки
-// с тем NavNum, что у объекта. Если читать одним CDBResult, а печатать
-// другим — линки получают PAGEN_2, а $_REQUEST читается с PAGEN_1, и клик
-// на «2» не переключает страницу.
+// Подводные камни:
+// 1) Один CDBResult на чтение страницы и на печать навигации — каждый
+//    NavStart() инкрементит глобальный NavNum, и GetNavPrint() ренедрит
+//    ссылки с NavNum объекта; если читать одним, а печатать другим — линки
+//    получают PAGEN_2, а $_REQUEST читается с PAGEN_1.
+// 2) CDBResult::NavStart() сбрасывает NavPageNomer в 1, если на момент
+//    вызова NavRecordCount = 0 (пустой объект): он сравнивает PAGEN с
+//    NavPageCount, который без records = 0, и любой PAGEN > 0 не проходит
+//    условие PAGEN <= NavPageCount. Поэтому проставляем NavRecordCount
+//    ДО вызова NavStart().
 $pageSize = 10;
 $total = (int) $ordersCls::getCount($ormFilter);
+$totalPages = (int) max(1, ceil($total / $pageSize));
 
 $rsList = new CDBResult();
+$rsList->NavRecordCount = $total;
+$rsList->NavPageCount   = $totalPages;
 $rsList->NavStart($pageSize);
-$page = max(1, (int) $rsList->NavPageNomer);
+$page = max(1, min($totalPages, (int) $rsList->NavPageNomer));
 
 $query = $ordersCls::query()
     ->setFilter($ormFilter)
@@ -164,9 +172,82 @@ foreach ($query->exec() as $row) {
 
 $rsList->InitFromArray($rows);
 $rsList->NavRecordCount = $total;
-$rsList->NavPageCount = (int) max(1, ceil($total / $pageSize));
-$rsList->NavPageNomer = $page;
-$lAdmin->NavText($rsList->GetNavPrint('Заказы'));
+$rsList->NavPageCount   = $totalPages;
+$rsList->NavPageNomer   = $page;
+
+// ── Кастомная пагинация ──────────────────────────────────────────────────
+// Дефолтный GetNavPrint() — это «Начало | Пред. | 1 2 | След. | Конец | Все»
+// текстом через | без какой-либо стилизации. Рисуем свой пагинатор с
+// кружочками-кнопками, состояниями active/disabled и эллипсисом.
+$pagenParam = 'PAGEN_' . (int) $rsList->NavNum;
+$rangeFrom  = $total > 0 ? ($page - 1) * $pageSize + 1 : 0;
+$rangeTo    = min($page * $pageSize, $total);
+
+$pageUrl = static function (int $p) use ($pagenParam): string {
+    $params = $_GET;
+    $params[$pagenParam] = $p;
+    return '?' . http_build_query($params);
+};
+
+$delta = 2;
+$pages = [];
+$lo = max(1, $page - $delta);
+$hi = min($totalPages, $page + $delta);
+if ($lo > 1)               { $pages[] = 1; if ($lo > 2)               { $pages[] = '…'; } }
+for ($i = $lo; $i <= $hi; $i++) { $pages[] = $i; }
+if ($hi < $totalPages)     { if ($hi < $totalPages - 1) { $pages[] = '…'; } $pages[] = $totalPages; }
+
+ob_start();
+?>
+<style>
+.gree-pager { display:flex; align-items:center; justify-content:space-between; padding:10px 4px; gap:12px; flex-wrap:wrap; font-family:Verdana,Arial,sans-serif; }
+.gree-pager__info { color:#535c69; font-size:12px; }
+.gree-pager__nav { display:flex; gap:4px; align-items:center; }
+.gree-pager__btn,
+.gree-pager__gap { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px; padding:0 9px; border-radius:4px; font-size:13px; line-height:1; text-decoration:none; color:#1f87e5; background:#fff; border:1px solid #d6dde2; box-sizing:border-box; transition:background .12s,color .12s,border-color .12s; }
+.gree-pager__btn:hover { background:#eef4f9; color:#0b5fa3; text-decoration:none; border-color:#a8c5dd; }
+.gree-pager__btn--active,
+.gree-pager__btn--active:hover { background:#1f87e5; color:#fff; border-color:#1f87e5; cursor:default; }
+.gree-pager__btn--disabled,
+.gree-pager__btn--disabled:hover { color:#bbb; cursor:default; background:#f7f8fa; border-color:#e3e6ea; }
+.gree-pager__gap { border:none; background:transparent; color:#888; min-width:18px; padding:0 2px; }
+</style>
+<div class="gree-pager">
+    <div class="gree-pager__info">
+        <?php if ($total > 0): ?>
+            Показано <b><?= $rangeFrom ?>–<?= $rangeTo ?></b> из <b><?= $total ?></b>
+        <?php else: ?>
+            Заказов не найдено
+        <?php endif; ?>
+    </div>
+    <?php if ($totalPages > 1): ?>
+        <div class="gree-pager__nav">
+            <?php if ($page > 1): ?>
+                <a class="gree-pager__btn" href="<?= htmlspecialchars($pageUrl($page - 1), ENT_QUOTES) ?>" title="Предыдущая">‹</a>
+            <?php else: ?>
+                <span class="gree-pager__btn gree-pager__btn--disabled">‹</span>
+            <?php endif; ?>
+
+            <?php foreach ($pages as $p): ?>
+                <?php if ($p === '…'): ?>
+                    <span class="gree-pager__gap">…</span>
+                <?php elseif ($p === $page): ?>
+                    <span class="gree-pager__btn gree-pager__btn--active"><?= (int) $p ?></span>
+                <?php else: ?>
+                    <a class="gree-pager__btn" href="<?= htmlspecialchars($pageUrl((int) $p), ENT_QUOTES) ?>"><?= (int) $p ?></a>
+                <?php endif; ?>
+            <?php endforeach; ?>
+
+            <?php if ($page < $totalPages): ?>
+                <a class="gree-pager__btn" href="<?= htmlspecialchars($pageUrl($page + 1), ENT_QUOTES) ?>" title="Следующая">›</a>
+            <?php else: ?>
+                <span class="gree-pager__btn gree-pager__btn--disabled">›</span>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+</div>
+<?php
+$lAdmin->NavText(ob_get_clean());
 
 $paymentLabels = ['card' => 'Карта', 'uzum_bank' => 'Рассрочка UZUM', 'anor_bank' => 'Рассрочка Anorbank'];
 $statusLabels  = ['new' => 'Новый', 'confirmed' => 'Подтверждён', 'shipped' => 'Отправлен', 'delivered' => 'Доставлен', 'cancelled' => 'Отменён'];
