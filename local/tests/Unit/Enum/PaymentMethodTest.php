@@ -22,6 +22,13 @@ final class PaymentMethodTest extends TestCase
         $this->assertSame('order.payment.uzum_bank', PaymentMethod::UzumBank->translationKey());
     }
 
+    public function testLabelReturnsRussianManagerFacingName(): void
+    {
+        $this->assertSame('Карта', PaymentMethod::Card->label());
+        $this->assertSame('Рассрочка UZUM', PaymentMethod::UzumBank->label());
+        $this->assertSame('Рассрочка Anorbank', PaymentMethod::AnorBank->label());
+    }
+
     public function testTryFromOrNullReturnsNullOnEmpty(): void
     {
         $this->assertNull(PaymentMethod::tryFromOrNull(null));

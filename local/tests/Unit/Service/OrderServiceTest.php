@@ -7,6 +7,7 @@ namespace Gree\Tests\Unit\Service;
 use Gree\Collection\CartItemCollection;
 use Gree\Collection\OfferCollection;
 use Gree\Contract\DB\TransactionServiceInterface;
+use Gree\Contract\Notification\OrderNotifierInterface;
 use Gree\Contract\Repository\CartItemRepositoryInterface;
 use Gree\Contract\Repository\CartRepositoryInterface;
 use Gree\Contract\Repository\OfferRepositoryInterface;
@@ -44,6 +45,7 @@ final class OrderServiceTest extends TestCase
     private LanguageServiceInterface $language;
     private InMemoryHttpContext $http;
     private TransactionServiceInterface $tx;
+    private OrderNotifierInterface $notifier;
     private OrderService $service;
 
     protected function setUp(): void
@@ -67,6 +69,8 @@ final class OrderServiceTest extends TestCase
         // assert rollback override this method specifically.
         $this->tx->method('run')->willReturnCallback(static fn(callable $cb) => $cb());
 
+        $this->notifier = $this->createMock(OrderNotifierInterface::class);
+
         $this->service = new OrderService(
             $this->orders,
             $this->orderItems,
@@ -78,6 +82,7 @@ final class OrderServiceTest extends TestCase
             $this->language,
             $this->http,
             $this->tx,
+            $this->notifier,
         );
     }
 
@@ -296,7 +301,7 @@ final class OrderServiceTest extends TestCase
         $service = new OrderService(
             $this->orders, $this->orderItems, $this->cartToken, $this->carts,
             $this->cartItems, $this->offers, $this->products, $this->language,
-            $this->http, $this->tx,
+            $this->http, $this->tx, $this->notifier,
         );
 
         try {

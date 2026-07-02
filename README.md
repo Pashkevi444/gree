@@ -323,7 +323,8 @@ Bitrix-нативная работа с куками — через `Gree\Http\H
 3. **Snapshot** — для каждой строки корзины подтягиваем свежий offer + product, фиксируем цену+имя+цвет+площадь
 4. Генерируем уникальный `publicId` (12-hex, ретрай при коллизии)
 5. Транзакционно: `orders->insert` → `orderItems->insert` × N → `cartItems->delete` × N (очищаем корзину чтоб второй раз не сабмитнул)
-6. Возвращаем `OrderDto` с `publicId`
+6. **E-mail-уведомление** менеджеру (`OrderNotifierInterface::notify`) — best-effort, вне транзакции
+7. Возвращаем `OrderDto` с `publicId`
 
 ### DTO
 
@@ -331,6 +332,16 @@ Bitrix-нативная работа с куками — через `Gree\Http\H
 - `OrderDeliveryDto` — city/street/house/apartment/comment
 - `OrderItemDto` — snapshot позиции
 - `OrderDto` — агрегат-корень, объединяет всё + items collection
+
+### E-mail-уведомление о заказе
+
+После успешного `place()` `OrderService` дёргает `Gree\Contract\Notification\OrderNotifierInterface`. Реализация — `Gree\Notification\EmailOrderNotifier`:
+
+- форматирует все поля заказа в HTML-письмо (сумма, оплата, статус, покупатель, доставка, полный состав таблицей) — менеджеру видно суть, не заходя в админку;
+- добавляет deep-link на кастомную деталку `/bitrix/admin/gree_orders_view.php?ID={id}` (база — `ORDER_ADMIN_URL`);
+- **fail-soft**: транспорт (`Gree\Mail\BitrixMailer` → `Bitrix\Main\Mail\Mail::send`) кидает/недоступен → ловим, логируем `critical`, заказ всё равно оформлен.
+
+Получатели + From — из `.env` (`ORDER_MAIL_TO` через запятую, `ORDER_MAIL_FROM`). Пустой `ORDER_MAIL_TO` → `isConfigured()=false` → no-op: локалка и тесты почту не шлют. Русские лейблы оплаты — `PaymentMethod::label()`.
 
 ---
 
@@ -540,8 +551,11 @@ php bitrix/modules/sprint.migration/tools/migrate.php down=Version20260517000005
 | `GREE_TEST_INTEGRATION` | `local/tests/bootstrap.php` | `1` → boot Bitrix-пролог вместо стабов. Выставляется composer-скриптом `test:integration`, в `.env` обычно не нужна. |
 | `GREE_TEST_MYSQL_SOCKET` | `local/tests/bootstrap.php` | Явный путь к unix-socket MySQL для CLI. Bootstrap пробует MAMP/brew/apt/rpm дефолты сам — задавай только если у тебя сокет в нестандартном месте. |
 | `GREE_ALLOWED_HOSTS` | `services.php` → `ApiGuard` | Список хостов через запятую (`gree.all4it.org,www.gree.uz`), которым ApiGuard верит как Origin/Referer для state-changing API. За reverse proxy/CDN `HTTP_HOST` приходит внутренним, а браузер шлёт публичное имя → без этой ENV получаешь 403 «foreign origin». На localhost ENV не нужна — фоллбек на `HTTP_HOST` текущего запроса + `X-Forwarded-Host` если proxy его ставит. |
+| `ORDER_MAIL_TO` | `Gree\Mail\BitrixMailer` | Получатель(и) письма о заказе через запятую (`sales@gree.ru,manager@gree.ru`). Пусто → уведомления о заказах выключены (no-op). |
+| `ORDER_MAIL_FROM` | `Gree\Mail\BitrixMailer` | Адрес отправителя. Пусто → дефолт Bitrix. |
+| `ORDER_ADMIN_URL` | `services.php` → `EmailOrderNotifier` | Базовый абсолютный URL сайта для deep-link в кастомную деталку заказа. Пусто → в письме не будет ссылки в админку. |
 
-Любая новая `getenv()` в коде → строка в `.env.example` (это требование закреплено в CLAUDE.md).
+Любая новая `getenv()` / `Env::get()` в коде → строка в `.env.example` (это требование закреплено в CLAUDE.md).
 
 ---
 

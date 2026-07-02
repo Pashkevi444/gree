@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Gree\Contract\DB\TransactionServiceInterface;
 use Gree\Contract\Http\HttpContextInterface;
+use Gree\Contract\Mail\MailerInterface;
+use Gree\Contract\Notification\OrderNotifierInterface;
 use Gree\Contract\Security\ApiGuardInterface;
 use Gree\Contract\Service\CsrfServiceInterface;
 use Gree\Contract\Repository\BlogRepositoryInterface;
@@ -58,6 +60,8 @@ use Gree\Controller\ProductController;
 use Gree\Controller\WhereToBuyController;
 use Gree\DB\TransactionService;
 use Gree\Http\BitrixHttpContext;
+use Gree\Mail\BitrixMailer;
+use Gree\Notification\EmailOrderNotifier;
 use Gree\Repository\BlogRepository;
 use Gree\Security\ApiGuard;
 use Gree\Security\CsrfService;
@@ -368,6 +372,22 @@ $container
     ->setPublic(true);
 $container->setAlias(CartServiceInterface::class, CartService::class)->setPublic(true);
 
+// ─── Notifications ────────────────────────────────────────────────────────
+// E-mail-уведомление о новом заказе. Получатели/From — из .env; пусто → no-op.
+// Ссылка в админку строится от ORDER_ADMIN_URL (базовый URL сайта).
+$container
+    ->register(BitrixMailer::class)
+    ->setFactory([BitrixMailer::class, 'fromEnv'])
+    ->setPublic(true);
+$container->setAlias(MailerInterface::class, BitrixMailer::class)->setPublic(true);
+
+$container
+    ->register(EmailOrderNotifier::class)
+    ->addArgument(new Reference(MailerInterface::class))
+    ->addArgument((string) (\Gree\Core\Env::get('ORDER_ADMIN_URL', '') ?? ''))
+    ->setPublic(true);
+$container->setAlias(OrderNotifierInterface::class, EmailOrderNotifier::class)->setPublic(true);
+
 // ─── Orders ───────────────────────────────────────────────────────────────
 $container->register(OrderRepository::class)->setPublic(true);
 $container->setAlias(OrderRepositoryInterface::class, OrderRepository::class)->setPublic(true);
@@ -387,6 +407,7 @@ $container
     ->addArgument(new Reference(LanguageServiceInterface::class))
     ->addArgument(new Reference(HttpContextInterface::class))
     ->addArgument(new Reference(TransactionServiceInterface::class))
+    ->addArgument(new Reference(OrderNotifierInterface::class))
     ->setPublic(true);
 $container->setAlias(OrderServiceInterface::class, OrderService::class)->setPublic(true);
 

@@ -7,6 +7,7 @@ namespace Gree\Service;
 use Gree\Collection\OrderItemCollection;
 use Gree\Contract\DB\TransactionServiceInterface;
 use Gree\Contract\Http\HttpContextInterface;
+use Gree\Contract\Notification\OrderNotifierInterface;
 use Gree\Contract\Repository\CartItemRepositoryInterface;
 use Gree\Contract\Repository\CartRepositoryInterface;
 use Gree\Contract\Repository\OfferRepositoryInterface;
@@ -50,6 +51,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
         private readonly LanguageServiceInterface $language,
         private readonly HttpContextInterface $http,
         private readonly TransactionServiceInterface $tx,
+        private readonly OrderNotifierInterface $notifier,
     ) {}
 
     public function place(
@@ -126,7 +128,7 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 return $id;
             });
 
-            return new OrderDto(
+            $placed = new OrderDto(
                 publicId:   $publicId,
                 status:     $orderDto->status,
                 customer:   $orderDto->customer,
@@ -141,6 +143,12 @@ final class OrderService extends BaseService implements OrderServiceInterface
                 ip:         $orderDto->ip,
                 userAgent:  $orderDto->userAgent,
             );
+
+            // Best-effort уведомление менеджеру (e-mail). Notifier fail-soft —
+            // почта недоступна, заказ всё равно оформлен.
+            $this->notifier->notify($placed);
+
+            return $placed;
         } catch (CheckoutValidationException | EmptyCartException $e) {
             throw $e;
         } catch (\Throwable $e) {

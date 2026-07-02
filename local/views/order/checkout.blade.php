@@ -56,7 +56,6 @@
                     <div class="order-card__title">{{ Language::t('order.delivery.title') }}</div>
                     <div class="order-card__description">{{ Language::t('order.delivery.description') }}</div>
                     <div class="order-card-content">
-                        <p class="order-card__note">{{ Language::t('order.delivery.note') }}</p>
                         <div class="form-layout form-layout--delivery">
                             <label class="label">
                                 <div class="label__title">{{ Language::t('order.delivery.city') }}</div>

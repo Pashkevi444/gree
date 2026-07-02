@@ -23,6 +23,16 @@ enum PaymentMethod: string
         return 'order.payment.' . $this->value;
     }
 
+    /** Русский лейбл для админки / уведомлений менеджеру (UI покупателя берёт translationKey). */
+    public function label(): string
+    {
+        return match ($this) {
+            self::Card     => 'Карта',
+            self::UzumBank => 'Рассрочка UZUM',
+            self::AnorBank => 'Рассрочка Anorbank',
+        };
+    }
+
     public static function tryFromOrNull(?string $value): ?self
     {
         return ($value === null || $value === '') ? null : self::tryFrom($value);
